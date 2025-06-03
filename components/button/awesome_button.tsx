@@ -3,15 +3,15 @@
 import { useSelector } from 'react-redux';
 import { ThemeStateType } from '@components/theme/theme_color';
 import styles from '@components/button/awesome_button.module.css'
-import { getThemeState } from "@utils/store/slices/mainThemeSlice";
+import { defaultTheme, getThemeState } from "@utils/store/slices/mainThemeSlice";
 
-enum ButtonSize {
+export enum ButtonSize {
   mini,
   normal,
   full
 };
 
-enum ButtonType {
+export enum ButtonType {
   dark,
   normal,
   light,
@@ -21,18 +21,41 @@ export type ButtonProps = {
   size? : ButtonSize,
   type? : ButtonType,
   onClick? : Function,
-  style? : string,
+  style? : {},
   disable? : boolean,
   text? : string,
 };
 
-type ButtonColor = {
-  label:string,
-  background:string,
-};
-
 function getButtonColor(props: ButtonProps, curTheme: ThemeStateType) {
-  return '';
+  
+  let light = defaultTheme.themeColor.Light;
+  let dark = defaultTheme.themeColor.Dark;
+  let theme1 = defaultTheme.themeColor.Theme1;
+  let theme2 = defaultTheme.themeColor.Theme2;
+  let theme3 = defaultTheme.themeColor.Theme3;
+  if (
+    curTheme &&
+    curTheme.themeColor &&
+    curTheme.themeColor.Light &&
+    curTheme.themeColor.Dark &&
+    curTheme.themeColor.Theme1 &&
+    curTheme.themeColor.Theme2 &&
+    curTheme.themeColor.Theme3
+  ) {
+    light = curTheme.themeColor.Light;
+    dark = curTheme.themeColor.Dark;
+    theme1 = curTheme.themeColor.Theme1;
+    theme2 = curTheme.themeColor.Theme2;
+    theme3 = curTheme.themeColor.Theme3;
+  }
+
+  if (props.type === ButtonType.dark) {
+    return {color : light, backgroundColor : theme1};
+  }
+  else if (props.type === ButtonType.light) {
+    return {color : dark, backgroundColor : theme3};
+  }
+  return {color : dark, backgroundColor : theme2};
 };
 
 function getOnclickColor(props: ButtonProps, curTheme: ThemeStateType) {
@@ -40,36 +63,44 @@ function getOnclickColor(props: ButtonProps, curTheme: ThemeStateType) {
 };
 
 function getButtonSize(props: ButtonProps) {
-  return '';
+  if (props.size === ButtonSize.mini) {
+    return {width : "auto", height: "20px"};
+  } else if (props.size === ButtonSize.full) {
+    return {width : "100%", height: "40px"};
+  }
+  return {width: "auto", height: "40px", padding: "10px"};
 };
 
 const defaultButton :ButtonProps = {
   size : ButtonSize.normal,
   type : ButtonType.normal,
   onClick : function(){console.log("button click!")},
-  style : "",
+  style : {},
   disable : false,
-  text : "버튼",
+  text : "클릭",
 };
 
 export default function AwesomeButton (props : ButtonProps
 ) {
 
+  props = props || defaultButton;
   const buttonSizeStyle = getButtonSize(props);
-
   const currentTheme = useSelector(getThemeState);
-  console.log(currentTheme);
+  console.log("AwesomeButton currentTheme : ", currentTheme);
   const buttonColorStyle = getButtonColor(props, currentTheme);
 
   return (
-    <div className={"awesome_button button-outline" + `${styles[buttonSizeStyle]}`}>
-      <button className="black">test button</button>
-      {/* <button 
-        className={`${styles[buttonColorStyle]}`}
-        disabled={props.disable} 
-      >
-        {props.text}
-      </button> */}
+    <div className={"awesome_button button-outline"}>
+      <button 
+        style={{...props.style,
+                ...buttonSizeStyle, 
+                ...buttonColorStyle, 
+                borderRadius: "10px",
+                }}
+        disabled={props.disable}
+        >
+          {props.text}
+      </button>
     </div>
   );
 };

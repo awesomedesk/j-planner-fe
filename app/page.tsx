@@ -1,4 +1,6 @@
-import AwesomeButton from "@components/button/awesome_button";
+"use client";
+
+import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/awesome_button";
 import Image from "next/image";
 import Link from 'next/link';
 
@@ -9,18 +11,23 @@ export default function Home() {
         <h1>
           J-planner Home
         </h1>
-        <div className="p-8 border-solid border-2">
+        <div className="p-8 border-solid border-2" 
+            style={{width: "300px"}}>
           <Link href={"calender"}>
-            <Image
-                src="/example/vercel.svg"
-                alt="Vercel Logo"
-                className="dark:invert"
-                width={100}
-                height={24}
-                priority
-                />
+            <div className="items-center" >
+              <Image
+                  src="example/vercel.svg"
+                  alt="Vercel Logo"
+                  // className="dark:invert"
+                  width={100}
+                  height={24}
+                  // priority
+                  />
+            </div>
             <AwesomeButton 
-              text="달력"
+              size={ButtonSize.normal}
+              type={ButtonType.light}
+              text="달력으로 가기"
             />
           </Link>
         </div>

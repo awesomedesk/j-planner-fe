@@ -34,7 +34,7 @@ export const greenColorTheme : ThemeColor = {
 };
 
 export const brownColorTheme : ThemeColor = {
-  ThemeName : 'greenColorTheme',
+  ThemeName : 'brownColorTheme',
   ThemeCd : 2,
   Dark : "#332523",
   Theme1 : "#7F534B",

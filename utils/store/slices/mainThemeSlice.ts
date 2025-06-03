@@ -22,7 +22,5 @@ export const mainThemeSlice = createSlice({
 })
 
 export const {setDarkThemeState, setLightThemeState, setThemeColor} = mainThemeSlice.actions
-export const getThemeState = (state:ThemeStateType) => state;
-export const getColorState = (state:ThemeStateType) => state.themeColor;
-export const getDarkState = (state:ThemeStateType) => state.dark;
+export const getThemeState = (state:any) => state.mainTheme;
 export default mainThemeSlice.reducer;
