@@ -1,6 +1,6 @@
 "use client";
 
-import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/awesome_button";
+import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/AwesomeButton";
 import Image from "next/image";
 import Link from 'next/link';
 
@@ -14,7 +14,7 @@ export default function Home() {
         <div className="p-8 border-solid border-2" 
             style={{width: "300px"}}>
           <Link href={"calender"}>
-            <div className="items-center" >
+            <div className="flex flex-col items-center justify-center gap-4" >
               <Image
                   src="example/vercel.svg"
                   alt="Vercel Logo"
@@ -23,12 +23,12 @@ export default function Home() {
                   height={24}
                   // priority
                   />
+              <AwesomeButton 
+                size={ButtonSize.normal}
+                type={ButtonType.light}
+                text="달력으로 가기"
+                />
             </div>
-            <AwesomeButton 
-              size={ButtonSize.normal}
-              type={ButtonType.light}
-              text="달력으로 가기"
-            />
           </Link>
         </div>
     </main>

@@ -2,7 +2,7 @@
 
 import { useSelector } from 'react-redux';
 import { ThemeStateType } from '@components/theme/theme_color';
-import styles from '@components/button/awesome_button.module.css'
+import styles from '@components/button/AwesomeButton.module.css'
 import { defaultTheme, getThemeState } from "@utils/store/slices/mainThemeSlice";
 
 export enum ButtonSize {
@@ -20,7 +20,7 @@ export enum ButtonType {
 export type ButtonProps = {
   size? : ButtonSize,
   type? : ButtonType,
-  onClick? : Function,
+  onClick? : () => void,
   style? : {},
   disable? : boolean,
   text? : string,
@@ -90,18 +90,18 @@ export default function AwesomeButton (props : ButtonProps
   const buttonColorStyle = getButtonColor(props, currentTheme);
 
   return (
-    <div className={"awesome_button button-outline"}>
       <button 
+        className="flex items-center justify-center"
         style={{...props.style,
                 ...buttonSizeStyle, 
                 ...buttonColorStyle, 
                 borderRadius: "10px",
                 }}
         disabled={props.disable}
+        onClick={() => props.onClick && props.onClick()}
         >
           {props.text}
       </button>
-    </div>
   );
 };
 

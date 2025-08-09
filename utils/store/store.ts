@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
 import mainThemeReducer from '@utils/store/slices/mainThemeSlice'
+import mainMenuReducer from '@utils/store/slices/mainMenuSlice'
 
 export const store = configureStore({
   reducer: {
     mainTheme:mainThemeReducer,
+    mainMenu:mainMenuReducer,
   },
 });
 

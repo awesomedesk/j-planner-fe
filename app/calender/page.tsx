@@ -1,10 +1,15 @@
+"use client";
 
-export default function calender() {
+import Calendar from "@components/calendar/Calendar";
+
+export default function CalendarPage() {
+  const handleDateSelect = (date: Date) => {
+    console.log('Selected date:', date);
+  };
+
   return (
-    <main className="flex flex-col items-center justify-between p-24">
-      <div>
-        <p>Show calender</p>
-      </div>
-    </main>
+    <div className="min-h-screen">
+        <Calendar onDateSelect={handleDateSelect} />
+    </div>
   );
 }
