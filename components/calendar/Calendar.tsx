@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import CalendarHeader from './CalendarHeader';
-import CalendarGrid from './CalendarGrid';
+import CalendarMonthly from './monthly/CalendarMonthly';
 import { Schedule, CalendarProps } from './types';
 
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
@@ -74,7 +74,7 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
       />
       
       <div className="flex-1 overflow-hidden">
-        <CalendarGrid 
+        <CalendarMonthly 
           currentDate={currentDate}
           selectedDate={selectedDate}
           schedules={schedules}
