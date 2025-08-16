@@ -1,6 +1,6 @@
 "use client";
 
-import { Schedule, ScheduleItemProps } from './types';
+import { Schedule, ScheduleItemProps } from '../types';
 
 export default function ScheduleItem({ schedule }: ScheduleItemProps) {
   const getScheduleColorClass = (color: Schedule['color']) => {
@@ -26,4 +26,3 @@ export default function ScheduleItem({ schedule }: ScheduleItemProps) {
     </div>
   );
 }
-

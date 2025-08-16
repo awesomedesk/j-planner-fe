@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from 'react';
-import { CalendarGridProps } from './types';
+import { CalendarGridProps } from '../types';
 import ScheduleItem from './ScheduleItem';
 import WeekNumber from './WeekNumber';
-import { generateCalendarDays, isDifferentMonth, isSameDate } from './utils/dateUtils';
+import { generateCalendarDays, isDifferentMonth, isSameDate } from '../utils/dateUtils';
 
 // Props interface moved to types/index.ts
 
@@ -116,4 +116,3 @@ export default function CalendarGrid({ currentDate, selectedDate, schedules, onD
     </div>
   );
 }
-
