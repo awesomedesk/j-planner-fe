@@ -25,8 +25,8 @@ export default function MainHeader() {
   };
 
   return (
-    <div className="main-header" style={getHeaderStyle()}>
-      <div className='p-2 flex items-center justify-between'>
+    <div className="main-header h-16" style={getHeaderStyle()}>
+      <div className='p-2 h-full flex items-center justify-between'>
         <Link href={"/"}>
           <h2 className="text-2xl font-bold">{projectName}</h2>
         </Link>

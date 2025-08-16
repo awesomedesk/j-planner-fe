@@ -17,11 +17,11 @@ export default function MainLayout(props: MainLayoutProps) {
 
   const {title, children} = props;
   return (
-    <div className="min-h-screen flex">
+    <div className="flex">
       <div className={`main-content-box  ${isMenuOpen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
         <MainHeader />
         <div className="flex">
-          <main className={`transition-all duration-300 container mx-auto px-4 py-8`}>
+          <main className={`transition-all duration-300 w-full`}>
             {children}
           </main>
         </div>

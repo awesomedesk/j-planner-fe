@@ -1,77 +1,88 @@
 "use client";
 
-import { useState, useCallback, useMemo } from 'react';
-import { CalendarProps, Schedule } from './types';
-import CalendarNavigation from './CalendarNavigation';
+import { useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { getThemeState } from '@utils/store/slices/mainThemeSlice';
+import CalendarHeader from './CalendarHeader';
 import CalendarGrid from './CalendarGrid';
-import ScheduleManager from './ScheduleManager';
+import { Schedule, CalendarProps } from './types';
 
-export default function Calendar({ onDateSelect }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const currentTheme = useSelector(getThemeState);
 
-  const handlePrevMonth = useCallback(() => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1));
-  }, []);
+  // Default sample schedules if none provided
+  const defaultSchedules: Schedule[] = useMemo(() => [
+    {
+      id: '1',
+      title: '보고계획 제작',
+      date: new Date(2023, 4, 1),
+      color: 'blue'
+    },
+    {
+      id: '2', 
+      title: '오전 11시 추열계획 작업',
+      date: new Date(2023, 4, 1),
+      color: 'purple'
+    },
+    {
+      id: '3',
+      title: '오후 6시 지역아학',
+      date: new Date(2023, 4, 1),
+      color: 'lightpurple'
+    },
+    {
+      id: '4',
+      title: '오후 10시 충구 침술 한국어...',
+      date: new Date(2023, 4, 1),
+      color: 'pink'
+    },
+    {
+      id: '5',
+      title: '오후 10:15 어국 침술 한국어...',
+      date: new Date(2023, 4, 1),
+      color: 'pink'
+    }
+  ], []);
 
-  const handleNextMonth = useCallback(() => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1));
-  }, []);
+  const schedules = externalSchedules || defaultSchedules;
 
-  const handleViewTypeChange = useCallback(() => {
-    // Future implementation for different view types (week, month, year)
-    console.log('View type change requested');
-  }, []);
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
 
-  const handleDateClick = useCallback((day: number) => {
-    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    setSelectedDate(newDate);
-    onDateSelect?.(newDate);
-  }, [currentDate, onDateSelect]);
+  const handleNextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
 
-  const handleAddSchedule = useCallback((title: string) => {
-    if (!selectedDate) return;
-
-    const newSchedule: Schedule = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title,
-      date: new Date(selectedDate)
-    };
-
-    setSchedules(prev => [...prev, newSchedule]);
-  }, [selectedDate]);
-
-  const handleDeleteSchedule = useCallback((id: string) => {
-    setSchedules(prev => prev.filter(schedule => schedule.id !== id));
-  }, []);
-
-  const memoizedSchedules = useMemo(() => schedules, [schedules]);
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    onDateSelect?.(date);
+  };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <CalendarNavigation
+    <div 
+      className="w-full h-full flex flex-col p-4 rounded-lg"
+      style={{ backgroundColor: currentTheme.themeColor.Light }}
+    >
+      <CalendarHeader 
         currentDate={currentDate}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
-        onViewTypeChange={handleViewTypeChange}
+        theme={currentTheme}
       />
       
-      <CalendarGrid
-        currentDate={currentDate}
-        selectedDate={selectedDate}
-        schedules={memoizedSchedules}
-        onDateClick={handleDateClick}
-      />
-      
-      {selectedDate && (
-        <ScheduleManager
+      <div className="flex-1 overflow-hidden">
+        <CalendarGrid 
+          currentDate={currentDate}
           selectedDate={selectedDate}
-          schedules={memoizedSchedules}
-          onAddSchedule={handleAddSchedule}
-          onDeleteSchedule={handleDeleteSchedule}
+          schedules={schedules}
+          onDateClick={handleDateClick}
+          theme={currentTheme}
         />
-      )}
+      </div>
     </div>
   );
-} 
+}
+

@@ -8,8 +8,8 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-screen">
-        <Calendar onDateSelect={handleDateSelect} />
+    <div className="w-full overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}>
+      <Calendar onDateSelect={handleDateSelect} />
     </div>
   );
 }
