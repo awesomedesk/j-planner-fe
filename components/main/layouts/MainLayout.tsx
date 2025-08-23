@@ -1,10 +1,10 @@
 "use client";
 
-import MainHeader from "./MainHeader";
-import MainFooter from './MainFooter';
-import MainMenu from "./MainMenu";
+import MainHeader from "@components/main/layouts/MainHeader";
+import MainFooter from '@components/main/layouts/MainFooter';
+import MainMenu from "@components/main/layouts/MainMenu";
 import { useSelector } from 'react-redux';
-import { RootState } from '@/utils/store/store';
+import { RootState } from '@utils/store/store';
 
 interface MainLayoutProps {
   title?:string,
@@ -18,7 +18,7 @@ export default function MainLayout(props: MainLayoutProps) {
   const {title, children} = props;
   return (
     <div className="flex">
-      <div className={`main-content-box  ${isMenuOpen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
+      <div className={`main-content-box  ${isMenuOpen ? 'w-[calc(100%-14rem)]' : 'w-full'}`}>
         <MainHeader />
         <div className="flex">
           <main className={`transition-all duration-300 w-full`}>

@@ -5,7 +5,9 @@ export type ScheduleColor = 'blue' | 'purple' | 'pink' | 'lightpurple';
 export interface Schedule {
   id: string;
   title: string;
-  date: Date;
+  startDate: Date;
+  endDate: Date;
+  isAllDay: boolean;
   color: ScheduleColor;
 }
 

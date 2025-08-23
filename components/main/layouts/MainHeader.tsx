@@ -3,16 +3,17 @@
 import Link from 'next/link';
 import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/AwesomeButton";
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/utils/store/store';
+import { RootState } from '@utils/store/store';
 import { toggleMenu } from '@utils/store/slices/mainMenuSlice';
+import { LAYOUT_CONSTANTS } from '@components/main/constants/layout';
 
 export default function MainHeader() {
   const projectName = "J's Planner";
   const mainTheme = useSelector((state: RootState) => state.mainTheme);
   const dispatch = useDispatch();
   const getHeaderStyle = () => {
-    const bgColor = mainTheme.dark ? mainTheme.themeColor.Dark : mainTheme.themeColor.Light;
-    const textColor = mainTheme.dark ? mainTheme.themeColor.Light : mainTheme.themeColor.Dark;
+    const bgColor = mainTheme.dark ? mainTheme.themeColor.Theme3 : mainTheme.themeColor.Theme1;
+    const textColor = mainTheme.dark ? mainTheme.themeColor.Theme1 : mainTheme.themeColor.Theme3;
     return {
       backgroundColor: bgColor,
       color: textColor
@@ -25,7 +26,7 @@ export default function MainHeader() {
   };
 
   return (
-    <div className="main-header h-16" style={getHeaderStyle()}>
+    <div className="main-header" style={{...getHeaderStyle(), height: `${LAYOUT_CONSTANTS.HEADER_HEIGHT_PX}px`}}>
       <div className='p-2 h-full flex items-center justify-between'>
         <Link href={"/"}>
           <h2 className="text-2xl font-bold">{projectName}</h2>

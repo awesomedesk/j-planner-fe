@@ -5,7 +5,7 @@ import { WeekNumberProps } from './types';
 export default function WeekNumber({ weekNumber, theme, height }: WeekNumberProps) {
   return (
     <div 
-      className={`text-center font-medium border-r flex items-center justify-center ${height}`}
+      className={`text-center font-medium border-r flex items-center justify-center text-sm ${height}`}
       style={{
         backgroundColor: theme.themeColor.Theme3,
         color: theme.themeColor.Dark,
