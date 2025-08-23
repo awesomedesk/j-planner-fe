@@ -2,8 +2,8 @@
 import dotenv from 'dotenv';
 
 // 환경에 따라 적절한 .env 파일 로드
-const nodeEnv = process.env.NODE_ENV || 'test';
-const envFile = `./env/.env.${nodeEnv}`;
+const appEnv = process.env.NEXT_PUBLIC_APP_ENV || 'test';
+const envFile = `./env/.env.${appEnv}`;
 
 // dotenv 설정
 dotenv.config({ path: envFile });
@@ -71,7 +71,7 @@ export const envConfig: EnvConfig = {
   
   // App Settings
   appVersion: getEnvVar('NEXT_PUBLIC_APP_VERSION', '1.0.0'),
-  appEnv: (getEnvVar('NEXT_PUBLIC_APP_ENV', 'local') as EnvConfig['appEnv']),
+  appEnv: (getEnvVar('NEXT_PUBLIC_APP_ENV', 'test') as EnvConfig['appEnv']),
   
   // Debug Settings
   debugMode: getBooleanEnvVar('NEXT_PUBLIC_DEBUG_MODE', false),

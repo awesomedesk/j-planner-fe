@@ -45,7 +45,7 @@ PORT=3000
 "dev": "cp env/.env.test .env && next dev"
 
 // dotenv 방식  
-"dev": "NODE_ENV=test next dev"
+"dev": "NODE_ENV=development NEXT_PUBLIC_APP_ENV=test next dev"
 ```
 
 ### **3. 프로젝트 요구사항 부합**
@@ -61,8 +61,8 @@ PORT=3000
 #### **1. 개발 생산성**
 ```bash
 # 즉시 환경 전환
-NODE_ENV=local npm run dev     # 로컬
-NODE_ENV=production npm run dev # 프로덕션
+NEXT_PUBLIC_APP_ENV=local npm run dev:local     # 로컬
+NEXT_PUBLIC_APP_ENV=production npm run dev:prod # 프로덕션
 ```
 
 #### **2. 표준 준수**
@@ -166,6 +166,7 @@ API_URL=development-url
 ```dockerfile
 # Dockerfile에서 환경변수 설정
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_APP_ENV=production
 ENV API_URL=https://api.prod.com
 
 # .env 파일은 무시됨
@@ -192,8 +193,8 @@ env/.env.test       # 테스트 환경
 import dotenv from 'dotenv';
 
 // 환경별 파일 로드
-const nodeEnv = process.env.NODE_ENV || 'test';
-dotenv.config({ path: `./env/.env.${nodeEnv}` });
+const appEnv = process.env.NEXT_PUBLIC_APP_ENV || 'test';
+dotenv.config({ path: `./env/.env.${appEnv}` });
 
 // 타입 안전한 환경변수 접근
 export const envConfig = {
@@ -216,9 +217,9 @@ const apiClient = new ApiClient({
 ### **환경별 실행**
 ```bash
 # 패키지 스크립트
-npm run dev        # NODE_ENV=test
-npm run dev:local  # NODE_ENV=local  
-npm run dev:prod   # NODE_ENV=production
+npm run dev        # NODE_ENV=development, NEXT_PUBLIC_APP_ENV=test
+npm run dev:local  # NODE_ENV=development, NEXT_PUBLIC_APP_ENV=local  
+npm run dev:prod   # NODE_ENV=development, NEXT_PUBLIC_APP_ENV=production
 ```
 
 ## 📊 대안과의 비교
@@ -251,7 +252,7 @@ npm run dev:prod   # NODE_ENV=production
 ```json
 {
   "scripts": {
-    "dev": "NODE_ENV=test next dev"
+    "dev": "NODE_ENV=development NEXT_PUBLIC_APP_ENV=test next dev"
   }
 }
 ```

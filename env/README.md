@@ -129,7 +129,7 @@ logger.error('에러 메시지');
 ### 환경변수 우선순위
 Next.js의 환경변수 로딩 우선순위:
 1. `.env.local` (항상, .env*.local은 .gitignore에 추가되어야 함)
-2. `.env.production`, `.env.test`, `.env.development` (NODE_ENV에 따라)
+2. `.env.production`, `.env.test`, `.env.local` (NEXT_PUBLIC_APP_ENV에 따라)
 3. `.env`
 
 ## 🔍 환경별 설정 예시
