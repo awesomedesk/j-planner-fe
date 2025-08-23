@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { scheduleApi } from '../types/schedule';
+import { scheduleApi } from '@components/calendar/types/schedule';
 import type { 
   ScheduleAPI, 
   CreateScheduleRequest, 
@@ -10,7 +10,7 @@ import type {
   DailyParams,
   SearchParams 
 } from '../types/types';
-import type { ApiError } from '../../../utils/api/client';
+import type { ApiError } from '@utils/api/client';
 
 interface UseScheduleState<T> {
   data: T | null;

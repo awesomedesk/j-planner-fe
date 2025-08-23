@@ -1,6 +1,6 @@
 "use client";
 
-import { WeekNumberProps } from './types';
+import { WeekNumberProps } from '@components/calendar/types';
 
 export default function WeekNumber({ weekNumber, theme, height }: WeekNumberProps) {
   return (
