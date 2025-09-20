@@ -12,7 +12,7 @@ export default function CalendarHeader({ currentDate, onPrevMonth, onNextMonth, 
   const currentYear = currentDate.getFullYear();
 
   return (
-    <div className="flex items-center justify-between mb-2">
+    <div className="calander-header flex items-center justify-between mb-4">
       {/* Left Navigation */}
       <div className="flex items-center space-x-4">
         <button 

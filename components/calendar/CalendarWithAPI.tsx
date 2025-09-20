@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { useMonthlySchedules, useScheduleMutations } from '@utils/api';
-import CalendarHeader from '@components/calendar/CalendarHeader';
+import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
 import CalendarGrid from '@components/calendar/monthly/CalendarMonthly';
 import type { Schedule, CalendarProps } from '@components/calendar/types';
 import type { ScheduleAPI } from '@components/calendar/types/types';
@@ -13,9 +13,10 @@ import type { ScheduleAPI } from '@components/calendar/types/types';
 const convertApiScheduleToSchedule = (apiSchedule: ScheduleAPI): Schedule => ({
   id: apiSchedule.id,
   title: apiSchedule.title,
-  startDate: new Date(apiSchedule.startDate || Date.now()),
-  endDate: new Date(apiSchedule.endDate || Date.now()),
+  startDateTime: new Date(apiSchedule.startDate || Date.now()),
+  endDateTime: new Date(apiSchedule.endDate || Date.now()),
   isAllDay: apiSchedule.isAllDay ?? false,
+  description: apiSchedule.description,
   color: apiSchedule.color,
 });
 
@@ -106,12 +107,11 @@ export default function CalendarWithAPI({ onDateSelect, initialDate }: Omit<Cale
       />
       
       <div className="flex-1 overflow-hidden">
-        <CalendarGrid 
+        <CalendarGrid
           currentDate={currentDate}
           selectedDate={selectedDate}
           schedules={schedules}
           onDateClick={handleDateClick}
-          theme={currentTheme}
         />
       </div>
 
