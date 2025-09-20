@@ -1,8 +1,8 @@
 "use client";
 
-import MainHeader from "@components/main/layouts/MainHeader";
-import MainFooter from '@components/main/layouts/MainFooter';
-import MainMenu from "@components/main/layouts/MainMenu";
+import MainHeader from "@components/layouts/main/layouts/MainHeader";
+import MainFooter from '@components/layouts/main/layouts/MainFooter';
+import MainMenu from "@components/layouts/main/layouts/MainMenu";
 import { useSelector } from 'react-redux';
 import { RootState } from '@/utils/store/store';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';

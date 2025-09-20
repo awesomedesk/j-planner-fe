@@ -1,7 +1,7 @@
 "use client";
 
 import Calendar from "@components/calendar/Calendar";
-import { LAYOUT_CONSTANTS } from '@components/main/constants/layout';
+import { LAYOUT_CONSTANTS } from '@components/layouts/main/constants/layout';
 
 export default function CalendarPage() {
   
