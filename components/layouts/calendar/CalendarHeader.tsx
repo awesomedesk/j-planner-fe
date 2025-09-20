@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarHeaderProps } from './types';
+import { CalendarHeaderProps } from '@components/calendar/types';
 
 export default function CalendarHeader({ currentDate, onPrevMonth, onNextMonth, theme }: CalendarHeaderProps) {
   const monthNames = [
@@ -12,7 +12,7 @@ export default function CalendarHeader({ currentDate, onPrevMonth, onNextMonth, 
   const currentYear = currentDate.getFullYear();
 
   return (
-    <div className="flex items-center justify-between mb-4 px-2">
+    <div className="calander-header flex items-center justify-between mb-4">
       {/* Left Navigation */}
       <div className="flex items-center space-x-4">
         <button 

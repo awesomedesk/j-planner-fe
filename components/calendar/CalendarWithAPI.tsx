@@ -4,16 +4,19 @@ import { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { useMonthlySchedules, useScheduleMutations } from '@utils/api';
-import CalendarHeader from './CalendarHeader';
-import CalendarGrid from './monthly/CalendarMonthly';
-import type { Schedule, CalendarProps } from './types';
+import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
+import CalendarGrid from '@components/calendar/monthly/CalendarMonthly';
+import type { Schedule, CalendarProps } from '@components/calendar/types';
 import type { ScheduleAPI } from '@components/calendar/types/types';
 
 // API 데이터를 기존 Schedule 타입으로 변환하는 함수
 const convertApiScheduleToSchedule = (apiSchedule: ScheduleAPI): Schedule => ({
   id: apiSchedule.id,
   title: apiSchedule.title,
-  date: new Date(apiSchedule.startDate),
+  startDateTime: new Date(apiSchedule.startDate || Date.now()),
+  endDateTime: new Date(apiSchedule.endDate || Date.now()),
+  isAllDay: apiSchedule.isAllDay ?? false,
+  description: apiSchedule.description,
   color: apiSchedule.color,
 });
 
@@ -104,12 +107,11 @@ export default function CalendarWithAPI({ onDateSelect, initialDate }: Omit<Cale
       />
       
       <div className="flex-1 overflow-hidden">
-        <CalendarGrid 
+        <CalendarGrid
           currentDate={currentDate}
           selectedDate={selectedDate}
           schedules={schedules}
           onDateClick={handleDateClick}
-          theme={currentTheme}
         />
       </div>
 

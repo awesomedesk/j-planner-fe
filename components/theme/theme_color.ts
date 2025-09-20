@@ -13,16 +13,6 @@ export interface ThemeColor {
   Light:string;
 };
 
-export const nonColorTheme : ThemeColor = {
-  ThemeName : 'nonColorTheme',
-  ThemeCd : 0,
-  Dark : "#000000",
-  Theme1 : "#474747",
-  Theme2 : "#858585",
-  Theme3 : "#CCCCCC",
-  Light : "#FFFFFF"
-};
-
 export const greenColorTheme : ThemeColor = {
   ThemeName : 'greenColorTheme',
   ThemeCd : 1,
@@ -41,4 +31,14 @@ export const brownColorTheme : ThemeColor = {
   Theme2 : "#D4A373",
   Theme3 : "#FAEDCD",
   Light : "#FEFAE0"
+};
+
+export const grayColorTheme : ThemeColor = {
+  ThemeName : 'grayColorTheme',
+  ThemeCd : 999,
+  Dark : "#000000",
+  Theme1 : "#474747",
+  Theme2 : "#858585",
+  Theme3 : "#CCCCCC",
+  Light : "#FFFFFF"
 };

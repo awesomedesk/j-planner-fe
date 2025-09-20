@@ -2,22 +2,14 @@
 
 import Link from 'next/link';
 import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/AwesomeButton";
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/utils/store/store';
+import { useDispatch } from 'react-redux';
 import { toggleMenu } from '@utils/store/slices/mainMenuSlice';
+import { useThemeColors } from '@utils/hooks/useTheme';
 
 export default function MainHeader() {
   const projectName = "J's Planner";
-  const mainTheme = useSelector((state: RootState) => state.mainTheme);
   const dispatch = useDispatch();
-  const getHeaderStyle = () => {
-    const bgColor = mainTheme.dark ? mainTheme.themeColor.Dark : mainTheme.themeColor.Light;
-    const textColor = mainTheme.dark ? mainTheme.themeColor.Light : mainTheme.themeColor.Dark;
-    return {
-      backgroundColor: bgColor,
-      color: textColor
-    };
-  };
+  const colors = useThemeColors();
 
   const handleMenuClick = () => {
     console.log("handleMenuClick");
@@ -25,10 +17,22 @@ export default function MainHeader() {
   };
 
   return (
-    <div className="main-header h-16" style={getHeaderStyle()}>
-      <div className='p-2 h-full flex items-center justify-between'>
+    <div
+      className="main-header"
+      style={{
+        backgroundColor: colors.surface,
+        color: colors.textReverse,
+        height: '60px'
+      }}
+    >
+      <div className='p-4 h-full flex items-center justify-between'>
         <Link href={"/"}>
-          <h2 className="text-2xl font-bold">{projectName}</h2>
+          <h2 
+            className="text-2xl font-bold" 
+            style={{ color: colors.textReverse }}
+          >
+            {projectName}
+          </h2>
         </Link>
         <div className="flex gap-2 ml-auto">
           <AwesomeButton 

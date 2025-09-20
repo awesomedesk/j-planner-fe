@@ -3,7 +3,7 @@ export { default as apiClient } from './client';
 export type { ApiResponse, ApiError } from './client';
 
 // API 함수들
-export { scheduleApi, userApi } from '../../components/calendar/types/schedule';
+export { scheduleApi, userApi } from '@components/calendar/types/schedule';
 
 // 타입들
 export type {
@@ -18,7 +18,7 @@ export type {
   DailyParams,
   SearchParams,
   ScheduleColor,
-} from '../../components/calendar/types/types';
+} from '@components/calendar/types/types';
 
 // 훅들
 export {
@@ -26,4 +26,4 @@ export {
   useDailySchedules,
   useScheduleMutations,
   useScheduleSearch,
-} from '../../components/calendar/hooks/useSchedule';
+} from '@components/calendar/hooks/useSchedule';
