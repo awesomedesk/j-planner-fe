@@ -3,14 +3,14 @@
 import { CalendarHeaderProps } from '@components/calendar/types';
 import AwesomeButton, { ButtonSize, ButtonType } from '@components/button/AwesomeButton';
 
-export default function CalendarHeader({ currentDate, onPrevMonth, onNextMonth, theme }: CalendarHeaderProps) {
+export default function CalendarHeader({ viewDate, onToday, onPrevMonth, onNextMonth, theme }: CalendarHeaderProps) {
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const currentMonth = monthNames[currentDate.getMonth()];
-  const currentYear = currentDate.getFullYear();
+  const currentMonth = monthNames[viewDate.getMonth()];
+  const currentYear = viewDate.getFullYear();
 
   return (
     <div className="calander-header flex items-center justify-between mb-4">
@@ -38,7 +38,8 @@ export default function CalendarHeader({ currentDate, onPrevMonth, onNextMonth, 
           <AwesomeButton
             size={ButtonSize.normal}
             type={ButtonType.light}
-            text="⋮"
+            text="오늘"
+            onClick={onToday}
           />
         </div>
 

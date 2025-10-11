@@ -5,6 +5,7 @@ import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/Awesom
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleMenu } from '@utils/store/slices/mainMenuSlice';
 import { getThemeColor } from '@utils/store/slices/mainThemeSlice';
+import { LAYOUT_CONSTANTS } from '@components/layouts/main/constants/layout';
 
 export default function MainHeader() {
   const projectName = "J's Planner";
@@ -26,7 +27,7 @@ export default function MainHeader() {
       style={{
         backgroundColor: colors.surface,
         color: colors.textReverse,
-        height: '60px'
+        height: `${LAYOUT_CONSTANTS.HEADER_HEIGHT_PX}px`
       }}
     >
       <div className='p-4 h-full flex items-center justify-between'>

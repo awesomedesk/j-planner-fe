@@ -21,14 +21,14 @@ const convertApiScheduleToSchedule = (apiSchedule: ScheduleAPI): Schedule => ({
 });
 
 export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omit<CalendarProps, 'schedules'>) {
-  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
+  const [viewDate, setViewDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const currentTheme = useSelector(getThemeState);
 
   // API에서 월별 일정 조회
   const { data: apiSchedules, loading, error, refetch } = useMonthlySchedules({
-    year: currentDate.getFullYear(),
-    month: currentDate.getMonth() + 1, // JavaScript Date는 0부터 시작하므로 +1
+    year: viewDate.getFullYear(),
+    month: viewDate.getMonth() + 1, // JavaScript Date는 0부터 시작하므로 +1
   });
 
   // 일정 생성/수정/삭제 함수들 (향후 확장을 위해 준비)
@@ -41,11 +41,11 @@ export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omi
   }, [apiSchedules]);
 
   const handlePrevMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
   const handleDateClick = (date: Date) => {
@@ -87,7 +87,7 @@ export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omi
       style={{ backgroundColor: currentTheme.themeColor.Light }}
     >
       <CalendarHeader
-        currentDate={currentDate}
+        viewDate={viewDate}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         theme={currentTheme}
@@ -95,7 +95,7 @@ export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omi
 
       <div className="flex-1 overflow-hidden">
         <CalendarGrid
-          currentDate={currentDate}
+          viewDate={viewDate}
           selectedDate={selectedDate}
           schedules={schedules}
           onDateClick={handleDateClick}
