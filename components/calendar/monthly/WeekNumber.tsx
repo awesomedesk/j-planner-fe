@@ -1,6 +1,7 @@
 "use client";
 
-import { useThemeColors } from '@utils/hooks/useTheme';
+import { useSelector } from 'react-redux';
+import { getThemeColor } from '@utils/store/slices/mainThemeSlice';
 
 interface WeekNumberProps {
   weekNumber: number;
@@ -8,7 +9,13 @@ interface WeekNumberProps {
 }
 
 export default function WeekNumber({ weekNumber, height }: WeekNumberProps) {
-  const colors = useThemeColors();
+  const themeColors = useSelector(getThemeColor);
+
+  const colors = {
+    accent: themeColors.Theme3,
+    text: themeColors.Dark,
+    secondary: themeColors.Theme2
+  };
   
   return (
     <div 

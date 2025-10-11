@@ -1,6 +1,6 @@
 export type ThemeStateType = {
   themeColor:ThemeColor,
-  dark:boolean;
+  isDark:boolean;
 }
 
 export interface ThemeColor {
@@ -41,4 +41,8 @@ export const grayColorTheme : ThemeColor = {
   Theme2 : "#858585",
   Theme3 : "#CCCCCC",
   Light : "#FFFFFF"
+};
+
+export const defaultTheme:ThemeStateType = {
+  themeColor: greenColorTheme, isDark: false 
 };

@@ -1,14 +1,24 @@
 "use client";
 
-import { useDispatch } from 'react-redux';
-import { toggleDarkMode, setThemeColor } from "@utils/store/slices/mainThemeSlice";
-import { useTheme, useThemeColors } from "@utils/hooks/useTheme";
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleDarkMode, setThemeColor, getOriginalThemeColor, getThemeColor, getThemeDarkMode } from "@utils/store/slices/mainThemeSlice";
 import { greenColorTheme, brownColorTheme, grayColorTheme } from "@components/theme/theme_color";
 
 export default function ThemeSelector() {
   const dispatch = useDispatch();
-  const theme = useTheme();
-  const colors = useThemeColors();
+  const currentThemeColor = useSelector(getOriginalThemeColor); // 원본 테마 색상 (설정용)
+  const themeColors = useSelector(getThemeColor); // 계산된 테마 색상 (표시용)
+  const isDark = useSelector(getThemeDarkMode);
+
+  const colors = {
+    primary: themeColors.Theme1,
+    secondary: themeColors.Theme2,
+    accent: themeColors.Theme3,
+    background: themeColors.Light,
+    surface: themeColors.Dark,
+    text: themeColors.Dark,
+    textReverse: themeColors.Light
+  };
 
   const handleThemeChange = (themeColor: any) => {
     dispatch(setThemeColor(themeColor));
@@ -35,13 +45,13 @@ export default function ThemeSelector() {
           <button
             onClick={handleDarkModeToggle}
             className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-            style={{ 
-              backgroundColor: theme.dark ? colors.primary : colors.secondary 
+            style={{
+              backgroundColor: isDark ? colors.primary : colors.secondary
             }}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                theme.dark ? 'translate-x-6' : 'translate-x-1'
+                isDark ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
           </button>
@@ -55,8 +65,8 @@ export default function ThemeSelector() {
               onClick={() => handleThemeChange(item.theme)}
               className="w-full flex items-center justify-between p-3 rounded-lg border transition-all hover:scale-102"
               style={{
-                backgroundColor: theme.themeColor.ThemeCd === item.theme.ThemeCd ? colors.accent : colors.background,
-                borderColor: theme.themeColor.ThemeCd === item.theme.ThemeCd ? colors.primary : colors.secondary,
+                backgroundColor: currentThemeColor.ThemeCd === item.theme.ThemeCd ? colors.accent : colors.background,
+                borderColor: currentThemeColor.ThemeCd === item.theme.ThemeCd ? colors.primary : colors.secondary,
                 color: colors.text
               }}
             >
@@ -77,7 +87,7 @@ export default function ThemeSelector() {
                 </div>
                 <span className="text-sm">{item.name}</span>
               </div>
-              {theme.themeColor.ThemeCd === item.theme.ThemeCd && (
+              {currentThemeColor.ThemeCd === item.theme.ThemeCd && (
                 <span className="text-xs">✓</span>
               )}
             </button>
@@ -90,10 +100,10 @@ export default function ThemeSelector() {
       <div className="mt-6 p-3 rounded-lg" style={{ backgroundColor: colors.surface }}>
         <div className="text-xs opacity-75 mb-1" style={{ color: colors.textReverse }}>현재 테마</div>
         <div className="text-sm font-medium" style={{ color: colors.textReverse }}>
-          {theme.themeColor.ThemeName} {theme.dark ? '(다크)' : '(라이트)'}
+          {themeColors.ThemeName} {isDark ? '(다크)' : '(라이트)'}
         </div>
         <p className="text-xs opacity-75" style={{ color: colors.textReverse }}>
-          {theme.dark ? '다크 모드 활성화됨' : '라이트 모드 활성화됨'}
+          {isDark ? '다크 모드 활성화됨' : '라이트 모드 활성화됨'}
         </p>
       </div>
     </div>

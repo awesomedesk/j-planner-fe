@@ -5,17 +5,23 @@ import { useDispatch, useSelector } from "react-redux";
 import { getMainMenuState } from "@utils/store/slices/mainMenuSlice";
 import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/AwesomeButton";
 import { toggleMenu } from "@utils/store/slices/mainMenuSlice";
-import { useTheme, useThemeColors } from "@utils/hooks/useTheme";
+import { getThemeColor, getThemeDarkMode } from "@utils/store/slices/mainThemeSlice";
 import ThemeSelector from "@components/theme/ThemeSelector";
 
 export default function MainMenu() {
   const menuState = useSelector(getMainMenuState);
   const dispatch = useDispatch();
-  const theme = useTheme();
-  const colors = useThemeColors();
+  const themeColors = useSelector(getThemeColor);
+  const isDark = useSelector(getThemeDarkMode);
+
+  const colors = {
+    background: themeColors.Light,
+    text: themeColors.Dark,
+    secondary: themeColors.Theme2,
+    accent: themeColors.Theme3
+  };
   const [isThemeSectionOpen, setIsThemeSectionOpen] = useState(false);
-  
-  console.log("MainMenu isOpen : ", menuState);
+
   if (!menuState.isOpen) return null;
 
   const handleMenuClick = () => {
@@ -120,21 +126,21 @@ export default function MainMenu() {
             <div className="mt-2 px-3">
               <div className="flex items-center space-x-2 text-xs opacity-75">
                 <div className="flex space-x-1">
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full border"
-                    style={{ backgroundColor: theme.themeColor.Theme1 }}
+                    style={{ backgroundColor: themeColors.Theme1 }}
                   />
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full border"
-                    style={{ backgroundColor: theme.themeColor.Theme2 }}
+                    style={{ backgroundColor: themeColors.Theme2 }}
                   />
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full border"
-                    style={{ backgroundColor: theme.themeColor.Theme3 }}
+                    style={{ backgroundColor: themeColors.Theme3 }}
                   />
                 </div>
                 <span>
-                  {theme.themeColor.ThemeName} {theme.dark ? '(다크)' : '(라이트)'}
+                  {themeColors.ThemeName} {isDark ? '(다크)' : '(라이트)'}
                 </span>
               </div>
             </div>

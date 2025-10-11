@@ -2,28 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* :root {
-  --foreground-rgb: 253, 250, 223;
-  --background-start-rgb: 36, 49, 25;
-  --background-end-rgb: 36, 49, 25;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 36, 49, 25;
-    --background-start-rgb: 253, 250, 223;
-    --background-end-rgb: 253, 250, 223;
-  }
-} */
+/* CSS 변수는 테마 시스템에서 동적으로 관리됩니다 */
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  margin: 0;
+  padding: 0;
 }
 
 @layer utilities {

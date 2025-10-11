@@ -461,7 +461,7 @@ import { greenColorTheme, ThemeStateType } from '@components/theme/theme_color';
 
 const initialState: ThemeStateType = {
   themeColor: greenColorTheme,
-  dark: false
+  isDark: false
 };
 
 export const mainThemeSlice = createSlice({

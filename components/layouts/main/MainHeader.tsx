@@ -2,17 +2,21 @@
 
 import Link from 'next/link';
 import AwesomeButton, { ButtonSize, ButtonType } from "@components/button/AwesomeButton";
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { toggleMenu } from '@utils/store/slices/mainMenuSlice';
-import { useThemeColors } from '@utils/hooks/useTheme';
+import { getThemeColor } from '@utils/store/slices/mainThemeSlice';
 
 export default function MainHeader() {
   const projectName = "J's Planner";
   const dispatch = useDispatch();
-  const colors = useThemeColors();
+  const themeColors = useSelector(getThemeColor);
+
+  const colors = {
+    surface: themeColors.Dark,
+    textReverse: themeColors.Light
+  };
 
   const handleMenuClick = () => {
-    console.log("handleMenuClick");
     dispatch(toggleMenu());
   };
 

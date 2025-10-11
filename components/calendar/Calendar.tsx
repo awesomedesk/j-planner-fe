@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useTheme } from '@utils/hooks/useTheme';
+import { useSelector } from 'react-redux';
+import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
 import CalendarMonthly from './monthly/CalendarMonthly';
 import { Schedule, CalendarProps } from './types';
@@ -9,7 +10,7 @@ import { Schedule, CalendarProps } from './types';
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const currentTheme = useTheme();
+  const currentTheme = useSelector(getThemeState);
 
   // Default sample schedules if none provided
   const testSchedules: Schedule[] = useMemo(() => [

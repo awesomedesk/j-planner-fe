@@ -6,7 +6,6 @@ import { LAYOUT_CONSTANTS } from '@components/layouts/main/constants/layout';
 export default function CalendarPage() {
   
   const handleDateSelect = (date: Date) => {
-    console.log('Selected date:', date);
   };
 
   return (
