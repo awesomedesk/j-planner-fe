@@ -20,7 +20,7 @@ export interface CalendarProps {
 }
 
 export interface CalendarGridProps {
-  currentDate: Date;
+  viewDate: Date;
   selectedDate: Date | null;
   schedules: Schedule[];
   onDateClick: (date: Date) => void;
@@ -28,7 +28,8 @@ export interface CalendarGridProps {
 }
 
 export interface CalendarHeaderProps {
-  currentDate: Date;
+  viewDate: Date;
+  onToday: () => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   theme: ThemeStateType;

@@ -10,9 +10,9 @@ import { getThemeColor } from '@utils/store/slices/mainThemeSlice';
 
 // Props interface moved to types/index.ts
 
-export default function CalendarMonthlyClient({ currentDate, selectedDate, schedules, onDateClick }: Omit<CalendarGridProps, 'theme'>) {
+export default function CalendarMonthlyClient({ viewDate, selectedDate, schedules, onDateClick }: Omit<CalendarGridProps, 'theme'>) {
   const { days, weekNumbers } = useMemo(() =>
-    generateCalendarDays(currentDate), [currentDate]);
+    generateCalendarDays(viewDate), [viewDate]);
   const themeColors = useSelector(getThemeColor);
 
   const colors = {
@@ -141,7 +141,7 @@ export default function CalendarMonthlyClient({ currentDate, selectedDate, sched
               <div className="flex flex-1 min-w-0">
                 {week.map((date, dayIndex) => {
                 const daySchedules = getSchedulesForDate(date);
-                const isOtherMonth = isDifferentMonth(date, currentDate);
+                const isOtherMonth = isDifferentMonth(date, viewDate);
                 const isDateSelected = isSameDate(selectedDate, date);
                 const isToday = isSameDate(new Date(), date);
                 // Use the actual calculated cell height

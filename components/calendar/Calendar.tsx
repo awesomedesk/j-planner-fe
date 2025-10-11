@@ -8,7 +8,7 @@ import CalendarMonthly from './monthly/CalendarMonthly';
 import { Schedule, CalendarProps } from './types';
 
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
+  const [viewDate, setViewDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const currentTheme = useSelector(getThemeState);
 
@@ -78,30 +78,35 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
   const schedules = externalSchedules || testSchedules;
 
   const handlePrevMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     setSelectedDate(null);
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
     setSelectedDate(null);
   };
 
+  const handleToday = () => {
+    setViewDate(new Date());
+    setSelectedDate(null);
+  }
+
   const handleDateClick = (date: Date) => {
     const clickedMonth = date.getMonth();
-    const currentMonth = currentDate.getMonth();
-    
+    const currentMonth = viewDate.getMonth();
+
     // If clicked date is from previous month
-    if (clickedMonth < currentMonth || 
+    if (clickedMonth < currentMonth ||
         (currentMonth === 0 && clickedMonth === 11)) { // Handle year boundary (Jan -> Dec)
-      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+      setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
       setSelectedDate(date);
       onDateSelect?.(date);
     }
-    // If clicked date is from next month  
-    else if (clickedMonth > currentMonth || 
+    // If clicked date is from next month
+    else if (clickedMonth > currentMonth ||
              (currentMonth === 11 && clickedMonth === 0)) { // Handle year boundary (Dec -> Jan)
-      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+      setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
       setSelectedDate(date);
       onDateSelect?.(date);
     }
@@ -116,16 +121,17 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
     <div
       className="w-full h-full flex flex-col p-4 rounded-lg"
     >
-      <CalendarHeader 
-        currentDate={currentDate}
+      <CalendarHeader
+        viewDate={viewDate}
+        onToday={handleToday}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         theme={currentTheme}
       />
-      
+
       <div className="flex-1 overflow-hidden min-w-0 h-full">
-        <CalendarMonthly 
-          currentDate={currentDate}
+        <CalendarMonthly
+          viewDate={viewDate}
           selectedDate={selectedDate}
           schedules={schedules}
           onDateClick={handleDateClick}

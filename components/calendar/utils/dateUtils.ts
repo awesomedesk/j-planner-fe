@@ -1,6 +1,6 @@
-const calculateRequiredWeeks = (currentDate: Date): number => {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+const calculateRequiredWeeks = (viewDate: Date): number => {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
   
   // First day of the month
   const firstDay = new Date(year, month, 1);
@@ -24,20 +24,20 @@ const calculateRequiredWeeks = (currentDate: Date): number => {
   return weeks;
 };
 
-export const generateCalendarDays = (currentDate: Date) => {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  
+export const generateCalendarDays = (viewDate: Date) => {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
   // First day of the month
   const firstDay = new Date(year, month, 1);
-  
+
   // Start from Sunday of the week containing the first day
   const startDate = new Date(firstDay);
   const dayOfWeek = firstDay.getDay();
   startDate.setDate(firstDay.getDate() - dayOfWeek);
-  
+
   // Calculate required number of weeks
-  const requiredWeeks = calculateRequiredWeeks(currentDate);
+  const requiredWeeks = calculateRequiredWeeks(viewDate);
   
   // Generate dynamic number of weeks
   const days = [];
@@ -65,8 +65,8 @@ export const generateCalendarDays = (currentDate: Date) => {
   return { days, weekNumbers };
 };
 
-export const isDifferentMonth = (date: Date, currentDate: Date) => {
-  return date.getMonth() !== currentDate.getMonth();
+export const isDifferentMonth = (date: Date, viewDate: Date) => {
+  return date.getMonth() !== viewDate.getMonth();
 };
 
 export const isSameDate = (date1: Date | null, date2: Date) => {
