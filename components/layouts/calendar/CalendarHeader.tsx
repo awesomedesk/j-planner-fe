@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CalendarHeaderProps, CalendarViewMode } from '@components/calendar/types';
 import AwesomeButton, { ButtonSize, ButtonType } from '@components/button/AwesomeButton';
+import { KOREAN_MONTH_NAMES } from '@components/calendar/utils/scheduleUtils';
 
 export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, onNext, onViewModeChange, theme }: CalendarHeaderProps) {
   const [showViewMenu, setShowViewMenu] = useState(false);
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentMonth = monthNames[viewDate.getMonth()];
+  const currentMonth = KOREAN_MONTH_NAMES[viewDate.getMonth()];
   const currentYear = viewDate.getFullYear();
 
   const viewModeLabels: Record<CalendarViewMode, string> = {
@@ -24,6 +22,38 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
     onViewModeChange(mode);
     setShowViewMenu(false);
   };
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowViewMenu(false);
+      }
+    }
+
+    if (showViewMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showViewMenu]);
+
+  // Handle escape key to close dropdown
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowViewMenu(false);
+      }
+    }
+
+    if (showViewMenu) {
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [showViewMenu]);
 
   return (
     <div className="calander-header flex items-center justify-between mb-4">
@@ -45,7 +75,7 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
               textAlign: 'left'
             }}
           >
-            {currentYear} {currentMonth}
+            {currentYear}년 {currentMonth}
           </h2>
 
           <AwesomeButton
@@ -65,7 +95,7 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
       </div>
 
       {/* Right Navigation - View Mode Selector */}
-      <div className="flex items-center space-x-2 relative">
+      <div className="flex items-center space-x-2 relative" ref={dropdownRef}>
         <AwesomeButton
           size={ButtonSize.normal}
           type={ButtonType.light}
@@ -81,6 +111,8 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
               border: `1px solid ${theme.themeColor.Theme2}`,
               minWidth: '120px'
             }}
+            role="menu"
+            aria-label="View mode selector"
           >
             {(['month', 'week', 'day'] as CalendarViewMode[]).map((mode) => (
               <button
@@ -101,6 +133,8 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
+                role="menuitem"
+                aria-current={viewMode === mode ? 'true' : 'false'}
               >
                 {viewModeLabels[mode]}
               </button>

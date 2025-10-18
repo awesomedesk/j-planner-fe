@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { CalendarGridProps, Schedule } from '../types';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
+import { getScheduleColor, getSchedulePosition, formatHourLabel, CALENDAR_CONSTANTS } from '../utils/scheduleUtils';
 
 export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDateClick }: Omit<CalendarGridProps, 'theme'>) {
   const theme = useSelector(getThemeState);
@@ -16,7 +17,6 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
   }, [viewDate]);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  const HOUR_HEIGHT = 60; // Height per hour in pixels
 
   const getSchedulesForDay = (date: Date) => {
     return schedules.filter(schedule => {
@@ -35,40 +35,11 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
     });
   };
 
-  const getScheduleColor = (color: string) => {
-    const colors = {
-      blue: '#3b82f6',
-      purple: '#8b5cf6',
-      pink: '#ec4899',
-      lightpurple: '#a78bfa'
-    };
-    return colors[color as keyof typeof colors] || colors.blue;
-  };
-
-  const getSchedulePosition = (schedule: Schedule) => {
-    const startTime = new Date(schedule.startDateTime);
-    const endTime = new Date(schedule.endDateTime);
-
-    const startHour = startTime.getHours();
-    const startMinute = startTime.getMinutes();
-    const endHour = endTime.getHours();
-    const endMinute = endTime.getMinutes();
-
-    // Calculate position: each hour = HOUR_HEIGHT, round to 10-minute intervals
-    const startOffset = startHour * HOUR_HEIGHT + Math.floor(startMinute / 10) * (HOUR_HEIGHT / 6);
-    const endOffset = endHour * HOUR_HEIGHT + Math.ceil(endMinute / 10) * (HOUR_HEIGHT / 6);
-
-    return {
-      top: startOffset,
-      height: Math.max(endOffset - startOffset, HOUR_HEIGHT / 6) // Minimum 10 minutes height
-    };
-  };
-
   return (
     <div className="h-full flex flex-col">
       {/* Time grid with sticky header */}
       <div className="flex-1 overflow-y-auto">
-        <div className="flex" style={{ height: `${HOUR_HEIGHT * 24}px` }}>
+        <div className="flex" style={{ height: `${CALENDAR_CONSTANTS.HOUR_HEIGHT * 24}px` }}>
           {/* Time labels */}
           <div className="w-16 flex-shrink-0 relative">
             {/* Sticky header for time column */}
@@ -77,7 +48,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
               style={{
                 backgroundColor: theme.themeColor.Light,
                 borderColor: theme.themeColor.Theme2,
-                height: '80px'
+                height: `${CALENDAR_CONSTANTS.HEADER_HEIGHT}px`
               }}
             />
 
@@ -87,11 +58,11 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                 className="text-xs p-2 text-right absolute w-full"
                 style={{
                   color: theme.themeColor.Dark,
-                  top: `${hour * HOUR_HEIGHT + 80}px`,
-                  height: `${HOUR_HEIGHT}px`
+                  top: `${hour * CALENDAR_CONSTANTS.HOUR_HEIGHT + CALENDAR_CONSTANTS.HEADER_HEIGHT}px`,
+                  height: `${CALENDAR_CONSTANTS.HOUR_HEIGHT}px`
                 }}
               >
-                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                {formatHourLabel(hour)}
               </div>
             ))}
           </div>
@@ -116,7 +87,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                   style={{
                     borderColor: theme.themeColor.Theme2,
                     backgroundColor: isSelected ? theme.themeColor.Theme1 : theme.themeColor.Light,
-                    height: '80px'
+                    height: `${CALENDAR_CONSTANTS.HEADER_HEIGHT}px`
                   }}
                   onClick={() => onDateClick(day)}
                 >
@@ -159,8 +130,8 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                     className="absolute w-full border-b cursor-pointer"
                     style={{
                       borderColor: theme.themeColor.Theme2,
-                      top: `${hour * HOUR_HEIGHT + 80}px`,
-                      height: `${HOUR_HEIGHT}px`
+                      top: `${hour * CALENDAR_CONSTANTS.HOUR_HEIGHT + CALENDAR_CONSTANTS.HEADER_HEIGHT}px`,
+                      height: `${CALENDAR_CONSTANTS.HOUR_HEIGHT}px`
                     }}
                     onClick={() => onDateClick(day)}
                   />
@@ -168,7 +139,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
 
                 {/* Schedules positioned absolutely */}
                 {daySchedules.map(schedule => {
-                  const position = getSchedulePosition(schedule);
+                  const position = getSchedulePosition(schedule, 'vertical');
                   return (
                     <div
                       key={schedule.id}
@@ -176,8 +147,8 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                       style={{
                         backgroundColor: getScheduleColor(schedule.color),
                         color: 'white',
-                        top: `${position.top + 80}px`,
-                        height: `${position.height}px`,
+                        top: `${position.start + CALENDAR_CONSTANTS.HEADER_HEIGHT}px`,
+                        height: `${position.size}px`,
                         zIndex: 1
                       }}
                     >

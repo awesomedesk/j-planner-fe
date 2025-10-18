@@ -5,12 +5,12 @@ import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { CalendarGridProps, Schedule } from '../types';
 import { format, isSameDay, isToday } from 'date-fns';
+import { getScheduleColor, getSchedulePosition, formatHourLabel, CALENDAR_CONSTANTS } from '../utils/scheduleUtils';
 
 export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGridProps, 'theme' | 'selectedDate' | 'onDateClick'>) {
   const theme = useSelector(getThemeState);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  const HOUR_WIDTH = 128; // Width per hour in pixels
 
   const daySchedules = useMemo(() => {
     return schedules.filter(schedule => {
@@ -31,35 +31,6 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
     return daySchedules.filter(s => !s.isAllDay);
   }, [daySchedules]);
 
-  const getScheduleColor = (color: string) => {
-    const colors = {
-      blue: '#3b82f6',
-      purple: '#8b5cf6',
-      pink: '#ec4899',
-      lightpurple: '#a78bfa'
-    };
-    return colors[color as keyof typeof colors] || colors.blue;
-  };
-
-  const getSchedulePosition = (schedule: Schedule) => {
-    const startTime = new Date(schedule.startDateTime);
-    const endTime = new Date(schedule.endDateTime);
-
-    const startHour = startTime.getHours();
-    const startMinute = startTime.getMinutes();
-    const endHour = endTime.getHours();
-    const endMinute = endTime.getMinutes();
-
-    // Calculate position: each hour = HOUR_WIDTH, round to 10-minute intervals
-    const startOffset = startHour * HOUR_WIDTH + Math.floor(startMinute / 10) * (HOUR_WIDTH / 6);
-    const endOffset = endHour * HOUR_WIDTH + Math.ceil(endMinute / 10) * (HOUR_WIDTH / 6);
-
-    return {
-      left: startOffset,
-      width: Math.max(endOffset - startOffset, HOUR_WIDTH / 6) // Minimum 10 minutes width
-    };
-  };
-
   // Calculate schedule layers to avoid overlaps
   const schedulesWithLayers = useMemo(() => {
     const sorted = [...timedSchedules].sort((a, b) =>
@@ -69,7 +40,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
     const layers: Array<{ schedule: Schedule; layer: number }> = [];
 
     sorted.forEach(schedule => {
-      const position = getSchedulePosition(schedule);
+      const position = getSchedulePosition(schedule, 'horizontal');
       let layer = 0;
 
       // Find the first available layer where this schedule doesn't overlap
@@ -77,12 +48,12 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
         const overlaps = layers.some(item => {
           if (item.layer !== layer) return false;
 
-          const itemPosition = getSchedulePosition(item.schedule);
-          const itemEnd = itemPosition.left + itemPosition.width;
-          const scheduleEnd = position.left + position.width;
+          const itemPosition = getSchedulePosition(item.schedule, 'horizontal');
+          const itemEnd = itemPosition.start + itemPosition.size;
+          const scheduleEnd = position.start + position.size;
 
           // Check if schedules overlap horizontally
-          return !(scheduleEnd <= itemPosition.left || position.left >= itemEnd);
+          return !(scheduleEnd <= itemPosition.start || position.start >= itemEnd);
         });
 
         if (!overlaps) break;
@@ -149,7 +120,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
 
       {/* Time grid - Horizontal layout */}
       <div className="flex-1 overflow-x-auto overflow-y-auto">
-        <div className="relative" style={{ width: `${HOUR_WIDTH * 24}px`, minHeight: '400px' }}>
+        <div className="relative" style={{ width: `${CALENDAR_CONSTANTS.HOUR_WIDTH * 24}px`, minHeight: '400px' }}>
           {/* Time labels row */}
           <div className="flex sticky top-0 z-10" style={{ backgroundColor: theme.themeColor.Light }}>
             {hours.map(hour => (
@@ -159,10 +130,10 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                 style={{
                   color: theme.themeColor.Dark,
                   borderColor: theme.themeColor.Theme2,
-                  width: `${HOUR_WIDTH}px`
+                  width: `${CALENDAR_CONSTANTS.HOUR_WIDTH}px`
                 }}
               >
-                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                {formatHourLabel(hour)}
               </div>
             ))}
           </div>
@@ -175,7 +146,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                 className="flex-shrink-0 border-r"
                 style={{
                   borderColor: theme.themeColor.Theme2,
-                  width: `${HOUR_WIDTH}px`
+                  width: `${CALENDAR_CONSTANTS.HOUR_WIDTH}px`
                 }}
               />
             ))}
@@ -184,7 +155,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
           {/* Schedule timeline - positioned absolutely */}
           <div className="absolute top-12 left-0 right-0" style={{ minHeight: '300px' }}>
             {schedulesWithLayers.map(({ schedule, layer }) => {
-              const position = getSchedulePosition(schedule);
+              const position = getSchedulePosition(schedule, 'horizontal');
               return (
                 <div
                   key={schedule.id}
@@ -192,9 +163,9 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                   style={{
                     backgroundColor: getScheduleColor(schedule.color),
                     color: 'white',
-                    left: `${position.left}px`,
-                    width: `${position.width}px`,
-                    top: `${layer * 80}px`,
+                    left: `${position.start}px`,
+                    width: `${position.size}px`,
+                    top: `${layer * CALENDAR_CONSTANTS.LAYER_HEIGHT}px`,
                     height: '70px',
                     zIndex: 1
                   }}
