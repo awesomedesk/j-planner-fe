@@ -1,16 +1,71 @@
 "use client";
 
-import { CalendarHeaderProps } from '@components/calendar/types';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { CalendarHeaderProps, CalendarViewMode } from '@components/calendar/types';
 import AwesomeButton, { ButtonSize, ButtonType } from '@components/button/AwesomeButton';
+import { KOREAN_MONTH_NAMES, getWeekOfMonth, getKoreanDayOfWeek } from '@components/calendar/utils/scheduleUtils';
 
-export default function CalendarHeader({ viewDate, onToday, onPrevMonth, onNextMonth, theme }: CalendarHeaderProps) {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, onNext, onViewModeChange, theme }: CalendarHeaderProps) {
+  const [showViewMenu, setShowViewMenu] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentMonth = monthNames[viewDate.getMonth()];
+  const currentMonth = KOREAN_MONTH_NAMES[viewDate.getMonth()];
   const currentYear = viewDate.getFullYear();
+
+  // Calculate additional info based on view mode
+  const dateInfo = useMemo(() => {
+    if (viewMode === 'week') {
+      const weekNum = getWeekOfMonth(viewDate);
+      return `${weekNum}주차`;
+    } else if (viewMode === 'day') {
+      const dayOfWeek = getKoreanDayOfWeek(viewDate);
+      return `${viewDate.getDate()}일 (${dayOfWeek})`;
+    }
+    return '';
+  }, [viewDate, viewMode]);
+
+  const viewModeLabels: Record<CalendarViewMode, string> = {
+    month: '월별보기',
+    week: '주별보기',
+    day: '일별보기',
+  };
+
+  const handleViewModeClick = (mode: CalendarViewMode) => {
+    onViewModeChange(mode);
+    setShowViewMenu(false);
+  };
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowViewMenu(false);
+      }
+    }
+
+    if (showViewMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showViewMenu]);
+
+  // Handle escape key to close dropdown
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowViewMenu(false);
+      }
+    }
+
+    if (showViewMenu) {
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [showViewMenu]);
 
   return (
     <div className="calander-header flex items-center justify-between mb-4">
@@ -20,21 +75,21 @@ export default function CalendarHeader({ viewDate, onToday, onPrevMonth, onNextM
           size={ButtonSize.normal}
           type={ButtonType.light}
           text="‹"
-          onClick={onPrevMonth}
+          onClick={onPrev}
         />
-        
+
         <div className="flex items-center space-x-2">
-          <h2 
+          <h2
             className="text-xl font-semibold"
-            style={{ 
+            style={{
               color: theme.themeColor.Dark,
-              minWidth: '200px', // Fixed width based on "2023 September" (~200px)
+              minWidth: '200px',
               textAlign: 'left'
             }}
           >
-            {currentYear} {currentMonth}
+            {currentYear}년 {currentMonth} {dateInfo}
           </h2>
-          
+
           <AwesomeButton
             size={ButtonSize.normal}
             type={ButtonType.light}
@@ -47,23 +102,57 @@ export default function CalendarHeader({ viewDate, onToday, onPrevMonth, onNextM
           size={ButtonSize.normal}
           type={ButtonType.light}
           text="›"
-          onClick={onNextMonth}
+          onClick={onNext}
         />
       </div>
 
-      {/* Right Navigation */}
-      <div className="flex items-center space-x-2">
+      {/* Right Navigation - View Mode Selector */}
+      <div className="flex items-center space-x-2 relative" ref={dropdownRef}>
         <AwesomeButton
           size={ButtonSize.normal}
           type={ButtonType.light}
-          text="월별보기"
+          text={`${viewModeLabels[viewMode]} ☰`}
+          onClick={() => setShowViewMenu(!showViewMenu)}
         />
-        
-        <AwesomeButton
-          size={ButtonSize.normal}
-          type={ButtonType.light}
-          text="⋮"
-        />
+
+        {showViewMenu && (
+          <div
+            className="absolute top-full right-0 mt-2 rounded-lg shadow-lg overflow-hidden z-50"
+            style={{
+              backgroundColor: theme.themeColor.Light,
+              border: `1px solid ${theme.themeColor.Theme2}`,
+              minWidth: '120px'
+            }}
+            role="menu"
+            aria-label="View mode selector"
+          >
+            {(['month', 'week', 'day'] as CalendarViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => handleViewModeClick(mode)}
+                className="w-full px-4 py-2 text-left transition-colors"
+                style={{
+                  backgroundColor: viewMode === mode ? theme.themeColor.Theme1 : 'transparent',
+                  color: viewMode === mode ? theme.themeColor.Light : theme.themeColor.Dark,
+                }}
+                onMouseEnter={(e) => {
+                  if (viewMode !== mode) {
+                    e.currentTarget.style.backgroundColor = theme.themeColor.Theme2;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (viewMode !== mode) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+                role="menuitem"
+                aria-current={viewMode === mode ? 'true' : 'false'}
+              >
+                {viewModeLabels[mode]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

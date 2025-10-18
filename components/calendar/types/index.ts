@@ -1,6 +1,7 @@
 import { ThemeStateType } from '@components/theme/theme_color';
 
 export type ScheduleColor = 'blue' | 'purple' | 'pink' | 'lightpurple';
+export type CalendarViewMode = 'month' | 'week' | 'day';
 
 export interface Schedule {
   id: string;
@@ -29,9 +30,11 @@ export interface CalendarGridProps {
 
 export interface CalendarHeaderProps {
   viewDate: Date;
+  viewMode: CalendarViewMode;
   onToday: () => void;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onViewModeChange: (mode: CalendarViewMode) => void;
   theme: ThemeStateType;
 }
 

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
+import { getCalendarViewMode, setViewMode } from '@utils/store/slices/calendarViewSlice';
 import { useMonthlySchedules, useScheduleMutations } from '@utils/api';
 import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
-import CalendarGrid from '@components/calendar/monthly/CalendarMonthly';
-import type { Schedule, CalendarProps } from '@components/calendar/types';
+import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
+import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
+import CalendarDaily from '@components/calendar/daily/CalendarDaily';
+import type { Schedule, CalendarProps, CalendarViewMode } from '@components/calendar/types';
 import type { ScheduleAPI } from '@components/calendar/types/types';
 
 // API 데이터를 기존 Schedule 타입으로 변환하는 함수
@@ -24,6 +27,8 @@ export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omi
   const [viewDate, setViewDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const currentTheme = useSelector(getThemeState);
+  const viewMode = useSelector(getCalendarViewMode);
+  const dispatch = useDispatch();
 
   // API에서 월별 일정 조회
   const { data: apiSchedules, loading, error, refetch } = useMonthlySchedules({
@@ -40,12 +45,47 @@ export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omi
     return apiSchedules.map(convertApiScheduleToSchedule);
   }, [apiSchedules]);
 
-  const handlePrevMonth = () => {
-    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  const handlePrev = () => {
+    setViewDate(prev => {
+      if (viewMode === 'month') {
+        return new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+      } else if (viewMode === 'week') {
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() - 7);
+        return newDate;
+      } else { // day
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() - 1);
+        return newDate;
+      }
+    });
+    setSelectedDate(null);
   };
 
-  const handleNextMonth = () => {
-    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const handleNext = () => {
+    setViewDate(prev => {
+      if (viewMode === 'month') {
+        return new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+      } else if (viewMode === 'week') {
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() + 7);
+        return newDate;
+      } else { // day
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() + 1);
+        return newDate;
+      }
+    });
+    setSelectedDate(null);
+  };
+
+  const handleToday = () => {
+    setViewDate(new Date());
+    setSelectedDate(null);
+  };
+
+  const handleViewModeChange = (mode: CalendarViewMode) => {
+    dispatch(setViewMode(mode));
   };
 
   const handleDateClick = (date: Date) => {
@@ -88,18 +128,37 @@ export default function CalendarWithAPIClient({ onDateSelect, initialDate }: Omi
     >
       <CalendarHeader
         viewDate={viewDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
+        viewMode={viewMode}
+        onToday={handleToday}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onViewModeChange={handleViewModeChange}
         theme={currentTheme}
       />
 
-      <div className="flex-1 overflow-hidden">
-        <CalendarGrid
-          viewDate={viewDate}
-          selectedDate={selectedDate}
-          schedules={schedules}
-          onDateClick={handleDateClick}
-        />
+      <div className="flex-1 overflow-hidden min-w-0 h-full">
+        {viewMode === 'month' && (
+          <CalendarMonthly
+            viewDate={viewDate}
+            selectedDate={selectedDate}
+            schedules={schedules}
+            onDateClick={handleDateClick}
+          />
+        )}
+        {viewMode === 'week' && (
+          <CalendarWeekly
+            viewDate={viewDate}
+            selectedDate={selectedDate}
+            schedules={schedules}
+            onDateClick={handleDateClick}
+          />
+        )}
+        {viewMode === 'day' && (
+          <CalendarDaily
+            viewDate={viewDate}
+            schedules={schedules}
+          />
+        )}
       </div>
 
       {/* 일정 생성 로딩 표시 */}
