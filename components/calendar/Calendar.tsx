@@ -1,16 +1,21 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
+import { getCalendarViewMode, setViewMode } from '@utils/store/slices/calendarViewSlice';
 import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
 import CalendarMonthly from './monthly/CalendarMonthly';
-import { Schedule, CalendarProps } from './types';
+import CalendarWeekly from './weekly/CalendarWeekly';
+import CalendarDaily from './daily/CalendarDaily';
+import { Schedule, CalendarProps, CalendarViewMode } from './types';
 
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
   const [viewDate, setViewDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const currentTheme = useSelector(getThemeState);
+  const viewMode = useSelector(getCalendarViewMode);
+  const dispatch = useDispatch();
 
   // Default sample schedules if none provided
   const testSchedules: Schedule[] = useMemo(() => [
@@ -77,20 +82,48 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
 
   const schedules = externalSchedules || testSchedules;
 
-  const handlePrevMonth = () => {
-    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  const handlePrev = () => {
+    setViewDate(prev => {
+      if (viewMode === 'month') {
+        return new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+      } else if (viewMode === 'week') {
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() - 7);
+        return newDate;
+      } else { // day
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() - 1);
+        return newDate;
+      }
+    });
     setSelectedDate(null);
   };
 
-  const handleNextMonth = () => {
-    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const handleNext = () => {
+    setViewDate(prev => {
+      if (viewMode === 'month') {
+        return new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+      } else if (viewMode === 'week') {
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() + 7);
+        return newDate;
+      } else { // day
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() + 1);
+        return newDate;
+      }
+    });
     setSelectedDate(null);
   };
 
   const handleToday = () => {
     setViewDate(new Date());
     setSelectedDate(null);
-  }
+  };
+
+  const handleViewModeChange = (mode: CalendarViewMode) => {
+    dispatch(setViewMode(mode));
+  };
 
   const handleDateClick = (date: Date) => {
     const clickedMonth = date.getMonth();
@@ -123,19 +156,37 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
     >
       <CalendarHeader
         viewDate={viewDate}
+        viewMode={viewMode}
         onToday={handleToday}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onViewModeChange={handleViewModeChange}
         theme={currentTheme}
       />
 
       <div className="flex-1 overflow-hidden min-w-0 h-full">
-        <CalendarMonthly
-          viewDate={viewDate}
-          selectedDate={selectedDate}
-          schedules={schedules}
-          onDateClick={handleDateClick}
-        />
+        {viewMode === 'month' && (
+          <CalendarMonthly
+            viewDate={viewDate}
+            selectedDate={selectedDate}
+            schedules={schedules}
+            onDateClick={handleDateClick}
+          />
+        )}
+        {viewMode === 'week' && (
+          <CalendarWeekly
+            viewDate={viewDate}
+            selectedDate={selectedDate}
+            schedules={schedules}
+            onDateClick={handleDateClick}
+          />
+        )}
+        {viewMode === 'day' && (
+          <CalendarDaily
+            viewDate={viewDate}
+            schedules={schedules}
+          />
+        )}
       </div>
     </div>
   );

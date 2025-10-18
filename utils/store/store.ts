@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
 import mainThemeReducer from '@utils/store/slices/mainThemeSlice'
 import mainMenuReducer from '@utils/store/slices/mainMenuSlice'
+import calendarViewReducer from '@utils/store/slices/calendarViewSlice'
 
 export const store = configureStore({
   reducer: {
     mainTheme:mainThemeReducer,
     mainMenu:mainMenuReducer,
+    calendarView:calendarViewReducer,
   },
 });
 
