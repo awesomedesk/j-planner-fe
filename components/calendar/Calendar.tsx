@@ -123,6 +123,8 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
 
   const handleViewModeChange = (mode: CalendarViewMode) => {
     dispatch(setViewMode(mode));
+    // Keep the current date context when switching view modes
+    // No need to reset viewDate - it stays on the current date/week/month
   };
 
   const handleDateClick = (date: Date) => {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { CalendarHeaderProps, CalendarViewMode } from '@components/calendar/types';
 import AwesomeButton, { ButtonSize, ButtonType } from '@components/button/AwesomeButton';
-import { KOREAN_MONTH_NAMES } from '@components/calendar/utils/scheduleUtils';
+import { KOREAN_MONTH_NAMES, getWeekOfMonth, getKoreanDayOfWeek } from '@components/calendar/utils/scheduleUtils';
 
 export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, onNext, onViewModeChange, theme }: CalendarHeaderProps) {
   const [showViewMenu, setShowViewMenu] = useState(false);
@@ -11,6 +11,18 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
 
   const currentMonth = KOREAN_MONTH_NAMES[viewDate.getMonth()];
   const currentYear = viewDate.getFullYear();
+
+  // Calculate additional info based on view mode
+  const dateInfo = useMemo(() => {
+    if (viewMode === 'week') {
+      const weekNum = getWeekOfMonth(viewDate);
+      return `${weekNum}주차`;
+    } else if (viewMode === 'day') {
+      const dayOfWeek = getKoreanDayOfWeek(viewDate);
+      return `${viewDate.getDate()}일 (${dayOfWeek})`;
+    }
+    return '';
+  }, [viewDate, viewMode]);
 
   const viewModeLabels: Record<CalendarViewMode, string> = {
     month: '월별보기',
@@ -75,7 +87,7 @@ export default function CalendarHeader({ viewDate, viewMode, onToday, onPrev, on
               textAlign: 'left'
             }}
           >
-            {currentYear}년 {currentMonth}
+            {currentYear}년 {currentMonth} {dateInfo}
           </h2>
 
           <AwesomeButton

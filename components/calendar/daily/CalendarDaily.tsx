@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { CalendarGridProps, Schedule } from '../types';
@@ -9,6 +9,8 @@ import { getScheduleColor, getSchedulePosition, formatHourLabel, CALENDAR_CONSTA
 
 export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGridProps, 'theme' | 'selectedDate' | 'onDateClick'>) {
   const theme = useSelector(getThemeState);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -68,58 +70,101 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
 
   const isTodayDate = isToday(viewDate);
 
+  // Calculate current time position
+  const currentTimePosition = useMemo(() => {
+    if (!isTodayDate) return null;
+
+    const now = currentTime;
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    return hours * CALENDAR_CONSTANTS.HOUR_WIDTH +
+           (minutes / 60) * CALENDAR_CONSTANTS.HOUR_WIDTH;
+  }, [isTodayDate, currentTime]);
+
+  // Update current time every minute
+  useEffect(() => {
+    if (!isTodayDate) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [isTodayDate]);
+
+  // Auto-scroll on mount
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!scrollContainerRef.current) return;
+
+      let scrollTarget = 0;
+
+      if (isTodayDate && currentTimePosition !== null) {
+        // 오늘: 현재 시간을 중앙에
+        scrollTarget = currentTimePosition - (scrollContainerRef.current.clientWidth / 2);
+      } else if (timedSchedules.length > 0) {
+        // 일정이 있는 경우: 첫 일정을 중앙에
+        const firstSchedule = timedSchedules[0];
+        const position = getSchedulePosition(firstSchedule, 'horizontal');
+        scrollTarget = position.start - (scrollContainerRef.current.clientWidth / 2);
+      } else {
+        // 일정이 없는 경우: 00시 (시작)
+        scrollTarget = 0;
+      }
+
+      scrollContainerRef.current.scrollLeft = Math.max(0, scrollTarget);
+    }, 100);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
   return (
     <div className="h-full flex flex-col">
-      {/* Day header */}
-      <div
-        className="p-4 border-b flex-shrink-0"
-        style={{
-          borderColor: theme.themeColor.Theme2,
-          backgroundColor: isTodayDate ? theme.themeColor.Theme1 : theme.themeColor.Light
-        }}
-      >
+      {/* All-day schedules section */}
+      {allDaySchedules.length > 0 && (
         <div
-          className="text-2xl font-bold"
-          style={{ color: isTodayDate ? 'white' : theme.themeColor.Dark }}
+          className="p-4 border-b flex-shrink-0"
+          style={{
+            borderColor: theme.themeColor.Theme2,
+            backgroundColor: theme.themeColor.Light
+          }}
         >
-          {format(viewDate, 'EEEE, MMMM d, yyyy')}
-        </div>
-
-        {/* All-day schedules */}
-        {allDaySchedules.length > 0 && (
-          <div className="mt-3">
-            <div
-              className="text-sm font-medium mb-2"
-              style={{ color: isTodayDate ? 'white' : theme.themeColor.Dark }}
-            >
-              All Day
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {allDaySchedules.map(schedule => (
-                <div
-                  key={schedule.id}
-                  className="p-2 rounded min-w-[200px] flex-shrink-0"
-                  style={{
-                    backgroundColor: getScheduleColor(schedule.color),
-                    color: 'white'
-                  }}
-                >
-                  <div className="font-medium">{schedule.title}</div>
-                  {schedule.description && (
-                    <div className="text-sm opacity-90 mt-1">{schedule.description}</div>
-                  )}
-                  {schedule.location && (
-                    <div className="text-sm opacity-90 mt-1">📍 {schedule.location}</div>
-                  )}
-                </div>
-              ))}
-            </div>
+          <div
+            className="text-sm font-medium mb-2"
+            style={{ color: theme.themeColor.Dark }}
+          >
+            종일
           </div>
-        )}
-      </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {allDaySchedules.map(schedule => (
+              <div
+                key={schedule.id}
+                className="p-2 rounded min-w-[200px] flex-shrink-0"
+                style={{
+                  backgroundColor: getScheduleColor(schedule.color),
+                  color: 'white'
+                }}
+              >
+                <div className="font-medium">{schedule.title}</div>
+                {schedule.description && (
+                  <div className="text-sm opacity-90 mt-1">{schedule.description}</div>
+                )}
+                {schedule.location && (
+                  <div className="text-sm opacity-90 mt-1">📍 {schedule.location}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Time grid - Horizontal layout */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto">
+      <div className="flex-1 overflow-x-auto overflow-y-auto" ref={scrollContainerRef}>
         <div className="relative" style={{ width: `${CALENDAR_CONSTANTS.HOUR_WIDTH * 24}px`, minHeight: '400px' }}>
           {/* Time labels row */}
           <div className="flex sticky top-0 z-10" style={{ backgroundColor: theme.themeColor.Light }}>
@@ -166,7 +211,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                     left: `${position.start}px`,
                     width: `${position.size}px`,
                     top: `${layer * CALENDAR_CONSTANTS.LAYER_HEIGHT}px`,
-                    height: '70px',
+                    height: '70px', 
                     zIndex: 1
                   }}
                 >
@@ -184,6 +229,50 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
               );
             })}
           </div>
+
+          {/* Current time indicator */}
+          {isTodayDate && currentTimePosition !== null && (
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none z-20"
+              style={{
+                left: `${currentTimePosition}px`,
+                width: '2px'
+              }}
+            >
+              {/* Vertical line */}
+              <div
+                className="absolute top-0 bottom-0 w-full"
+                style={{
+                  backgroundColor: theme.themeColor.Theme1,
+                  opacity: 0.8
+                }}
+              />
+              {/* Circle at top */}
+              <div
+                className="absolute top-12 rounded-full"
+                style={{
+                  left: '-4px',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: theme.themeColor.Theme1,
+                }}
+              />
+              {/* Time label - positioned below grid time labels */}
+              <div
+                className="absolute text-xs font-medium px-2 py-1 rounded shadow-sm"
+                style={{
+                  top: '70px', // Below the grid time labels (which are at ~48px)
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: theme.themeColor.Theme1,
+                  color: theme.themeColor.Light,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {format(currentTime, 'HH:mm')}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

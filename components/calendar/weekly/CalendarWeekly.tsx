@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { CalendarGridProps, Schedule } from '../types';
@@ -9,6 +9,7 @@ import { getScheduleColor, getSchedulePosition, formatHourLabel, CALENDAR_CONSTA
 
 export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDateClick }: Omit<CalendarGridProps, 'theme'>) {
   const theme = useSelector(getThemeState);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(viewDate, { weekStartsOn: 0 }); // Sunday
@@ -25,6 +26,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
   };
 
   const getAllDaySchedules = (date: Date) => {
+    // Currently called twice per day (lines 146 and 148)
     return schedules.filter(schedule => {
       const scheduleStart = new Date(schedule.startDateTime);
       const scheduleEnd = new Date(schedule.endDateTime);
@@ -34,6 +36,36 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
              date <= scheduleEnd;
     });
   };
+
+  // Check if today is in the current week
+  const isTodayInWeek = useMemo(() => {
+    const today = new Date();
+    return weekDays.some(day => isSameDay(day, today));
+  }, [weekDays]);
+
+  // Calculate current time position (vertical)
+  const currentTimePosition = useMemo(() => {
+    if (!isTodayInWeek) return null;
+
+    const now = currentTime;
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    return CALENDAR_CONSTANTS.HEADER_HEIGHT +
+           hours * CALENDAR_CONSTANTS.HOUR_HEIGHT +
+           (minutes / 60) * CALENDAR_CONSTANTS.HOUR_HEIGHT;
+  }, [isTodayInWeek, currentTime]);
+
+  // Update current time every minute
+  useEffect(() => {
+    if (!isTodayInWeek) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [isTodayInWeek]);
 
   return (
     <div className="h-full flex flex-col">
@@ -72,6 +104,48 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
             const daySchedules = getSchedulesForDay(day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isTodayDate = isToday(day);
+
+            // Calculate schedule layers to avoid overlaps
+            const calculateScheduleLayers = (schedules: Schedule[]) => {
+              const sorted = [...schedules].sort((a, b) =>
+                new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
+              );
+
+              const layers: Array<{ schedule: Schedule; layer: number; totalInLayer: number }> = [];
+
+              sorted.forEach(schedule => {
+                const position = getSchedulePosition(schedule, 'vertical');
+                let layer = 0;
+
+                // Find the first available layer where this schedule doesn't overlap
+                while (true) {
+                  const overlaps = layers.some(item => {
+                    if (item.layer !== layer) return false;
+
+                    const itemPosition = getSchedulePosition(item.schedule, 'vertical');
+                    const itemEnd = itemPosition.start + itemPosition.size;
+                    const scheduleEnd = position.start + position.size;
+
+                    // Check if schedules overlap vertically
+                    return !(scheduleEnd <= itemPosition.start || position.start >= itemEnd);
+                  });
+
+                  if (!overlaps) break;
+                  layer++;
+                }
+
+                layers.push({ schedule, layer, totalInLayer: 1 });
+              });
+
+              // Calculate how many schedules share the same column
+              const maxLayer = Math.max(...layers.map(l => l.layer), 0);
+              return layers.map(item => ({
+                ...item,
+                totalColumns: maxLayer + 1
+              }));
+            };
+
+            const schedulesWithLayers = calculateScheduleLayers(daySchedules);
 
             return (
               <div
@@ -137,18 +211,25 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                   />
                 ))}
 
-                {/* Schedules positioned absolutely */}
-                {daySchedules.map(schedule => {
+                {/* Schedules positioned absolutely with overlap handling */}
+                {schedulesWithLayers.map(({ schedule, layer, totalColumns }) => {
                   const position = getSchedulePosition(schedule, 'vertical');
+                  const widthPercentage = 100 / totalColumns;
+                  const leftPercentage = (layer / totalColumns) * 100;
+
                   return (
                     <div
                       key={schedule.id}
-                      className="absolute left-0 right-0 mx-1 text-xs p-1 rounded overflow-hidden"
+                      className="absolute text-xs p-1 rounded overflow-hidden"
                       style={{
                         backgroundColor: getScheduleColor(schedule.color),
                         color: 'white',
                         top: `${position.start + CALENDAR_CONSTANTS.HEADER_HEIGHT}px`,
                         height: `${position.size}px`,
+                        left: `${leftPercentage}%`,
+                        width: `${widthPercentage}%`,
+                        paddingLeft: '4px',
+                        paddingRight: '4px',
                         zIndex: 1
                       }}
                     >
@@ -159,6 +240,50 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                     </div>
                   );
                 })}
+
+                {/* Current time indicator - only on today's column */}
+                {isTodayDate && currentTimePosition !== null && (
+                  <div
+                    className="absolute left-0 right-0 pointer-events-none z-10"
+                    style={{
+                      top: `${currentTimePosition}px`,
+                      height: '2px'
+                    }}
+                  >
+                    {/* Horizontal line */}
+                    <div
+                      className="absolute left-0 right-0 h-full"
+                      style={{
+                        backgroundColor: theme.themeColor.Theme1,
+                        opacity: 0.8
+                      }}
+                    />
+                    {/* Circle at left */}
+                    <div
+                      className="absolute rounded-full"
+                      style={{
+                        left: '2px',
+                        top: '-4px',
+                        width: '10px',
+                        height: '10px',
+                        backgroundColor: theme.themeColor.Theme1,
+                      }}
+                    />
+                    {/* Time label */}
+                    <div
+                      className="absolute text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm"
+                      style={{
+                        left: '16px',
+                        top: '-10px',
+                        backgroundColor: theme.themeColor.Theme1,
+                        color: theme.themeColor.Light,
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {format(currentTime, 'HH:mm')}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

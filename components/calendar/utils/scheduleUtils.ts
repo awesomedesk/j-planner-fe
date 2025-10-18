@@ -114,3 +114,21 @@ export const ENGLISH_MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ] as const;
+
+/**
+ * Calculate week number of the month for a given date
+ * Returns which week of the month (1-based)
+ */
+export function getWeekOfMonth(date: Date): number {
+  const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+  const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+  const dayOfMonth = date.getDate();
+
+  // Calculate week number (1-based)
+  return Math.ceil((dayOfMonth + firstDayOfWeek) / 7);
+}
+
+export function getKoreanDayOfWeek(date: Date): string {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  return days[date.getDay()];
+}
