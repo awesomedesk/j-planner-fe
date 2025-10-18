@@ -19,6 +19,11 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
+  // TODO: [Medium Priority] Add auto-scroll on mount
+  // - If today is in the week: scroll to current time
+  // - If schedules exist: scroll to first schedule
+  // - Otherwise: scroll to 8 AM (work start time)
+
   const getSchedulesForDay = (date: Date) => {
     return schedules.filter(schedule => {
       return isSameDay(new Date(schedule.startDateTime), date) && !schedule.isAllDay;
@@ -26,6 +31,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
   };
 
   const getAllDaySchedules = (date: Date) => {
+    // TODO: [Low Priority] Optimize: Cache this result with useMemo
     // Currently called twice per day (lines 146 and 148)
     return schedules.filter(schedule => {
       const scheduleStart = new Date(schedule.startDateTime);
@@ -212,6 +218,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                 ))}
 
                 {/* Schedules positioned absolutely with overlap handling */}
+                {/* TODO: [Low Priority] Add schedule click interaction (show details, tooltip on hover) */}
                 {schedulesWithLayers.map(({ schedule, layer, totalColumns }) => {
                   const position = getSchedulePosition(schedule, 'vertical');
                   const widthPercentage = 100 / totalColumns;

@@ -198,6 +198,8 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
           </div>
 
           {/* Schedule timeline - positioned absolutely */}
+          {/* TODO: [Medium Priority] Make schedule height dynamic based on content */}
+          {/* TODO: [Low Priority] Add schedule click interaction (show details modal) */}
           <div className="absolute top-12 left-0 right-0" style={{ minHeight: '300px' }}>
             {schedulesWithLayers.map(({ schedule, layer }) => {
               const position = getSchedulePosition(schedule, 'horizontal');
@@ -212,6 +214,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                     width: `${position.size}px`,
                     top: `${layer * CALENDAR_CONSTANTS.LAYER_HEIGHT}px`,
                     height: '70px', 
+                    // TODO: [Medium] Make this dynamic (min 70px, max based on content)
                     zIndex: 1
                   }}
                 >
@@ -258,6 +261,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                 }}
               />
               {/* Time label - positioned below grid time labels */}
+              {/* TODO: [Medium Priority] Use CALENDAR_CONSTANTS for dynamic positioning instead of hardcoded 70px */}
               <div
                 className="absolute text-xs font-medium px-2 py-1 rounded shadow-sm"
                 style={{

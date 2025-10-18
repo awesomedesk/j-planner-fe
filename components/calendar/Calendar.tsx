@@ -10,6 +10,9 @@ import CalendarWeekly from './weekly/CalendarWeekly';
 import CalendarDaily from './daily/CalendarDaily';
 import { Schedule, CalendarProps, CalendarViewMode } from './types';
 
+// TODO: [Low Priority] Add keyboard navigation support (arrow keys to navigate dates)
+// TODO: [Low Priority] Add accessibility improvements (ARIA labels, focus management, screen reader support)
+// TODO: [Low Priority] Consider timezone support for future international use
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
   const [viewDate, setViewDate] = useState(initialDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
