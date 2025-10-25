@@ -1,16 +1,20 @@
 "use client";
 
-import Calendar from "@components/calendar/Calendar";
-import { LAYOUT_CONSTANTS } from '@components/layouts/main/constants/layout';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function CalendarPage() {
-  
-  const handleDateSelect = (date: Date) => {
-  };
+/**
+ * Legacy redirect page for backward compatibility
+ * /calender → /calendar/monthly/[today]
+ */
+export default function CalenderRedirect() {
+  const router = useRouter();
 
-  return (
-    <div className="w-full overflow-hidden" style={{ height: `calc(100vh - ${LAYOUT_CONSTANTS.HEADER_HEIGHT_PX}px)` }}>
-      <Calendar onDateSelect={handleDateSelect} />
-    </div>
-  );
+  useEffect(() => {
+    // Redirect to correct spelling with today's date
+    const today = new Date().toISOString().split('T')[0];
+    router.replace(`/calendar/monthly/${today}`);
+  }, [router]);
+
+  return null;
 }
