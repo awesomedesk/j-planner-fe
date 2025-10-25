@@ -4,9 +4,13 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run lint)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [
+      "Bash(rm)"
+    ]
   }
 }
