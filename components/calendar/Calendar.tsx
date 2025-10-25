@@ -1,158 +1,156 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useRouter, usePathname } from 'next/navigation';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { getCalendarViewMode, setViewMode } from '@utils/store/slices/calendarViewSlice';
 import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
-import CalendarMonthly from './monthly/CalendarMonthly';
+import CalendarMonthly from './monthly/CalendarMonthlyWrapper';
 import CalendarWeekly from './weekly/CalendarWeekly';
 import CalendarDaily from './daily/CalendarDaily';
-import { Schedule, CalendarProps, CalendarViewMode } from './types';
+import { CalendarProps, CalendarViewMode, Schedule } from './types';
+import { testSchedules } from './data/testSchedules';
+import { formatUrlDate } from '@/app/calendar/utils';
+import { scheduleApi } from './types/schedule';
+import { convertApiScheduleToSchedule, formatToISODateTime } from './utils/apiUtils';
+import { getDateRange, getAdjustedMonth } from './utils/dateUtils';
 
 // TODO: [Low Priority] Add keyboard navigation support (arrow keys to navigate dates)
 // TODO: [Low Priority] Add accessibility improvements (ARIA labels, focus management, screen reader support)
 // TODO: [Low Priority] Consider timezone support for future international use
+
+// Helper function to convert internal view mode to URL format
+const viewModeToUrl = (mode: CalendarViewMode): string => {
+  const mapping: Record<CalendarViewMode, string> = {
+    month: 'monthly',
+    week: 'weekly',
+    day: 'daily',
+  };
+  return mapping[mode];
+};
+
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
-  const [viewDate, setViewDate] = useState(initialDate || new Date());
+  // Use initialDate from URL as the single source of truth for viewDate
+  const viewDate = useMemo(() => initialDate || new Date(), [initialDate]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [schedules, setSchedules] = useState<Schedule[]>(externalSchedules || testSchedules);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const currentTheme = useSelector(getThemeState);
   const viewMode = useSelector(getCalendarViewMode);
   const dispatch = useDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Default sample schedules if none provided
-  const testSchedules: Schedule[] = useMemo(() => [
-    {
-      id: '1',
-      title: '프로젝트 기획 회의',
-      isAllDay: false,
-      startDateTime: new Date(2025, 9, 1, 10, 0),
-      endDateTime: new Date(2025, 9, 1, 12, 0),
-      description: '새 프로젝트 기획안 논의',
-      location: '회의실 A',
-      color: 'blue'
-    },
-    {
-      id: '2',
-      title: '점심 약속',
-      isAllDay: false,
-      startDateTime: new Date(2025, 9, 1, 12, 30),
-      endDateTime: new Date(2025, 9, 1, 14, 0),
-      description: '김과장님과 점심식사',
-      location: '강남역 맛집',
-      color: 'purple'
-    },
-    {
-      id: '3',
-      title: '개발팀 스프린트 리뷰',
-      isAllDay: false,
-      startDateTime: new Date(2025, 9, 1, 14, 0),
-      endDateTime: new Date(2025, 9, 1, 16, 0),
-      description: '이번 스프린트 성과 검토',
-      location: '개발팀 회의실',
-      color: 'lightpurple'
-    },
-    {
-      id: '4',
-      title: '의사 예약',
-      isAllDay: false,
-      startDateTime: new Date(2025, 9, 1, 15, 30),
-      endDateTime: new Date(2025, 9, 1, 16, 30),
-      description: '정기 건강검진',
-      location: '서울대병원',
-      color: 'pink'
-    },
-    {
-      id: '5',
-      title: '휴가',
-      isAllDay: true,
-      startDateTime: new Date(2025, 9, 1, 0, 0),
-      endDateTime: new Date(2025, 9, 3, 23, 59),
-      description: '가족여행 - 제주도',
-      color: 'blue'
-    },
-    {
-      id: '6',
-      title: '헬스장 PT',
-      isAllDay: false,
-      startDateTime: new Date(2025, 9, 1, 19, 0),
-      endDateTime: new Date(2025, 9, 1, 20, 0),
-      description: '개인 트레이닝 세션',
-      location: '피트니스센터',
-      color: 'purple'
+  // API에서 일정 조회
+  useEffect(() => {
+    // externalSchedules가 제공되면 API 조회를 하지 않음
+    if (externalSchedules) {
+      setSchedules(externalSchedules);
+      return;
     }
-  ], []);
 
-  const schedules = externalSchedules || testSchedules;
+    const fetchSchedules = async () => {
+      setIsLoadingSchedules(true);
+      setApiError(null);
+      try {
+        // viewMode와 viewDate를 기반으로 조회 기간 계산
+        const { start, end } = getDateRange(viewDate, viewMode);
+
+        // API 호출
+        const response = await scheduleApi.getList({
+          startDateTime: formatToISODateTime(start),
+          endDateTime: formatToISODateTime(end),
+        });
+
+        // API 데이터를 Schedule 타입으로 변환
+        const convertedSchedules = response.data.map(convertApiScheduleToSchedule);
+        setSchedules(convertedSchedules);
+      } catch (error) {
+        // API 오류 발생시 테스트 스케줄 사용
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch schedules from API';
+        console.error(errorMessage, error);
+        setApiError('일정을 불러오는데 실패했습니다. 테스트 데이터를 표시합니다.');
+        setSchedules(testSchedules);
+      } finally {
+        setIsLoadingSchedules(false);
+      }
+    };
+
+    fetchSchedules();
+  }, [viewDate, viewMode, externalSchedules]);
 
   const handlePrev = () => {
-    setViewDate(prev => {
+    const newDate = (() => {
       if (viewMode === 'month') {
-        return new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+        return getAdjustedMonth(viewDate, -1);
       } else if (viewMode === 'week') {
-        const newDate = new Date(prev);
-        newDate.setDate(prev.getDate() - 7);
-        return newDate;
+        const date = new Date(viewDate);
+        date.setDate(viewDate.getDate() - 7);
+        return date;
       } else { // day
-        const newDate = new Date(prev);
-        newDate.setDate(prev.getDate() - 1);
-        return newDate;
+        const date = new Date(viewDate);
+        date.setDate(viewDate.getDate() - 1);
+        return date;
       }
-    });
+    })();
+
     setSelectedDate(null);
+
+    // Update URL - viewDate will be updated from initialDate prop
+    const dateStr = formatUrlDate(newDate);
+    const urlView = viewModeToUrl(viewMode);
+    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
   };
 
   const handleNext = () => {
-    setViewDate(prev => {
+    const newDate = (() => {
       if (viewMode === 'month') {
-        return new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+        return getAdjustedMonth(viewDate, 1);
       } else if (viewMode === 'week') {
-        const newDate = new Date(prev);
-        newDate.setDate(prev.getDate() + 7);
-        return newDate;
+        const date = new Date(viewDate);
+        date.setDate(viewDate.getDate() + 7);
+        return date;
       } else { // day
-        const newDate = new Date(prev);
-        newDate.setDate(prev.getDate() + 1);
-        return newDate;
+        const date = new Date(viewDate);
+        date.setDate(viewDate.getDate() + 1);
+        return date;
       }
-    });
+    })();
+
     setSelectedDate(null);
+
+    // Update URL - viewDate will be updated from initialDate prop
+    const dateStr = formatUrlDate(newDate);
+    const urlView = viewModeToUrl(viewMode);
+    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
   };
 
   const handleToday = () => {
-    setViewDate(new Date());
+    const today = new Date();
     setSelectedDate(null);
+
+    // Update URL - viewDate will be updated from initialDate prop
+    const dateStr = formatUrlDate(today);
+    const urlView = viewModeToUrl(viewMode);
+    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
   };
 
   const handleViewModeChange = (mode: CalendarViewMode) => {
     dispatch(setViewMode(mode));
-    // Keep the current date context when switching view modes
-    // No need to reset viewDate - it stays on the current date/week/month
+
+    // Update URL if we're in a calendar route
+    if (pathname?.includes('/calendar/')) {
+      const dateStr = formatUrlDate(viewDate);
+      const urlView = viewModeToUrl(mode);
+      router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
+    }
   };
 
   const handleDateClick = (date: Date) => {
-    const clickedMonth = date.getMonth();
-    const currentMonth = viewDate.getMonth();
-
-    // If clicked date is from previous month
-    if (clickedMonth < currentMonth ||
-        (currentMonth === 0 && clickedMonth === 11)) { // Handle year boundary (Jan -> Dec)
-      setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-      setSelectedDate(date);
-      onDateSelect?.(date);
-    }
-    // If clicked date is from next month
-    else if (clickedMonth > currentMonth ||
-             (currentMonth === 11 && clickedMonth === 0)) { // Handle year boundary (Dec -> Jan)
-      setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-      setSelectedDate(date);
-      onDateSelect?.(date);
-    }
-    // If clicked date is from current month
-    else {
-      setSelectedDate(date);
-      onDateSelect?.(date);
-    }
+    setSelectedDate(date);
+    onDateSelect?.(date);
   };
 
   return (
@@ -168,6 +166,40 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
         onViewModeChange={handleViewModeChange}
         theme={currentTheme}
       />
+
+      {/* Error notification banner */}
+      {apiError && (
+        <div
+          className="mb-2 p-3 rounded-lg flex items-center justify-between"
+          style={{
+            backgroundColor: '#FEF3C7',
+            borderLeft: `4px solid ${currentTheme.themeColor.Theme1}`
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <span className="text-sm" style={{ color: '#92400E' }}>
+              {apiError}
+            </span>
+          </div>
+          <button
+            onClick={() => setApiError(null)}
+            className="text-sm px-2 py-1 rounded hover:bg-yellow-200 transition-colors"
+            style={{ color: '#92400E' }}
+          >
+            닫기
+          </button>
+        </div>
+      )}
+
+      {/* Loading overlay */}
+      {isLoadingSchedules && (
+        <div className="mb-2 p-3 rounded-lg text-center" style={{ backgroundColor: currentTheme.themeColor.Light }}>
+          <span className="text-sm" style={{ color: currentTheme.themeColor.Dark }}>
+            일정을 불러오는 중...
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 overflow-hidden min-w-0 h-full">
         {viewMode === 'month' && (
