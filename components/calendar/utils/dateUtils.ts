@@ -72,3 +72,54 @@ export const isDifferentMonth = (date: Date, viewDate: Date) => {
 export const isSameDate = (date1: Date | null, date2: Date) => {
   return date1?.toDateString() === date2.toDateString();
 };
+
+/**
+ * viewMode와 viewDate를 기반으로 조회 기간 계산
+ * @param viewDate - 현재 보고 있는 날짜
+ * @param viewMode - 보기 모드 (month, week, day)
+ * @returns 시작일과 종료일
+ */
+export const getDateRange = (viewDate: Date, viewMode: 'month' | 'week' | 'day'): { start: Date; end: Date } => {
+  if (viewMode === 'month') {
+    // 월별보기: 해당 월의 1일 00:00:00 ~ 말일 23:59:59
+    const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1, 0, 0, 0);
+    const end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59);
+    return { start, end };
+  } else if (viewMode === 'week') {
+    // 주별보기: 해당 주의 일요일 00:00:00 ~ 토요일 23:59:59
+    const day = viewDate.getDay();
+    const start = new Date(viewDate);
+    start.setDate(viewDate.getDate() - day);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  } else {
+    // 일별보기: 해당 일의 00:00:00 ~ 23:59:59
+    const start = new Date(viewDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(viewDate);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+};
+
+/**
+ * 다음/이전 월로 이동 시 날짜 조정
+ * 현재 일(day)을 유지하되, 해당 월에 없는 날짜면 마지막 날로 조정
+ * 예: 1월 31일 → 2월로 이동 → 2월 28일 (윤년 아닐 때)
+ */
+export const getAdjustedMonth = (date: Date, monthOffset: number): Date => {
+  const currentDay = date.getDate();
+  const targetYear = date.getFullYear();
+  const targetMonth = date.getMonth() + monthOffset;
+
+  // 대상 월의 마지막 날 구하기
+  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+  // 현재 일이 대상 월에 존재하면 그대로, 없으면 마지막 날 사용
+  const adjustedDay = Math.min(currentDay, lastDayOfTargetMonth);
+
+  return new Date(targetYear, targetMonth, adjustedDay);
+};
