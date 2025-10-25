@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { CalendarGridProps, Schedule } from '../types';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
-import { getScheduleColor, getSchedulePosition, formatHourLabel, CALENDAR_CONSTANTS } from '../utils/scheduleUtils';
+import { getSchedulePosition, formatHourLabel, CALENDAR_CONSTANTS } from '../utils/scheduleUtils';
+import { getScheduleColors } from '../utils/colorUtils';
+import { useScheduleLayout } from '../hooks/useScheduleLayout';
+import { useCurrentTimeIndicator } from '../hooks/useCurrentTimeIndicator';
 
 export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDateClick }: Omit<CalendarGridProps, 'theme'>) {
   const theme = useSelector(getThemeState);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(viewDate, { weekStartsOn: 0 }); // Sunday
@@ -19,59 +21,87 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  // TODO: [Medium Priority] Add auto-scroll on mount
-  // - If today is in the week: scroll to current time
-  // - If schedules exist: scroll to first schedule
-  // - Otherwise: scroll to 8 AM (work start time)
-
-  const getSchedulesForDay = (date: Date) => {
-    return schedules.filter(schedule => {
-      return isSameDay(new Date(schedule.startDateTime), date) && !schedule.isAllDay;
-    });
-  };
-
-  const getAllDaySchedules = (date: Date) => {
-    // TODO: [Low Priority] Optimize: Cache this result with useMemo
-    // Currently called twice per day (lines 146 and 148)
-    return schedules.filter(schedule => {
-      const scheduleStart = new Date(schedule.startDateTime);
-      const scheduleEnd = new Date(schedule.endDateTime);
-
-      return schedule.isAllDay &&
-             date >= scheduleStart &&
-             date <= scheduleEnd;
-    });
-  };
-
   // Check if today is in the current week
   const isTodayInWeek = useMemo(() => {
     const today = new Date();
     return weekDays.some(day => isSameDay(day, today));
   }, [weekDays]);
 
-  // Calculate current time position (vertical)
-  const currentTimePosition = useMemo(() => {
-    if (!isTodayInWeek) return null;
+  // Use current time indicator hook
+  const { currentTime, position: currentTimePosition } = useCurrentTimeIndicator(
+    isTodayInWeek,
+    'vertical',
+    CALENDAR_CONSTANTS.HEADER_HEIGHT
+  );
 
-    const now = currentTime;
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+  // 전체 날짜에 대한 종일 일정을 미리 계산하여 캐싱
+  const allDaySchedulesByDate = useMemo(() => {
+    const map = new Map<string, Schedule[]>();
+    weekDays.forEach(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const daySchedules = schedules.filter(schedule => {
+        const scheduleStart = new Date(schedule.startDateTime);
+        const scheduleEnd = new Date(schedule.endDateTime);
 
-    return CALENDAR_CONSTANTS.HEADER_HEIGHT +
-           hours * CALENDAR_CONSTANTS.HOUR_HEIGHT +
-           (minutes / 60) * CALENDAR_CONSTANTS.HOUR_HEIGHT;
-  }, [isTodayInWeek, currentTime]);
+        return schedule.allDay &&
+               date >= scheduleStart &&
+               date <= scheduleEnd;
+      });
+      map.set(dateKey, daySchedules);
+    });
+    return map;
+  }, [weekDays, schedules]);
 
-  // Update current time every minute
-  useEffect(() => {
-    if (!isTodayInWeek) return;
+  const getAllDaySchedules = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return allDaySchedulesByDate.get(dateKey) || [];
+  };
 
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
+  // Pre-calculate schedule layers for each day to use hooks properly
+  const scheduleLayers = useMemo(() => {
+    return weekDays.map(day => {
+      const daySchedules = schedules.filter(schedule => {
+        return isSameDay(new Date(schedule.startDateTime), day) && !schedule.allDay;
+      });
 
-    return () => clearInterval(interval);
-  }, [isTodayInWeek]);
+      // Calculate layers
+      const sorted = [...daySchedules].sort((a, b) =>
+        new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
+      );
+
+      const layers: Array<{ schedule: Schedule; layer: number }> = [];
+
+      sorted.forEach(schedule => {
+        const position = getSchedulePosition(schedule, 'vertical');
+        let layer = 0;
+
+        while (true) {
+          const overlaps = layers.some(item => {
+            if (item.layer !== layer) return false;
+
+            const itemPosition = getSchedulePosition(item.schedule, 'vertical');
+            const itemEnd = itemPosition.start + itemPosition.size;
+            const scheduleEnd = position.start + position.size;
+
+            return !(scheduleEnd <= itemPosition.start || position.start >= itemEnd);
+          });
+
+          if (!overlaps) break;
+          layer++;
+        }
+
+        layers.push({ schedule, layer });
+      });
+
+      const maxLayer = Math.max(...layers.map(l => l.layer), -1);
+      const totalColumns = maxLayer + 1;
+
+      return layers.map(item => ({
+        ...item,
+        totalColumns
+      }));
+    });
+  }, [weekDays, schedules]);
 
   return (
     <div className="h-full flex flex-col">
@@ -107,51 +137,12 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
 
           {/* Day columns with absolute positioned schedules */}
           {weekDays.map((day, dayIndex) => {
-            const daySchedules = getSchedulesForDay(day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isTodayDate = isToday(day);
+            const isViewDate = isSameDay(day, viewDate); // URL 날짜와 일치
 
-            // Calculate schedule layers to avoid overlaps
-            const calculateScheduleLayers = (schedules: Schedule[]) => {
-              const sorted = [...schedules].sort((a, b) =>
-                new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
-              );
-
-              const layers: Array<{ schedule: Schedule; layer: number; totalInLayer: number }> = [];
-
-              sorted.forEach(schedule => {
-                const position = getSchedulePosition(schedule, 'vertical');
-                let layer = 0;
-
-                // Find the first available layer where this schedule doesn't overlap
-                while (true) {
-                  const overlaps = layers.some(item => {
-                    if (item.layer !== layer) return false;
-
-                    const itemPosition = getSchedulePosition(item.schedule, 'vertical');
-                    const itemEnd = itemPosition.start + itemPosition.size;
-                    const scheduleEnd = position.start + position.size;
-
-                    // Check if schedules overlap vertically
-                    return !(scheduleEnd <= itemPosition.start || position.start >= itemEnd);
-                  });
-
-                  if (!overlaps) break;
-                  layer++;
-                }
-
-                layers.push({ schedule, layer, totalInLayer: 1 });
-              });
-
-              // Calculate how many schedules share the same column
-              const maxLayer = Math.max(...layers.map(l => l.layer), 0);
-              return layers.map(item => ({
-                ...item,
-                totalColumns: maxLayer + 1
-              }));
-            };
-
-            const schedulesWithLayers = calculateScheduleLayers(daySchedules);
+            // Get pre-calculated schedule layers for this day
+            const schedulesWithLayers = scheduleLayers[dayIndex];
 
             return (
               <div
@@ -166,7 +157,7 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                   className="sticky top-0 z-[5] p-2 text-center border-b cursor-pointer"
                   style={{
                     borderColor: theme.themeColor.Theme2,
-                    backgroundColor: isSelected ? theme.themeColor.Theme1 : theme.themeColor.Light,
+                    backgroundColor: isViewDate ? theme.themeColor.Theme3 : (isSelected ? theme.themeColor.Theme1 : theme.themeColor.Light),
                     height: `${CALENDAR_CONSTANTS.HEADER_HEIGHT}px`
                   }}
                   onClick={() => onDateClick(day)}
@@ -185,22 +176,28 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                   </div>
 
                   {/* All-day schedules */}
-                  {getAllDaySchedules(day).length > 0 && (
-                    <div className="mt-1 space-y-1">
-                      {getAllDaySchedules(day).map(schedule => (
-                        <div
-                          key={schedule.id}
-                          className="text-xs px-1 rounded truncate"
-                          style={{
-                            backgroundColor: getScheduleColor(schedule.color),
-                            color: 'white'
-                          }}
-                        >
-                          {schedule.title}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    const allDaySchedules = getAllDaySchedules(day);
+                    return allDaySchedules.length > 0 && (
+                      <div className="mt-1 space-y-1">
+                        {allDaySchedules.map(schedule => {
+                          const { backgroundColor, textColor } = getScheduleColors(schedule.color);
+                          return (
+                            <div
+                              key={schedule.id}
+                              className="text-xs px-1 rounded truncate"
+                              style={{
+                                backgroundColor,
+                                color: textColor
+                              }}
+                            >
+                              {schedule.title}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Hour lines */}
@@ -223,14 +220,15 @@ export default function CalendarWeekly({ viewDate, selectedDate, schedules, onDa
                   const position = getSchedulePosition(schedule, 'vertical');
                   const widthPercentage = 100 / totalColumns;
                   const leftPercentage = (layer / totalColumns) * 100;
+                  const { backgroundColor, textColor } = getScheduleColors(schedule.color);
 
                   return (
                     <div
                       key={schedule.id}
                       className="absolute text-xs p-1 rounded overflow-hidden"
                       style={{
-                        backgroundColor: getScheduleColor(schedule.color),
-                        color: 'white',
+                        backgroundColor,
+                        color: textColor,
                         top: `${position.start + CALENDAR_CONSTANTS.HEADER_HEIGHT}px`,
                         height: `${position.size}px`,
                         left: `${leftPercentage}%`,
