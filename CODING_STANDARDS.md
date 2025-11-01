@@ -3,7 +3,7 @@
 This document defines the coding standards and best practices for the J's Planner project.
 
 ## Table of Contents
-- [File Naming Conventions](#file-naming-conventions)
+- [Naming Conventions](#naming-conventions)
 - [Component Structure](#component-structure)
 - [URL Navigation](#url-navigation)
 - [State Management](#state-management)
@@ -15,33 +15,247 @@ This document defines the coding standards and best practices for the J's Planne
 
 ---
 
-## File Naming Conventions
+## Naming Conventions
 
-### Files
-- **Components**: `snake_case` for files, `PascalCase` for exports
+### 명명 규칙의 중요성
+**역할을 명확히 표현하는 이름을 사용하세요.** 리뷰어와 미래의 개발자가 코드를 읽고 즉시 이해할 수 있도록 해야 합니다.
+
+### 파일 명명 규칙
+
+#### 컴포넌트 파일
+- **형식**: `snake_case` for files, `PascalCase` for exports
+- **원칙**: 파일명은 컴포넌트의 역할을 명확히 표현
   ```
-  ✅ components/calendar/monthly/CalendarMonthly.tsx
-  ❌ components/calendar/monthly/calendar-monthly.tsx
+  ✅ components/calendar/monthly/CalendarMonthly.tsx  (월간 캘린더 뷰)
+  ✅ components/calendar/hooks/useCalendarNavigation.ts  (캘린더 네비게이션 로직)
+  ❌ components/calendar/monthly/calendar-monthly.tsx  (케밥 케이스 사용)
+  ❌ components/calendar/monthly/Cal.tsx  (축약형, 역할 불명확)
   ```
 
-- **Utilities**: `camelCase` for files and exports
+#### 유틸리티 파일
+- **형식**: `camelCase` for files and exports
+- **원칙**: 파일명은 제공하는 기능을 설명
   ```
-  ✅ utils/hooks/useNavigation.ts
-  ✅ utils/store/slices/mainThemeSlice.ts
+  ✅ utils/hooks/useNavigation.ts  (네비게이션 훅)
+  ✅ utils/store/slices/mainThemeSlice.ts  (메인 테마 상태 슬라이스)
+  ✅ components/calendar/utils/dateUtils.ts  (날짜 관련 유틸리티)
+  ❌ utils/helpers.ts  (너무 일반적)
+  ❌ utils/util.ts  (역할 불명확)
   ```
 
-### Components
-- Export with `PascalCase`
+### 컴포넌트 명명 규칙
+
+#### 컴포넌트 이름
+- **형식**: `PascalCase`
+- **원칙**: 컴포넌트의 역할과 책임을 명확히 표현
   ```tsx
+  // ✅ Good: 역할이 명확함
   export default function CalendarMonthly() { }
+  export default function ScheduleItem() { }
+  export default function CalendarHeader() { }
+
+  // ❌ Bad: 역할이 불명확하거나 너무 일반적
+  export default function Calendar() { }  // 어떤 뷰인지 불명확
+  export default function Item() { }  // 무엇의 Item인지 불명확
+  export default function Component1() { }  // 의미 없는 이름
   ```
 
-### Variables & Functions
-- `camelCase` for local variables and functions
+#### Props 인터페이스
+- **형식**: `ComponentNameProps`
+- **원칙**: 어떤 컴포넌트의 Props인지 명확히 표현
   ```tsx
-  const handleClick = () => { }
-  const isActive = true
+  // ✅ Good
+  interface CalendarMonthlyProps {
+    viewDate: Date;
+    onDateSelect?: (date: Date) => void;
+  }
+
+  // ❌ Bad
+  interface Props { }  // 어떤 컴포넌트인지 불명확
+  interface CalendarProps { }  // 너무 일반적
   ```
+
+### 함수 명명 규칙
+
+#### 이벤트 핸들러
+- **형식**: `handle[Action]` 또는 `on[Action]`
+- **원칙**: 어떤 이벤트를 처리하는지 명확히 표현
+  ```tsx
+  // ✅ Good: 역할이 명확함
+  const handleDateClick = (date: Date) => { }
+  const handleNextMonth = () => { }
+  const handleViewModeChange = (mode: ViewMode) => { }
+
+  // ❌ Bad: 역할이 불명확
+  const onClick = () => { }  // 무엇을 클릭하는지 불명확
+  const handle = () => { }  // 무엇을 처리하는지 불명확
+  const dateClick = () => { }  // 핸들러임이 불명확
+  ```
+
+#### 유틸리티 함수
+- **형식**: `동사 + 명사` 형태로 동작을 명확히 표현
+- **원칙**: 함수가 무엇을 하는지 이름만으로 이해 가능하도록
+  ```tsx
+  // ✅ Good: 동작이 명확함
+  function formatUrlDate(date: Date): string { }
+  function generateCalendarDays(viewDate: Date): CalendarDay[] { }
+  function getScheduleColors(schedule: Schedule, themeColor: string) { }
+  function calculateCellHeight(windowHeight: number): number { }
+
+  // ❌ Bad: 동작이 불명확
+  function format(date: Date) { }  // 무엇을 포맷하는지 불명확
+  function get(schedule: Schedule) { }  // 무엇을 가져오는지 불명확
+  function process(data: any) { }  // 무엇을 처리하는지 불명확
+  ```
+
+#### Boolean 함수/변수
+- **형식**: `is/has/should/can + 형용사/명사`
+- **원칙**: true/false를 반환하는 것이 명확해야 함
+  ```tsx
+  // ✅ Good: Boolean임이 명확
+  const isActive = true;
+  const hasSchedules = schedules.length > 0;
+  const shouldShowMore = daySchedules.length > maxCount;
+  const canNavigate = viewMode !== null;
+  function isDifferentMonth(date: Date, viewDate: Date): boolean { }
+  function isSameDate(date1: Date, date2: Date): boolean { }
+
+  // ❌ Bad: Boolean임이 불명확
+  const active = true;  // Boolean인지 상태값인지 불명확
+  const schedules = true;  // 일정 배열과 혼동 가능
+  function differentMonth(date: Date) { }  // 반환 타입 불명확
+  ```
+
+### 변수 명명 규칙
+
+#### 일반 변수
+- **형식**: `camelCase`
+- **원칙**: 변수가 담고 있는 데이터를 명확히 표현
+  ```tsx
+  // ✅ Good: 역할이 명확함
+  const viewDate = new Date();
+  const selectedDate = null;
+  const scheduleColors = getScheduleColors(schedule);
+  const maxSchedulesCount = 5;
+
+  // ❌ Bad: 역할이 불명확
+  const date = new Date();  // 어떤 날짜인지 불명확
+  const temp = null;  // 무엇을 담는지 불명확
+  const data = getData();  // 어떤 데이터인지 불명확
+  const n = 5;  // 무엇의 숫자인지 불명확
+  ```
+
+#### 상수
+- **형식**: `UPPER_SNAKE_CASE` (설정 상수) 또는 `PascalCase` (객체 상수)
+- **원칙**: 용도와 값의 의미를 명확히 표현
+  ```tsx
+  // ✅ Good: 용도가 명확함
+  export const MONTHLY_VIEW_CONSTANTS = {
+    MAIN_HEADER_HEIGHT: 60,
+    DAY_NAMES_ROW_HEIGHT: 40,
+    MIN_CELL_HEIGHT: 80,
+  };
+
+  const MAX_SCHEDULES_PER_DAY = 5;
+  const DEFAULT_VIEW_MODE = 'month';
+
+  // ❌ Bad: 용도가 불명확
+  const CONSTANTS = { HEIGHT: 60 };  // 무엇의 상수인지 불명확
+  const MAX = 5;  // 무엇의 최대값인지 불명확
+  const DEFAULT = 'month';  // 무엇의 기본값인지 불명확
+  ```
+
+### 타입/인터페이스 명명 규칙
+
+#### 인터페이스
+- **형식**: `PascalCase`, 설명적인 이름 사용
+- **원칙**: 데이터 구조의 역할을 명확히 표현
+  ```tsx
+  // ✅ Good: 역할이 명확함
+  interface Schedule {
+    id: string;
+    title: string;
+    startDateTime: Date;
+    endDateTime: Date;
+  }
+
+  interface CalendarDay {
+    date: Date;
+    isCurrentMonth: boolean;
+    schedules: Schedule[];
+  }
+
+  // ❌ Bad: 역할이 불명확
+  interface Data { }  // 무엇의 데이터인지 불명확
+  interface Item { }  // 무엇의 아이템인지 불명확
+  interface Obj { }  // 의미 없는 이름
+  ```
+
+#### 타입 별칭
+- **형식**: `PascalCase` 또는 `type + 설명`
+- **원칙**: 타입의 용도를 명확히 표현
+  ```tsx
+  // ✅ Good: 용도가 명확함
+  type CalendarViewMode = 'day' | 'week' | 'month';
+  type ScheduleColors = {
+    background: string;
+    border: string;
+    text: string;
+  };
+
+  // ❌ Bad: 용도가 불명확
+  type Mode = 'day' | 'week' | 'month';  // 무엇의 모드인지 불명확
+  type Colors = { };  // 무엇의 색상인지 불명확
+  ```
+
+### 명명 규칙 체크리스트
+
+이름을 지을 때 다음을 확인하세요:
+- [ ] 이름만 보고도 역할/용도를 이해할 수 있는가?
+- [ ] 약어를 사용했다면 팀 내에서 일반적으로 통용되는가?
+- [ ] 너무 일반적이거나 모호한 이름은 아닌가? (data, temp, item 등)
+- [ ] 비슷한 역할의 다른 코드와 일관된 명명 패턴을 따르는가?
+- [ ] Boolean 값은 is/has/should/can으로 시작하는가?
+- [ ] 함수 이름은 동사로 시작하여 동작을 표현하는가?
+
+### 좋은 명명의 예시
+
+```tsx
+// ✅ 컴포넌트: 역할이 명확
+function CalendarMonthly({ viewDate, onDateSelect }: CalendarMonthlyProps) {
+  // ✅ 상태: 무엇을 저장하는지 명확
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ✅ 계산된 값: 무엇을 나타내는지 명확
+  const calendarDays = useMemo(() =>
+    generateCalendarDays(viewDate), [viewDate]
+  );
+
+  // ✅ 핸들러: 어떤 이벤트를 처리하는지 명확
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    onDateSelect?.(date);
+  };
+
+  // ✅ Boolean: true/false 값임이 명확
+  const hasSchedules = schedules.length > 0;
+  const shouldShowMoreButton = schedules.length > MAX_VISIBLE_SCHEDULES;
+
+  return (
+    <div>
+      {calendarDays.map(day => (
+        <div
+          key={day.date.toISOString()}
+          onClick={() => handleDateClick(day.date)}
+        >
+          {/* ... */}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
 
 ---
 
@@ -711,15 +925,16 @@ export default function CalendarMonthly({ viewDate, onDateClick }: CalendarProps
 ## Summary
 
 **Golden Rules:**
-1. 📁 Files: `snake_case`, Exports: `PascalCase`
-2. 🔗 Navigation: Custom hooks for user actions, `<Link>` for clickable elements
-3. 🎨 Styling: Tailwind for layout, inline styles for theme colors
-4. 📦 State: Redux with typed selectors
-5. 🪝 Hooks: Generic in `utils/`, feature-specific in `components/[feature]/hooks/`
-6. 📝 Types: Separate files, interfaces for objects
-7. 💬 Comments: Only when adding value
-8. 📝 Commits: Korean messages, feature-based separation
-9. 🔀 PRs: Follow `.github/PULL_REQUEST_TEMPLATE.md`
+1. 📛 Naming: 역할을 명확히 표현하는 이름 사용 (리뷰어가 즉시 이해 가능하도록)
+2. 📁 Files: `snake_case`, Exports: `PascalCase`
+3. 🔗 Navigation: Custom hooks for user actions, `<Link>` for clickable elements
+4. 🎨 Styling: Tailwind for layout, inline styles for theme colors
+5. 📦 State: Redux with typed selectors
+6. 🪝 Hooks: Generic in `utils/`, feature-specific in `components/[feature]/hooks/`
+7. 📝 Types: Separate files, interfaces for objects
+8. 💬 Comments: Only when adding value
+9. 📝 Commits: Korean messages, feature-based separation
+10. 🔀 PRs: Follow `.github/PULL_REQUEST_TEMPLATE.md`
 
 ---
 
