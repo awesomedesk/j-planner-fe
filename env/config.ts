@@ -1,12 +1,5 @@
 // 환경변수 설정 및 유틸리티
-import dotenv from 'dotenv';
-
-// 환경에 따라 적절한 .env 파일 로드
-const appEnv = process.env.NEXT_PUBLIC_APP_ENV || 'test';
-const envFile = `./env/.env.${appEnv}`;
-
-// dotenv 설정
-dotenv.config({ path: envFile });
+// Next.js는 빌드 타임에 환경변수를 로드하므로 클라이언트에서는 dotenv를 사용하지 않음
 
 interface EnvConfig {
   // API Configuration
@@ -38,58 +31,37 @@ interface EnvConfig {
   cacheTimeout?: number;
 }
 
-// 환경변수를 안전하게 가져오는 헬퍼 함수
-function getEnvVar(key: string, defaultValue?: string): string {
-  const value = process.env[key];
-  if (!value && !defaultValue) {
-    console.warn(`Environment variable ${key} is not set`);
-    return '';
-  }
-  return value || defaultValue || '';
-}
-
-function getBooleanEnvVar(key: string, defaultValue: boolean = false): boolean {
-  const value = process.env[key];
-  if (!value) return defaultValue;
-  return value.toLowerCase() === 'true';
-}
-
-function getNumberEnvVar(key: string, defaultValue?: number): number | undefined {
-  const value = process.env[key];
-  if (!value) return defaultValue;
-  const parsed = parseInt(value, 10);
-  return isNaN(parsed) ? defaultValue : parsed;
-}
-
 // 환경별 설정 로드
+// Next.js는 process.env.KEY 형태의 정적 접근만 빌드 타임에 치환함 (동적 접근 불가)
+// 따라서 각 환경변수를 직접 접근해야 함
 export const envConfig: EnvConfig = {
   // API Configuration
-  apiBaseUrl: getEnvVar('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:8080/api'),
-  
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+
   // Auth Settings
-  authDomain: getEnvVar('NEXT_PUBLIC_AUTH_DOMAIN', 'localhost:3000'),
-  
+  authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN || '',
+
   // App Settings
-  appVersion: getEnvVar('NEXT_PUBLIC_APP_VERSION', '1.0.0'),
-  appEnv: (getEnvVar('NEXT_PUBLIC_APP_ENV', 'test') as EnvConfig['appEnv']),
-  
+  appVersion: process.env.NEXT_PUBLIC_APP_VERSION || '',
+  appEnv: (process.env.NEXT_PUBLIC_APP_ENV || 'test') as EnvConfig['appEnv'],
+
   // Debug Settings
-  debugMode: getBooleanEnvVar('NEXT_PUBLIC_DEBUG_MODE', false),
-  logLevel: (getEnvVar('NEXT_PUBLIC_LOG_LEVEL', 'info') as EnvConfig['logLevel']),
-  
+  debugMode: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true',
+  logLevel: (process.env.NEXT_PUBLIC_LOG_LEVEL || 'info') as EnvConfig['logLevel'],
+
   // Feature Flags
-  enableAnalytics: getBooleanEnvVar('NEXT_PUBLIC_ENABLE_ANALYTICS', false),
-  enableNotifications: getBooleanEnvVar('NEXT_PUBLIC_ENABLE_NOTIFICATIONS', true),
-  
+  enableAnalytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
+  enableNotifications: process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS === 'true',
+
   // External Services
-  googleCalendarApiKey: getEnvVar('NEXT_PUBLIC_GOOGLE_CALENDAR_API_KEY'),
-  firebaseApiKey: getEnvVar('NEXT_PUBLIC_FIREBASE_API_KEY'),
-  
+  googleCalendarApiKey: process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_API_KEY,
+  firebaseApiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+
   // Optional Settings
-  mockApi: getBooleanEnvVar('NEXT_PUBLIC_MOCK_API'),
-  testUserEmail: getEnvVar('NEXT_PUBLIC_TEST_USER_EMAIL'),
-  enableServiceWorker: getBooleanEnvVar('NEXT_PUBLIC_ENABLE_SERVICE_WORKER'),
-  cacheTimeout: getNumberEnvVar('NEXT_PUBLIC_CACHE_TIMEOUT'),
+  mockApi: process.env.NEXT_PUBLIC_MOCK_API === 'true',
+  testUserEmail: process.env.NEXT_PUBLIC_TEST_USER_EMAIL,
+  enableServiceWorker: process.env.NEXT_PUBLIC_ENABLE_SERVICE_WORKER === 'true',
+  cacheTimeout: process.env.NEXT_PUBLIC_CACHE_TIMEOUT ? parseInt(process.env.NEXT_PUBLIC_CACHE_TIMEOUT, 10) : undefined,
 };
 
 // 환경별 유틸리티 함수들
@@ -155,15 +127,15 @@ export const validateEnvConfig = (): { isValid: boolean; errors: string[] } => {
   };
 };
 
-// 환경 정보 출력 (개발시에만)
-if (isDevelopment()) {
+// 환경 정보 출력 (개발시에만, 서버 사이드에서만)
+if (typeof window === 'undefined' && isDevelopment()) {
   logger.info('Environment Config:', {
     appEnv: envConfig.appEnv,
     apiBaseUrl: envConfig.apiBaseUrl,
     debugMode: envConfig.debugMode,
     logLevel: envConfig.logLevel,
   });
-  
+
   const validation = validateEnvConfig();
   if (!validation.isValid) {
     logger.error('Environment validation errors:', validation.errors);

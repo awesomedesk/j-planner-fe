@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '@utils/store/store';
-
-export type CalendarViewMode = 'month' | 'week' | 'day';
+import type { CalendarViewMode } from '@components/calendar/types';
 
 export interface CalendarViewState {
   viewMode: CalendarViewMode;

@@ -1,6 +1,7 @@
 import { Schedule } from '../types';
+import { normalizeHex } from './colorUtils';
 
-// Schedule color constants
+// Schedule color constants (fallback colors)
 export const SCHEDULE_COLORS = {
   blue: '#3b82f6',
   purple: '#8b5cf6',
@@ -13,14 +14,25 @@ export const CALENDAR_CONSTANTS = {
   HOUR_HEIGHT: 60,  // Height per hour in pixels (for vertical timeline)
   HOUR_WIDTH: 128,  // Width per hour in pixels (for horizontal timeline)
   HEADER_HEIGHT: 80, // Header height in pixels
-  LAYER_HEIGHT: 80,  // Height per schedule layer
+  LAYER_HEIGHT: 90,  // Height per schedule layer
   MIN_TIME_UNIT: 10, // Minimum time unit in minutes
 } as const;
 
 /**
- * Get the hex color code for a schedule color
+ * Get the hex color code for a schedule
+ * Prioritizes schedule.color as hex, falls back to named color constants
+ *
+ * @param color - Color value from schedule (can be hex or named color)
+ * @returns Hex color string
  */
-export function getScheduleColor(color: string): string {
+export function getScheduleColor(color: string | undefined): string {
+  if (!color) return SCHEDULE_COLORS.blue;
+
+  // Try to use as hex color first
+  const normalizedHex = normalizeHex(color);
+  if (normalizedHex) return normalizedHex;
+
+  // Fall back to named color constants
   return SCHEDULE_COLORS[color as keyof typeof SCHEDULE_COLORS] || SCHEDULE_COLORS.blue;
 }
 
@@ -28,7 +40,7 @@ export function getScheduleColor(color: string): string {
  * Get Tailwind CSS classes for a schedule color
  */
 export function getScheduleColorClass(color: Schedule['color']): string {
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     blue: 'bg-blue-500 text-white',
     purple: 'bg-purple-600 text-white',
     lightpurple: 'bg-purple-300 text-purple-900',

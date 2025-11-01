@@ -1,23 +1,44 @@
 import { envConfig, logger } from '@env/config';
+import type { AwesomeResponse } from './types';
 
+/**
+ * API 클라이언트 설정
+ */
 interface ApiClientConfig {
   baseURL: string;
   timeout?: number;
   headers?: Record<string, string>;
 }
 
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message?: string;
-}
-
-interface ApiError {
+/**
+ * API 에러 타입
+ */
+export interface ApiError {
   message: string;
   status: number;
   code?: string;
 }
 
+/**
+ * 타입 가드: error가 ApiError 타입인지 확인
+ */
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    'status' in error &&
+    typeof (error as ApiError).message === 'string' &&
+    typeof (error as ApiError).status === 'number'
+  );
+}
+
+/**
+ * HTTP 클라이언트
+ *
+ * fetch API를 래핑하여 타임아웃, 에러 핸들링, 인증 등을 처리
+ * 모든 메서드는 AwesomeResponse<T> 형식으로 응답
+ */
 class ApiClient {
   private baseURL: string;
   private timeout: number;
@@ -35,9 +56,9 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -54,55 +75,61 @@ class ApiClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw {
+          message: `HTTP ${response.status}: ${response.statusText}`,
+          status: response.status,
+          code: 'HTTP_ERROR',
+        } as ApiError;
       }
 
       const data = await response.json();
-      
-      return {
-        data,
-        status: response.status,
-        message: data.message,
-      };
+      return data as T;
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw {
+            message: 'Request timeout',
+            status: 0,
+            code: 'TIMEOUT',
+          } as ApiError;
+        }
         throw {
           message: error.message,
           status: 0,
           code: 'NETWORK_ERROR',
         } as ApiError;
       }
-      
+
       throw error;
     }
   }
 
-  async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
-    const url = params 
+  async get<T>(endpoint: string, params?: Record<string, string>): Promise<AwesomeResponse<T>> {
+    const url = params
       ? `${endpoint}?${new URLSearchParams(params).toString()}`
       : endpoint;
-    
-    return this.request<T>(url, { method: 'GET' });
+
+    return this.request<AwesomeResponse<T>>(url, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+  async post<T, D = unknown>(endpoint: string, data?: D): Promise<AwesomeResponse<T>> {
+    return this.request<AwesomeResponse<T>>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+  async put<T, D = unknown>(endpoint: string, data?: D): Promise<AwesomeResponse<T>> {
+    return this.request<AwesomeResponse<T>>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
-  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+  async delete<T>(endpoint: string): Promise<AwesomeResponse<T>> {
+    return this.request<AwesomeResponse<T>>(endpoint, { method: 'DELETE' });
   }
 
   setAuthToken(token: string) {
@@ -127,4 +154,3 @@ logger.info('API Client initialized', {
 });
 
 export default apiClient;
-export type { ApiResponse, ApiError };

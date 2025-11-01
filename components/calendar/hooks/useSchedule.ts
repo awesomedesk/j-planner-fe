@@ -1,16 +1,24 @@
 "use client";
 
+/**
+ * Schedule Hooks
+ *
+ * Custom React hooks for schedule operations:
+ * - useScheduleSearch: Query schedules within a date range
+ * - useScheduleMutations: Create, update, and delete schedules
+ *
+ * These hooks handle loading states, error handling, and API communication.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { scheduleApi } from '@components/calendar/types/schedule';
-import type { 
-  ScheduleAPI, 
-  CreateScheduleRequest, 
+import type {
+  ScheduleAPI,
+  CreateScheduleRequest,
   UpdateScheduleRequest,
-  MonthlyParams,
-  DailyParams,
-  SearchParams 
-} from '../types/types';
-import type { ApiError } from '@utils/api/client';
+  GetScheduleListParams
+} from '@components/calendar/types/types';
+import { isApiError } from '@utils/api/client';
 
 interface UseScheduleState<T> {
   data: T | null;
@@ -18,31 +26,35 @@ interface UseScheduleState<T> {
   error: string | null;
 }
 
-// 월별 일정 조회 훅
-export function useMonthlySchedules(params: MonthlyParams) {
-  const [state, setState] = useState<UseScheduleState<ScheduleAPI[]>>({
-    data: null,
-    loading: false,
-    error: null,
-  });
+/**
+ * Hook for searching schedules within a date range
+ * Automatically fetches data when params change
+ *
+ * @param params - Date range parameters for filtering schedules
+ * @returns Query state with data, loading, error, and refetch function
+ */
+export function useScheduleSearch(params: GetScheduleListParams) {
+  const [data, setData] = useState<ScheduleAPI[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSchedules = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
+    setLoading(true);
+    setError(null);
+
     try {
-      const response = await scheduleApi.getByMonth(params);
-      setState({
-        data: response.data.schedules,
-        loading: false,
-        error: null,
-      });
+      const response = await scheduleApi.getList(params);
+      setData(response.data);
+      setLoading(false);
     } catch (error) {
-      const apiError = error as ApiError;
-      setState({
-        data: null,
-        loading: false,
-        error: apiError.message || '일정을 불러오는데 실패했습니다.',
-      });
+      const errorMessage = isApiError(error)
+        ? error.message
+        : error instanceof Error
+        ? error.message
+        : '일정 조회에 실패했습니다.';
+      setError(errorMessage);
+      setData(null);
+      setLoading(false);
     }
   }, [params]);
 
@@ -51,97 +63,103 @@ export function useMonthlySchedules(params: MonthlyParams) {
   }, [fetchSchedules]);
 
   return {
-    ...state,
+    data,
+    loading,
+    error,
     refetch: fetchSchedules,
+    clearError: () => setError(null),
   };
 }
 
-// 일별 일정 조회 훅
-export function useDailySchedules(params: DailyParams) {
-  const [state, setState] = useState<UseScheduleState<ScheduleAPI[]>>({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
-  const fetchSchedules = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const response = await scheduleApi.getByDate(params);
-      setState({
-        data: response.data.schedules,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      setState({
-        data: null,
-        loading: false,
-        error: apiError.message || '일정을 불러오는데 실패했습니다.',
-      });
-    }
-  }, [params]);
-
-  useEffect(() => {
-    fetchSchedules();
-  }, [fetchSchedules]);
-
-  return {
-    ...state,
-    refetch: fetchSchedules,
-  };
-}
-
-// 일정 생성/수정/삭제 훅
+/**
+ * Hook for schedule CRUD operations (mutations)
+ * Provides functions for creating, updating, and deleting schedules
+ */
 export function useScheduleMutations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Create a new schedule
+   * @param data - Schedule data to create
+   * @returns Created schedule or null on error
+   */
   const createSchedule = useCallback(async (data: CreateScheduleRequest): Promise<ScheduleAPI | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await scheduleApi.create(data);
       setLoading(false);
       return response.data;
     } catch (error) {
-      const apiError = error as ApiError;
-      setError(apiError.message || '일정 생성에 실패했습니다.');
+      const errorMessage = isApiError(error)
+        ? error.message
+        : error instanceof Error
+        ? error.message
+        : '일정 생성에 실패했습니다.';
+      setError(errorMessage);
       setLoading(false);
       return null;
     }
   }, []);
 
+  /**
+   * Update an existing schedule
+   * TODO: [Medium Priority] Implement when backend API is ready
+   * @param id - Schedule ID to update
+   * @param data - Partial schedule data to update
+   * @returns Updated schedule or null on error
+   */
   const updateSchedule = useCallback(async (id: string, data: UpdateScheduleRequest): Promise<ScheduleAPI | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const response = await scheduleApi.update(id, data);
-      setLoading(false);
-      return response.data;
+      // TODO: Uncomment when API is implemented
+      // const response = await scheduleApi.update(id, data);
+      // setLoading(false);
+      // return response.data;
+
+      // Temporary: Return error until API is implemented
+      throw new Error('Update API not yet implemented');
     } catch (error) {
-      const apiError = error as ApiError;
-      setError(apiError.message || '일정 수정에 실패했습니다.');
+      const errorMessage = isApiError(error)
+        ? error.message
+        : error instanceof Error
+        ? error.message
+        : '일정 수정에 실패했습니다.';
+      setError(errorMessage);
       setLoading(false);
       return null;
     }
   }, []);
 
+  /**
+   * Delete a schedule
+   * TODO: [Medium Priority] Implement when backend API is ready
+   * @param id - Schedule ID to delete
+   * @returns true on success, false on error
+   */
   const deleteSchedule = useCallback(async (id: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      await scheduleApi.delete(id);
-      setLoading(false);
-      return true;
+      // TODO: Uncomment when API is implemented
+      // await scheduleApi.delete(id);
+      // setLoading(false);
+      // return true;
+
+      // Temporary: Return error until API is implemented
+      throw new Error('Delete API not yet implemented');
     } catch (error) {
-      const apiError = error as ApiError;
-      setError(apiError.message || '일정 삭제에 실패했습니다.');
+      const errorMessage = isApiError(error)
+        ? error.message
+        : error instanceof Error
+        ? error.message
+        : '일정 삭제에 실패했습니다.';
+      setError(errorMessage);
       setLoading(false);
       return false;
     }
@@ -157,36 +175,3 @@ export function useScheduleMutations() {
   };
 }
 
-// 일정 검색 훅
-export function useScheduleSearch() {
-  const [state, setState] = useState<UseScheduleState<ScheduleAPI[]>>({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
-  const searchSchedules = useCallback(async (params: SearchParams) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const response = await scheduleApi.search(params);
-      setState({
-        data: response.data.schedules,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      setState({
-        data: null,
-        loading: false,
-        error: apiError.message || '검색에 실패했습니다.',
-      });
-    }
-  }, []);
-
-  return {
-    ...state,
-    searchSchedules,
-  };
-}
