@@ -11,6 +11,7 @@ This document defines the coding standards and best practices for the J's Planne
 - [TypeScript](#typescript)
 - [Hooks](#hooks)
 - [Git Commits](#git-commits)
+- [Pull Requests](#pull-requests)
 
 ---
 
@@ -551,6 +552,106 @@ git commit -m "Docs: 코딩 표준에 Git 커밋 가이드라인 추가"
 
 ---
 
+## Pull Requests
+
+### PR 가이드라인
+
+#### 1. PR 템플릿 사용
+**반드시** `.github/PULL_REQUEST_TEMPLATE.md` 파일의 템플릿을 따라 PR을 작성하세요.
+
+#### 2. PR 제목 작성 규칙
+```
+[상태] 작업 내용을 간결하게
+
+예시:
+✅ 캘린더 네비게이션 훅 추가
+✅ [WIP] 다크모드 구현
+```
+
+**상태 표시:**
+- 작업 중: `[WIP]` (Work In Progress)
+- 완료: 상태 표시 없음
+
+#### 3. PR 템플릿 구조
+
+템플릿의 각 섹션을 빠짐없이 작성하세요:
+
+**필수 섹션:**
+- **개요**: PR을 시작하게 된 이유
+- **작업한 내용**: 구체적인 변경사항 나열
+- **리뷰 가이드**: 중점적으로 봐야 할 부분, 질문사항
+- **테스트 결과**: 테스트 결과 첨부 또는 테스트 방법 제시
+
+**선택 섹션:**
+- **앞으로 추가 예정 내용**: 후속 작업 계획
+- **기타 내용**: 참고사항
+- **이슈번호**: 관련 이슈 링크 (예: [#1][#2])
+
+#### 4. 좋은 PR 예시
+
+```markdown
+캘린더 네비게이션 커스텀 훅 추가
+
+## 개요
+
+캘린더 컴포넌트에서 네비게이션 로직이 중복되어 유지보수가 어려운 문제를 해결하기 위해 커스텀 훅으로 추출했습니다.
+
+## 작업한 내용
+
+- useCalendarNavigation 커스텀 훅 생성
+- Calendar, CalendarMonthly 컴포넌트에서 중복 로직 제거
+- "show +N" 링크를 클릭 가능하게 개선
+- 테스트 데이터 추가 (야간 일정, 여러 날짜 걸친 일정)
+
+## 리뷰 가이드
+
+- useCalendarNavigation 훅의 구조가 적절한지 검토 부탁드립니다
+- 특히 viewDate와 viewMode 동기화 로직 확인 필요
+
+## 테스트 결과
+
+- 월간/주간/일간 뷰 전환 정상 동작 확인
+- "show +3" 클릭 시 해당 날짜의 일간 뷰로 이동 확인
+- 브라우저 뒤로가기/앞으로가기 정상 동작
+
+## 앞으로 추가 예정 내용
+
+- 키보드 네비게이션 지원 (방향키로 날짜 이동)
+- URL 파라미터 검증 강화
+
+## 기타 내용
+
+- CODING_STANDARDS.md에 네비게이션 가이드라인 추가
+
+## 이슈번호
+
+[#23]
+```
+
+#### 5. 나쁜 PR 예시
+
+```markdown
+❌ 제목: 업데이트
+❌ 개요: 캘린더 수정
+❌ 작업한 내용: 여러 파일 변경
+❌ 리뷰 가이드: (비어있음)
+❌ 테스트 결과: 잘 됨
+```
+
+#### 6. PR 생성 전 체크리스트
+
+PR을 생성하기 전에 확인하세요:
+- [ ] 템플릿의 모든 필수 섹션 작성 완료
+- [ ] 모든 커밋이 의미있는 단위로 분리되어 있음
+- [ ] 커밋 메시지가 가이드라인을 따름
+- [ ] 린트 통과 (`npm run lint`)
+- [ ] TypeScript 오류 없음
+- [ ] 로컬에서 테스트 완료
+- [ ] 스크린샷이나 동영상이 필요한 경우 첨부
+- [ ] 관련 이슈 번호 연결
+
+---
+
 ## Testing & Quality
 
 ### Before Committing
@@ -617,6 +718,8 @@ export default function CalendarMonthly({ viewDate, onDateClick }: CalendarProps
 5. 🪝 Hooks: Generic in `utils/`, feature-specific in `components/[feature]/hooks/`
 6. 📝 Types: Separate files, interfaces for objects
 7. 💬 Comments: Only when adding value
+8. 📝 Commits: Korean messages, feature-based separation
+9. 🔀 PRs: Follow `.github/PULL_REQUEST_TEMPLATE.md`
 
 ---
 
