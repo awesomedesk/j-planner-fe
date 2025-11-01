@@ -1,54 +1,5 @@
 import { Schedule } from '../types';
-import { normalizeHex } from './colorUtils';
-
-// Schedule color constants (fallback colors)
-export const SCHEDULE_COLORS = {
-  blue: '#3b82f6',
-  purple: '#8b5cf6',
-  pink: '#ec4899',
-  lightpurple: '#a78bfa'
-} as const;
-
-// Calendar layout constants
-export const CALENDAR_CONSTANTS = {
-  HOUR_HEIGHT: 60,  // Height per hour in pixels (for vertical timeline)
-  HOUR_WIDTH: 128,  // Width per hour in pixels (for horizontal timeline)
-  HEADER_HEIGHT: 80, // Header height in pixels
-  LAYER_HEIGHT: 90,  // Height per schedule layer
-  MIN_TIME_UNIT: 10, // Minimum time unit in minutes
-} as const;
-
-/**
- * Get the hex color code for a schedule
- * Prioritizes schedule.color as hex, falls back to named color constants
- *
- * @param color - Color value from schedule (can be hex or named color)
- * @returns Hex color string
- */
-export function getScheduleColor(color: string | undefined): string {
-  if (!color) return SCHEDULE_COLORS.blue;
-
-  // Try to use as hex color first
-  const normalizedHex = normalizeHex(color);
-  if (normalizedHex) return normalizedHex;
-
-  // Fall back to named color constants
-  return SCHEDULE_COLORS[color as keyof typeof SCHEDULE_COLORS] || SCHEDULE_COLORS.blue;
-}
-
-/**
- * Get Tailwind CSS classes for a schedule color
- */
-export function getScheduleColorClass(color: Schedule['color']): string {
-  const colorMap: Record<string, string> = {
-    blue: 'bg-blue-500 text-white',
-    purple: 'bg-purple-600 text-white',
-    lightpurple: 'bg-purple-300 text-purple-900',
-    pink: 'bg-pink-400 text-white'
-  };
-
-  return colorMap[color] || 'bg-gray-400 text-white';
-}
+import { WEEKLY_DAILY_VIEW_CONSTANTS } from '../constants/calendar';
 
 /**
  * Calculate schedule position for timeline views
@@ -60,27 +11,49 @@ interface SchedulePosition {
 
 export function getSchedulePosition(
   schedule: Schedule,
-  orientation: 'horizontal' | 'vertical'
+  orientation: 'horizontal' | 'vertical',
+  viewDate?: Date
 ): SchedulePosition {
   const startTime = new Date(schedule.startDateTime);
   const endTime = new Date(schedule.endDateTime);
 
-  const startHour = startTime.getHours();
-  const startMinute = startTime.getMinutes();
-  const endHour = endTime.getHours();
-  const endMinute = endTime.getMinutes();
+  let effectiveStartTime = startTime;
+  let effectiveEndTime = endTime;
+
+  // If viewDate is provided, clip the schedule to that day's boundaries
+  if (viewDate) {
+    const dayStart = new Date(viewDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(viewDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    // Clip start time to day start if schedule starts before this day
+    if (startTime < dayStart) {
+      effectiveStartTime = dayStart;
+    }
+
+    // Clip end time to day end if schedule ends after this day
+    if (endTime > dayEnd) {
+      effectiveEndTime = dayEnd;
+    }
+  }
+
+  const startHour = effectiveStartTime.getHours();
+  const startMinute = effectiveStartTime.getMinutes();
+  const endHour = effectiveEndTime.getHours();
+  const endMinute = effectiveEndTime.getMinutes();
 
   const unitSize = orientation === 'horizontal'
-    ? CALENDAR_CONSTANTS.HOUR_WIDTH
-    : CALENDAR_CONSTANTS.HOUR_HEIGHT;
+    ? WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_WIDTH
+    : WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_HEIGHT;
 
-  const unitsPerHour = 60 / CALENDAR_CONSTANTS.MIN_TIME_UNIT;
+  const unitsPerHour = 60 / WEEKLY_DAILY_VIEW_CONSTANTS.MIN_TIME_UNIT;
 
   // Calculate position: round to 10-minute intervals
   const startOffset = startHour * unitSize +
-    Math.floor(startMinute / CALENDAR_CONSTANTS.MIN_TIME_UNIT) * (unitSize / unitsPerHour);
+    Math.floor(startMinute / WEEKLY_DAILY_VIEW_CONSTANTS.MIN_TIME_UNIT) * (unitSize / unitsPerHour);
   const endOffset = endHour * unitSize +
-    Math.ceil(endMinute / CALENDAR_CONSTANTS.MIN_TIME_UNIT) * (unitSize / unitsPerHour);
+    Math.ceil(endMinute / WEEKLY_DAILY_VIEW_CONSTANTS.MIN_TIME_UNIT) * (unitSize / unitsPerHour);
 
   return {
     start: startOffset,

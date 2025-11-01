@@ -102,14 +102,14 @@ export function getContrastTextColor(backgroundColor: string): string {
  * Get schedule background color and appropriate text color
  *
  * @param colorHex - Hex color string from schedule.color
- * @param fallbackColor - Fallback color if hex is invalid (default: blue)
+ * @param themeColor - Theme color to use as fallback (from Redux theme state)
  * @returns Object with backgroundColor and textColor
  */
 export function getScheduleColors(
   colorHex: string | undefined,
-  fallbackColor: string = '#3B82F6'
+  themeColor: string
 ): { backgroundColor: string; textColor: string } {
-  const backgroundColor = normalizeHex(colorHex || '') || fallbackColor;
+  const backgroundColor = normalizeHex(colorHex || '') || themeColor;
   const textColor = getContrastTextColor(backgroundColor);
 
   return {
