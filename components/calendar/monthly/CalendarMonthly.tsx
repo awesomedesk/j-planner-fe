@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { CalendarGridProps } from '../types';
 import ScheduleItem from './ScheduleItem';
 import WeekNumber from './WeekNumber';
@@ -8,7 +9,8 @@ import { generateCalendarDays, isDifferentMonth, isSameDate } from '../utils/dat
 import { useSelector } from 'react-redux';
 import { getThemeColor } from '@utils/store/slices/mainThemeSlice';
 import { startOfDay, endOfDay, isWithinInterval, isSameDay } from 'date-fns';
-import { CALENDAR_LAYOUT_CONSTANTS } from '../constants/calendar';
+import { MONTHLY_VIEW_CONSTANTS } from '../constants/calendar';
+import { formatUrlDate } from '@/app/calendar/utils';
 
 /**
  * CalendarMonthly - Client-side monthly calendar view component
@@ -70,20 +72,20 @@ export default function CalendarMonthly({ viewDate, selectedDate, schedules, onD
   const cellHeight = useMemo(() => {
     const weekCount = days.length;
     const availableHeight = (windowHeight || 800)
-      - CALENDAR_LAYOUT_CONSTANTS.MAIN_HEADER_HEIGHT
-      - CALENDAR_LAYOUT_CONSTANTS.FOOTER_HEIGHT
-      - CALENDAR_LAYOUT_CONSTANTS.CALENDAR_HEADER_HEIGHT
-      - CALENDAR_LAYOUT_CONSTANTS.PADDING;
-    return Math.max(CALENDAR_LAYOUT_CONSTANTS.MIN_CELL_HEIGHT, availableHeight / weekCount);
+      - MONTHLY_VIEW_CONSTANTS.MAIN_HEADER_HEIGHT
+      - MONTHLY_VIEW_CONSTANTS.FOOTER_HEIGHT
+      - MONTHLY_VIEW_CONSTANTS.DAY_NAMES_ROW_HEIGHT
+      - MONTHLY_VIEW_CONSTANTS.PADDING;
+    return Math.max(MONTHLY_VIEW_CONSTANTS.MIN_CELL_HEIGHT, availableHeight / weekCount);
   }, [days.length, windowHeight]);
 
   // Calculate maximum schedules based on dynamic cell height - memoized
   const maxSchedulesCount = useMemo(() => {
     const availableHeight = cellHeight
-      - CALENDAR_LAYOUT_CONSTANTS.DATE_HEIGHT
-      - CALENDAR_LAYOUT_CONSTANTS.CELL_PADDING
-      - CALENDAR_LAYOUT_CONSTANTS.SHOW_MORE_HEIGHT;
-    return Math.max(1, Math.floor(availableHeight / CALENDAR_LAYOUT_CONSTANTS.SCHEDULE_ITEM_HEIGHT));
+      - MONTHLY_VIEW_CONSTANTS.DATE_HEIGHT
+      - MONTHLY_VIEW_CONSTANTS.CELL_PADDING
+      - MONTHLY_VIEW_CONSTANTS.SHOW_MORE_HEIGHT;
+    return Math.max(1, Math.floor(availableHeight / MONTHLY_VIEW_CONSTANTS.SCHEDULE_ITEM_HEIGHT));
   }, [cellHeight]);
 
   // Show loading state during SSR or before windowHeight is set
@@ -190,10 +192,14 @@ export default function CalendarMonthly({ viewDate, selectedDate, schedules, onD
                         ))}
 
                         {hasMoreSchedules && (
-                          <div className="text-xs font-medium text-center"
-                            style={{ color: colors.primary }}>
+                          <Link
+                            href={`/calendar/daily/${formatUrlDate(date)}`}
+                            className="text-xs font-medium text-center cursor-pointer hover:underline block"
+                            style={{ color: colors.primary }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             show +{daySchedules.length - maxSchedulesCount}
-                          </div>
+                          </Link>
                         )}
                       </div>
                     </div>

@@ -1,34 +1,23 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useRouter, usePathname } from 'next/navigation';
+import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
-import { getCalendarViewMode, setViewMode } from '@utils/store/slices/calendarViewSlice';
+import { getCalendarViewMode } from '@utils/store/slices/calendarViewSlice';
 import CalendarHeader from '@components/layouts/calendar/CalendarHeader';
 import CalendarMonthly from './monthly/CalendarMonthlyWrapper';
 import CalendarWeekly from './weekly/CalendarWeekly';
 import CalendarDaily from './daily/CalendarDaily';
-import { CalendarProps, CalendarViewMode, Schedule } from './types';
+import { CalendarProps, Schedule } from './types';
 import { testSchedules } from './data/testSchedules';
-import { formatUrlDate } from '@/app/calendar/utils';
 import { scheduleApi } from './types/schedule';
 import { convertApiScheduleToSchedule, formatToISODateTime } from './utils/apiUtils';
 import { getDateRange, getAdjustedMonth } from './utils/dateUtils';
+import { useCalendarNavigation } from './hooks/useCalendarNavigation';
 
 // TODO: [Low Priority] Add keyboard navigation support (arrow keys to navigate dates)
 // TODO: [Low Priority] Add accessibility improvements (ARIA labels, focus management, screen reader support)
 // TODO: [Low Priority] Consider timezone support for future international use
-
-// Helper function to convert internal view mode to URL format
-const viewModeToUrl = (mode: CalendarViewMode): string => {
-  const mapping: Record<CalendarViewMode, string> = {
-    month: 'monthly',
-    week: 'weekly',
-    day: 'daily',
-  };
-  return mapping[mode];
-};
 
 export default function Calendar({ onDateSelect, initialDate, schedules: externalSchedules }: CalendarProps) {
   // Use initialDate from URL as the single source of truth for viewDate
@@ -39,9 +28,7 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
   const [apiError, setApiError] = useState<string | null>(null);
   const currentTheme = useSelector(getThemeState);
   const viewMode = useSelector(getCalendarViewMode);
-  const dispatch = useDispatch();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { navigateInCurrentView, changeViewMode } = useCalendarNavigation();
 
   // API에서 일정 조회
   useEffect(() => {
@@ -97,11 +84,7 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
     })();
 
     setSelectedDate(null);
-
-    // Update URL - viewDate will be updated from initialDate prop
-    const dateStr = formatUrlDate(newDate);
-    const urlView = viewModeToUrl(viewMode);
-    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
+    navigateInCurrentView(newDate, viewMode);
   };
 
   const handleNext = () => {
@@ -120,32 +103,18 @@ export default function Calendar({ onDateSelect, initialDate, schedules: externa
     })();
 
     setSelectedDate(null);
-
-    // Update URL - viewDate will be updated from initialDate prop
-    const dateStr = formatUrlDate(newDate);
-    const urlView = viewModeToUrl(viewMode);
-    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
+    navigateInCurrentView(newDate, viewMode);
   };
 
   const handleToday = () => {
     const today = new Date();
     setSelectedDate(null);
-
-    // Update URL - viewDate will be updated from initialDate prop
-    const dateStr = formatUrlDate(today);
-    const urlView = viewModeToUrl(viewMode);
-    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
+    navigateInCurrentView(today, viewMode);
   };
 
   const handleViewModeChange = (mode: CalendarViewMode) => {
-    dispatch(setViewMode(mode));
-
-    // Update URL if we're in a calendar route
-    if (pathname?.includes('/calendar/')) {
-      const dateStr = formatUrlDate(viewDate);
-      const urlView = viewModeToUrl(mode);
-      router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
-    }
+    setSelectedDate(null);
+    changeViewMode(mode, viewDate);
   };
 
   const handleDateClick = (date: Date) => {

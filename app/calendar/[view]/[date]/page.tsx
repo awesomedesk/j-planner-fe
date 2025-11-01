@@ -7,6 +7,7 @@ import Calendar from "@components/calendar/Calendar";
 import { LAYOUT_CONSTANTS } from '@components/layouts/main/constants/layout';
 import { setViewMode } from '@utils/store/slices/calendarViewSlice';
 import { urlViewToMode, parseUrlDate, formatUrlDate } from '@/app/calendar/utils';
+import { useCalendarNavigation } from '@components/calendar/hooks/useCalendarNavigation';
 
 /**
  * Calendar page with specific date
@@ -17,6 +18,7 @@ export default function CalendarDatePage() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
+  const { navigateInCurrentView } = useCalendarNavigation();
 
   const urlView = params.view as string;
   const dateStr = params.date as string;
@@ -47,9 +49,9 @@ export default function CalendarDatePage() {
   }, [viewMode, initialDate, urlView, dispatch, router]);
 
   const handleDateSelect = (date: Date) => {
-    // Update URL with selected date
-    const dateStr = formatUrlDate(date);
-    router.push(`/calendar/${urlView}/${dateStr}`, { scroll: false });
+    if (viewMode) {
+      navigateInCurrentView(date, viewMode);
+    }
   };
 
   // Show nothing while validating/redirecting
