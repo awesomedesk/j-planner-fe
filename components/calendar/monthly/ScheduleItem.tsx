@@ -1,10 +1,14 @@
 "use client";
 
+import { useSelector } from 'react-redux';
+import { getThemeState } from '@utils/store/slices/mainThemeSlice';
 import { ScheduleItemProps } from '../types';
 import { formatTimeKorean } from '../utils/scheduleUtils';
 import { getScheduleColors } from '../utils/colorUtils';
 
 export default function ScheduleItem({ schedule }: ScheduleItemProps) {
+  const theme = useSelector(getThemeState);
+
   const getDisplayText = () => {
     if (schedule.allDay) {
       return schedule.title;
@@ -12,7 +16,7 @@ export default function ScheduleItem({ schedule }: ScheduleItemProps) {
     return `${formatTimeKorean(schedule.startDateTime)} ${schedule.title}`;
   };
 
-  const { backgroundColor, textColor } = getScheduleColors(schedule.color);
+  const { backgroundColor, textColor } = getScheduleColors(schedule.color, theme.themeColor.Theme1);
 
   return (
     <div

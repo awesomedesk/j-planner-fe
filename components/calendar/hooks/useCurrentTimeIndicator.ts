@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { CALENDAR_CONSTANTS } from '../utils/scheduleUtils';
+import { WEEKLY_DAILY_VIEW_CONSTANTS } from '../constants/calendar';
 
 export type TimeOrientation = 'vertical' | 'horizontal';
 
@@ -53,14 +53,14 @@ export function useCurrentTimeIndicator(
       // Weekly view: time flows vertically
       return (
         headerOffset +
-        hours * CALENDAR_CONSTANTS.HOUR_HEIGHT +
-        (minutes / 60) * CALENDAR_CONSTANTS.HOUR_HEIGHT
+        hours * WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_HEIGHT +
+        (minutes / 60) * WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_HEIGHT
       );
     } else {
       // Daily view: time flows horizontally
       return (
-        hours * CALENDAR_CONSTANTS.HOUR_WIDTH +
-        (minutes / 60) * CALENDAR_CONSTANTS.HOUR_WIDTH
+        hours * WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_WIDTH +
+        (minutes / 60) * WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_WIDTH
       );
     }
   }, [isToday, currentTime, orientation, headerOffset]);
