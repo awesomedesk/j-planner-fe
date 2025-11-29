@@ -1,26 +1,26 @@
 const calculateRequiredWeeks = (viewDate: Date): number => {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
-  
+
   // First day of the month
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  
+
   // Calculate the start date (Sunday of the week containing the first day)
   const startDate = new Date(firstDay);
   startDate.setDate(firstDay.getDate() - firstDay.getDay());
-  
-  // Calculate how many weeks we need by checking if last day fits in existing weeks
-  let weeks = 4; // Start with minimum 4 weeks
-  let checkDate = new Date(startDate);
-  checkDate.setDate(startDate.getDate() + (weeks * 7) - 1); // Last day of 4th week
-  
-  // If last day of month is after the 4th week, we need more weeks
-  while (checkDate < lastDay && weeks < 6) {
-    weeks++;
-    checkDate.setDate(startDate.getDate() + (weeks * 7) - 1);
-  }
-  
+
+  // Calculate the end date (Saturday of the week containing the last day)
+  const endDate = new Date(lastDay);
+  const daysUntilSaturday = 6 - lastDay.getDay();
+  endDate.setDate(lastDay.getDate() + daysUntilSaturday);
+
+  // Calculate the number of days between start and end (inclusive)
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  // Calculate number of weeks (always round up to ensure we show all days)
+  const weeks = Math.ceil(totalDays / 7);
+
   return weeks;
 };
 
