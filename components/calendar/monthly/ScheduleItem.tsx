@@ -2,9 +2,9 @@
 
 import { useSelector } from 'react-redux';
 import { getThemeState } from '@utils/store/slices/mainThemeSlice';
-import { ScheduleItemProps } from '../types';
-import { formatTimeKorean } from '../utils/scheduleUtils';
-import { getScheduleColors } from '../utils/colorUtils';
+import { ScheduleItemProps } from '@components/calendar/types';
+import { formatTimeKorean } from '@components/calendar/utils/scheduleUtils';
+import { getScheduleColors } from '@components/calendar/utils/colorUtils';
 
 export default function ScheduleItem({ schedule }: ScheduleItemProps) {
   const theme = useSelector(getThemeState);

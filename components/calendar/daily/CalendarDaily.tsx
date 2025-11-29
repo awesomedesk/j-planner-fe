@@ -18,6 +18,19 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
+  // Calculate dynamic height for a schedule based on its content
+  const calculateScheduleHeight = (schedule: typeof timedSchedules[0]) => {
+    let contentLines = 2; // title + time
+    if (schedule.description) contentLines++;
+    if (schedule.location) contentLines++;
+
+    const calculatedHeight =
+      WEEKLY_DAILY_VIEW_CONSTANTS.SCHEDULE_PADDING * 2 +
+      contentLines * WEEKLY_DAILY_VIEW_CONSTANTS.SCHEDULE_LINE_HEIGHT;
+
+    return Math.max(WEEKLY_DAILY_VIEW_CONSTANTS.SCHEDULE_MIN_HEIGHT, calculatedHeight);
+  };
+
   const daySchedules = useMemo(() => {
     return schedules.filter(schedule => {
       const scheduleStart = new Date(schedule.startDateTime);
@@ -140,12 +153,12 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
           </div>
 
           {/* Schedule timeline - positioned absolutely */}
-          {/* TODO: [Medium Priority] Make schedule height dynamic based on content */}
           {/* TODO: [Low Priority] Add schedule click interaction (show details modal) */}
           <div className="absolute top-12 left-0 right-0" style={{ minHeight: '400px' }}>
             {schedulesWithLayers.map(({ schedule, layer }) => {
               const position = getSchedulePosition(schedule, 'horizontal', viewDate);
               const { backgroundColor, textColor } = getScheduleColors(schedule.color, theme.themeColor.Theme1);
+              const scheduleHeight = calculateScheduleHeight(schedule);
               return (
                 <div
                   key={schedule.id}
@@ -156,8 +169,7 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                     left: `${position.start}px`,
                     width: `${position.size}px`,
                     top: `${layer * WEEKLY_DAILY_VIEW_CONSTANTS.LAYER_HEIGHT}px`,
-                    height: '90px',
-                    // TODO: [Medium] Make this dynamic (min 90px, max based on content)
+                    height: `${scheduleHeight}px`,
                     zIndex: 1
                   }}
                 >
@@ -204,11 +216,10 @@ export default function CalendarDaily({ viewDate, schedules }: Omit<CalendarGrid
                 }}
               />
               {/* Time label - positioned below grid time labels */}
-              {/* TODO: [Medium Priority] Use WEEKLY_DAILY_VIEW_CONSTANTS for dynamic positioning instead of hardcoded 70px */}
               <div
                 className="absolute text-xs font-medium px-2 py-1 rounded shadow-sm"
                 style={{
-                  top: '70px', // Below the grid time labels (which are at ~48px)
+                  top: `${WEEKLY_DAILY_VIEW_CONSTANTS.HOUR_HEIGHT + 10}px`, // Below the grid time labels
                   left: '50%',
                   transform: 'translateX(-50%)',
                   backgroundColor: theme.themeColor.Theme1,

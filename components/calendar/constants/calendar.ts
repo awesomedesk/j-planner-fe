@@ -40,13 +40,18 @@ export const WEEKLY_DAILY_VIEW_CONSTANTS = {
   HOUR_WIDTH: 128,
 
   // Header height for weekly/daily view (includes day names and date info)
-  HEADER_HEIGHT: 120,
+  HEADER_HEIGHT: 140,
 
   // Height per schedule layer when stacked
   LAYER_HEIGHT: 90,
 
   // Minimum time unit in minutes for schedule positioning
   MIN_TIME_UNIT: 10,
+
+  // Schedule item height calculation constants
+  SCHEDULE_MIN_HEIGHT: 90,      // Minimum height for schedule items
+  SCHEDULE_LINE_HEIGHT: 16,     // Height per content line
+  SCHEDULE_PADDING: 8,          // Top/bottom padding for schedule items
 } as const;
 
 /**
