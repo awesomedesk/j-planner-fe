@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js-based planner application called "J's Planner" built with TypeScript, Redux Toolkit, and Tailwind CSS. The application features a theming system and component-based architecture with a focus on customizable UI components.
 
+## Product Planning
+
+- Product planning docs (requirements, decision log, open questions, implementation status) live in a **separate repository**, not here.
+  - Local: `../j-planner-product`
+  - GitHub: https://github.com/awesomedesk/j-planner-product (private)
+- Before implementing a feature, check `../j-planner-product/02-requirements.md` (requirement IDs, status) and `03-decisions.md` (confirmed decisions).
+- Do not add planning documents to this repository.
+
 ## Development Commands
 
 - `npm run dev` - Start development server on http://localhost:3000
