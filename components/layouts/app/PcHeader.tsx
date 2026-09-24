@@ -3,13 +3,16 @@
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
 
+import type { AddTarget } from './addMenuItems';
+import PcAddMenu from './PcAddMenu';
 import { VIEW_MODE_LABEL, formatHeaderMonth, type CalendarViewMode } from './appLayoutUtils';
 
 interface PcHeaderProps {
   baseDate: Date;
   viewMode: CalendarViewMode;
   onChangeViewMode: (viewMode: CalendarViewMode) => void;
-  onClickAdd?: () => void;
+  /** 추가 메뉴에서 고른 항목 (일정 / Todo / D-Day) */
+  onSelectAdd: (target: AddTarget) => void;
   onClickSettings?: () => void;
   className?: string;
 }
@@ -18,14 +21,15 @@ interface PcHeaderProps {
  * PcHeader - PC·태블릿 헤더 한 줄 (D-017, 768px 이상)
  * 서비스명 · 이전/날짜/다음 · 오늘 · 카테고리 필터 · 월/주/일 · 추가 · 설정
  *
- * 태블릿(768~1023px)은 화면기획서 TAB-01처럼 줄여서 보여준다: 오늘 버튼 없음, 필터는 '전체', 추가는 아이콘만.
- * 날짜 이동(US-09)·필터(US-11)·추가(US-05)는 각 스토리에서 동작을 붙인다.
+ * 태블릿(768~1023px)은 줄여서 보여준다: 필터는 '전체', 추가는 아이콘만 (TAB-01).
+ * 태블릿의 '오늘' 버튼은 D-037로 추가하기로 함 → 날짜 이동(US-09) 때 넣는다.
+ * 날짜 이동(US-09)·필터(US-11)는 각 스토리에서 동작을 붙인다. 추가는 일정 입력 창을 연다 (US-05).
  */
 export default function PcHeader({
   baseDate,
   viewMode,
   onChangeViewMode,
-  onClickAdd,
+  onSelectAdd,
   onClickSettings,
   className = '',
 }: PcHeaderProps) {
@@ -74,13 +78,7 @@ export default function PcHeader({
           })}
         </div>
 
-        <ThemeButton onClick={onClickAdd} className="hidden pc:inline-flex">
-          <Icon name="plus" />
-          <span>추가</span>
-        </ThemeButton>
-        <ThemeButton onClick={onClickAdd} iconOnly size="md" aria-label="추가" className="pc:hidden">
-          <Icon name="plus" />
-        </ThemeButton>
+        <PcAddMenu onSelect={onSelectAdd} />
 
         <ThemeButton onClick={onClickSettings} iconOnly size="md" aria-label="설정">
           <Icon name="gear" size={18} />

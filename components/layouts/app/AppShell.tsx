@@ -3,11 +3,17 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
-import Icon from '@components/icons/LineIcon';
+import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
+import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
+import { toLocalDateString } from '@components/schedule/utils/scheduleFormUtils';
+import { useAppSelector } from '@/app/hooks';
+import { selectCategories } from '@store/slices/categorySlice';
 
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
 
+import type { AddTarget } from './addMenuItems';
 import type { CalendarViewMode } from './appLayoutUtils';
+import MobileAddMenu from './MobileAddMenu';
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
@@ -36,10 +42,24 @@ export default function AppShell({ children }: AppShellProps) {
   /** 사용자가 직접 열고 닫기 전에는 폭에 따라 정한다 (PC 열림, 태블릿 닫힘) */
   const [sidebarOpenOverride, setSidebarOpenOverride] = useState<boolean | null>(null);
   const isSidebarOpen = sidebarOpenOverride ?? isPc;
+  const categories = useAppSelector(selectCategories);
+  /** 열려 있는 일정 입력 창 (US-05) */
+  const [scheduleFormTarget, setScheduleFormTarget] = useState<ScheduleFormTarget | null>(null);
+
+  /** 추가 메뉴에서 고른 항목 열기. 기준 날짜 = 고른 날짜(지금은 오늘, 달력이 생기면 선택한 날짜) */
+  const handleSelectAdd = (target: AddTarget) => {
+    if (target === 'SCHEDULE') setScheduleFormTarget({ mode: 'create', baseDate: toLocalDateString(today) });
+  };
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-tp-bg text-tp-text">
-      <PcHeader className="hidden tablet:flex" baseDate={today} viewMode={viewMode} onChangeViewMode={setViewMode} />
+      <PcHeader
+        className="hidden tablet:flex"
+        baseDate={today}
+        viewMode={viewMode}
+        onChangeViewMode={setViewMode}
+        onSelectAdd={handleSelectAdd}
+      />
       <MobileHeader className="flex tablet:hidden" baseDate={today} />
 
       <div className="relative flex min-h-0 flex-1">
@@ -66,14 +86,18 @@ export default function AppShell({ children }: AppShellProps) {
         />
       </div>
 
-      {/* 모바일·폴드: 오른쪽 아래 + 버튼 자리 (MO-01, 추가 선택 MO-07은 US-05) */}
-      <button
-        type="button"
-        aria-label="추가"
-        className="fixed bottom-5 right-4 z-20 inline-flex h-14 w-14 items-center justify-center rounded-full bg-tp-primary text-tp-on-primary shadow-[0_6px_16px_rgba(0,0,0,0.25)] tablet:hidden"
-      >
-        <Icon name="plus" size={24} strokeWidth={2.4} />
-      </button>
+      {/* 모바일·폴드: 오른쪽 아래 + 버튼 → 추가 선택 (MO-07) */}
+      <MobileAddMenu className="tablet:hidden" onSelect={handleSelectAdd} />
+
+      {scheduleFormTarget && (
+        <ScheduleFormDialog
+          target={scheduleFormTarget}
+          categories={categories}
+          onClose={() => setScheduleFormTarget(null)}
+          onSaved={() => setScheduleFormTarget(null)}
+          onDeleted={() => setScheduleFormTarget(null)}
+        />
+      )}
     </div>
   );
 }

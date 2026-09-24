@@ -7,7 +7,9 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 1. Read `../j-planner-product/00-working-rules.md` first, then the docs in its README order. For FE work the key ones are
    `03-decisions.md`, `06-screens.md` (has the screen-design canvas link — the canvas is the visual reference),
    `08-api-design.md`, `09-backlog.md` (stories, acceptance criteria, order).
-2. `git pull` before work. Commit straight to `main` (D-005). Commit only files in this repo.
+2. Pull before work, commit straight to `main` (D-005), commit only files in this repo.
+   The terminal can't use SSH, so pull/push over HTTPS with the token file — exact commands in `00-working-rules.md` §7.
+   Never open, print, or copy `awesomedesk/.git-credentials`.
 3. This repo's owner is the FE window. Planning docs and API docs are **not** ours:
    - Something the planning doesn't cover → don't decide it; collect questions (options + recommendation) for the PO window.
      If you had to pick something to keep going, mark it "제가 정한 부분 (확인 부탁)".
@@ -46,6 +48,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   on calendar blocks its stripe is theme Theme2 (D-037). New category color may be null → shown as the first of the 6 item colors (D-037).
 - Item colors: 6 colors in `components/theme/itemColorOptions.ts`. Schedule/Todo color null → theme Theme2 (D-030).
 - New schedule default time: clicked timetable slot → that time; add button → next top of the hour after now, 1 hour (D-037).
+- Discard confirm wording "작성을 취소할까요?" [계속 작성] [작성 취소]; a picked new-category color can be tapped again to unselect (D-039).
+- Add menu (PC header '추가', mobile + button MO-07): 일정 / Todo / D-Day. Todo·D-Day stay disabled until their forms exist (`addMenuItems.ts`).
 
 ## Gotchas
 
