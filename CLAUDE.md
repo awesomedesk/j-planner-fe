@@ -1,72 +1,55 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude working in this repository (the **FE window** of J-planner).
 
-## Project Overview
+## Start here
 
-This is a Next.js-based planner application called "J's Planner" built with TypeScript, Redux Toolkit, and Tailwind CSS. The application features a theming system and component-based architecture with a focus on customizable UI components.
+1. Read `../j-planner-product/00-working-rules.md` first, then the docs in its README order. For FE work the key ones are
+   `03-decisions.md`, `06-screens.md` (has the screen-design canvas link — the canvas is the visual reference),
+   `08-api-design.md`, `09-backlog.md` (stories, acceptance criteria, order).
+2. `git pull` before work. Commit straight to `main` (D-005). Commit only files in this repo.
+3. This repo's owner is the FE window. Planning docs and API docs are **not** ours:
+   - Something the planning doesn't cover → don't decide it; collect questions (options + recommendation) for the PO window.
+     If you had to pick something to keep going, mark it "제가 정한 부분 (확인 부탁)".
+   - Want an API change → ask the BE window. Follow `08-api-design.md` (it wins over `08-openapi.yaml` if they differ).
+4. When a story is done, report "US-xx 완료, 검수 요청" with what was built and how to check it (screenshots at 1440 / 820 / 390px).
+5. Write user-facing text and comments in Korean, plain words, 해요체 for UI messages.
 
-## Product Planning
+## Commands
 
-- Product planning docs (requirements, decision log, open questions, implementation status) live in a **separate repository**, not here.
-  - Local: `../j-planner-product`
-  - GitHub: https://github.com/awesomedesk/j-planner-product (private)
-- Before implementing a feature, check `../j-planner-product/02-requirements.md` (requirement IDs, status) and `03-decisions.md` (confirmed decisions).
-- Do not add planning documents to this repository.
-
-## Development Commands
-
-- `npm run dev` - Start development server on http://localhost:3000
-- `npm run build` - Build production version
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+- `npm run dev` (test env) / `npm run dev:local` — http://localhost:3000
+- `npm run lint`, `npm run build` (includes type check) — run before committing
+- `npm run api:types` — regenerate `types/api/schema.d.ts` from `../j-planner-product/08-openapi.yaml`
 
 ## Architecture
 
-### Redux Store Structure
-The application uses Redux Toolkit for state management with two main slices:
-- `mainThemeSlice` - Manages theme colors and dark/light mode (`utils/store/slices/mainThemeSlice.ts`)
-- `mainMenuSlice` - Controls main menu open/close state (`utils/store/slices/mainMenuSlice.ts`)
+- **Layout**: `components/layouts/app/AppShell.tsx` is the responsive frame (D-018). PC header one line (`PcHeader`), mobile header (`MobileHeader`),
+  sidebar area (`SidebarArea`, 330px / 360px at ≥1920, closed rail at 768–1023 opening as overlay), fold right panel, mobile + button.
+- **Breakpoints** (tailwind `screens`): mobile default, `fold:` 600, `tablet:` 768, `pc:` 1024, `wide:` 1920. JS: `utils/hooks/useMediaQuery.ts`.
+- **Theme** (D-024, D-038): `components/theme/theme_color.ts` holds the 3 palettes and `resolveThemePalette` (dark mode swaps Dark↔Light, Theme1↔Theme3).
+  `ThemeProvider` writes CSS variables `--tp-*` from `themeSlice`; defaults are also in `app/globals.css`.
+  Use Tailwind `tp-*` colors (`bg-tp-primary`, `text-tp-muted`, `border-tp-line`, …). Inline style only for data colors (category/item colors).
+- **Buttons**: `components/button/ThemeButton.tsx` — primary / secondary / danger. No white buttons (D-022). Inputs stay white.
+- **Dialogs**: `components/dialog/DialogFrame.tsx` — centered at ≥600px, full screen below. Pass `isDirty`; outside click / Esc / close / back /
+  cancel all go through one close request and show "작성을 취소할까요?" when dirty (D-037). Buttons inside use `useDialogRequestClose()`.
+- **API**: `utils/api/client.ts` (`apiClient`, `ApiError`, pure REST + Problem Details, D-031), resource functions in `utils/api/resources/`,
+  types in `types/api/index.ts` (never edit `schema.d.ts`). Show failures with `useErrorNotice()` (`utils/hooks`) → `noticeSlice` → `NoticeCenter`.
+- **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category`. Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
+- **App start** (`app/layout.tsx`): `ServerStatusCheck` (GET /api/v1/health) and `AppDataLoader` (categories).
+- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form). Feature hooks in `components/<feature>/hooks/`,
+  pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
+- **Dev pages**: `app/dev/*` — for checking features before the real entry points exist. Remove them when the feature is wired into real screens.
 
-The store is configured in `utils/store/store.ts` and provided via `utils/store/provider.tsx`.
+## Rules decided so far (quick reference — the source is 03-decisions.md)
 
-### Component Architecture
-- **Layout System**: Uses a main layout wrapper (`components/layouts/main/main_layout.tsx`) that includes header, footer, and sliding menu
-- **Theme System**: Centralized theming via `components/theme/theme_color.ts` with predefined color themes (green, brown, neutral)
-- **Custom Components**: Reusable `AwesomeButton` component with Redux-connected theming
+- Category names: trim, case- and accent-insensitive duplicates (D-035). `미지정` is gray in lists, fixed at top, cannot be edited;
+  on calendar blocks its stripe is theme Theme2 (D-037). New category color may be null → shown as the first of the 6 item colors (D-037).
+- Item colors: 6 colors in `components/theme/itemColorOptions.ts`. Schedule/Todo color null → theme Theme2 (D-030).
+- New schedule default time: clicked timetable slot → that time; add button → next top of the hour after now, 1 hour (D-037).
 
-### Path Aliases
-The project uses TypeScript path mapping for clean imports:
-- `@components/*` → `./components/*`
-- `@utils/*` → `./utils/*`
-- `@store/*` → `./utils/store/*`
-- `@/*` → `./*`
+## Gotchas
 
-### File Structure
-```
-app/                    # Next.js app router pages
-components/
-  ├── button/          # Reusable button components
-  ├── calendar/        # Calendar-related components
-  ├── layouts/main/    # Main layout components
-  └── theme/           # Theme definitions
-utils/store/           # Redux store and slices
-```
-
-## Key Implementation Details
-
-### Theme Integration
-- All UI components should use the Redux theme state via `useSelector(getThemeState)`
-- Theme colors are defined in `components/theme/theme_color.ts` with structured color palettes
-- Components should support both light/dark modes and multiple color themes
-
-### Component Development
-- All interactive components should be client-side (`"use client"` directive)
-- Follow existing naming conventions (snake_case for files, PascalCase for components)
-- Use Tailwind CSS for styling with dynamic theme integration
-- Components should accept props with TypeScript interfaces
-
-### State Management
-- Use Redux Toolkit with typed selectors and actions
-- Access state via `useSelector` with proper typing (`RootState`)
-- Dispatch actions using standard Redux patterns
+- Don't name a folder `icon` — the macOS `Icon` rule in `.gitignore` hides it from git. Icons live in `components/icons/`.
+- Don't use `next/font/google` — it downloads fonts at build time and fails without network. The font is a `<link>` in `app/layout.tsx` (D-038).
+- `.env.*` files are committed. Never put real secrets in them.
+- Coding conventions: `CODING_STANDARDS.md`. API client usage: `utils/api/README.md`.

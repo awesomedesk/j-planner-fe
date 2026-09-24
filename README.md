@@ -1,167 +1,93 @@
-# 📅 J's Planner Frontend
+# J's Planner — Frontend (`j-planner-fe`)
 
-> 개인 일정 관리를 위한 모던 웹 애플리케이션
+MBTI 'J' 성향 사용자를 위한 플래너의 **반응형 웹** 프론트엔드입니다. 하루 계획(Todo를 시간표에 배치)과 한 달 일정 관리를 한곳에서 합니다.
 
-React + Next.js + Redux Toolkit으로 구축된 사용자 친화적인 플래너 애플리케이션입니다.
+- 기술: Next.js 15 (App Router) · React 18 · TypeScript · Redux Toolkit · Tailwind CSS 3 · date-fns 4
+- 서버: [`J-planner-BE`](https://github.com/awesomedesk/J-planner-BE) (REST API)
+- **기획은 이 저장소에 없습니다.** 요구사항·결정·화면기획서·API 명세는 [`j-planner-product`](https://github.com/awesomedesk/j-planner-product)(비공개)가 기준입니다. 로컬에서는 `../j-planner-product`
 
-## ✨ 주요 기능
+## 지금 상태 (2026-09-25)
 
-- 📅 **월별 달력 뷰**: 직관적인 달력 인터페이스
-- 🎨 **다크/라이트 모드**: 사용자 선호에 따른 테마 변경
-- 🎯 **색상별 일정 분류**: 카테고리별 일정 관리
-- 🔄 **실시간 동기화**: 백엔드 API와 실시간 연동
-- 📱 **반응형 디자인**: 모바일/데스크톱 지원
+| 마일스톤 | 스토리 | 상태 |
+|---|---|---|
+| M0 기반 | US-01 반응형 틀 · US-02 테마 · US-03 API 연결 | PO 검수 통과 |
+| M1 일정 달력 | US-04 카테고리 관리 | 수정 반영 후 재검수 대기 |
+| | US-05 일정 추가·수정 | 입력 창만 있음 (달력 연결 전) |
 
-## 📸 스크린샷
+전체 순서와 완료 기준은 `j-planner-product/09-backlog.md`를 봅니다.
 
-![J's Planner 메인 화면](./public/example/Jsplanner-example.png)
+## 시작하기
 
-## 🛠️ 기술 스택
-
-### Frontend
-- **Framework**: Next.js 15.4.6 (App Router)
-- **Language**: TypeScript
-- **State Management**: Redux Toolkit
-- **Styling**: Tailwind CSS
-- **UI Components**: 커스텀 컴포넌트 시스템
-
-### Development
-- **Linting**: ESLint + Next.js 규칙
-- **Environment**: 환경별 설정 관리 (local/test/production)
-
-## 🚀 시작하기
-
-### 1. 환경 설정
 ```bash
-# 저장소 클론
-git clone https://github.com/awesomedesk/j-planner-fe.git
-cd j-planner-fe
-
-# 의존성 설치
 npm install
-
-# 초기 환경 설정
-npm run env:setup
+npm run dev          # http://localhost:3000
 ```
 
-### 2. 환경별 실행
-```bash
-# 기본 개발 환경 (test 환경)
-npm run dev
+- BE 주소는 `.env.local`(로컬) · `.env.test` · `.env.production`의 `NEXT_PUBLIC_API_BASE_URL`에 있습니다. 기본값 `http://localhost:8080`
+  - `/api/v1`은 적지 않습니다. API 클라이언트가 붙입니다.
+- `npm run dev`는 `test` 환경 설정으로 뜹니다. 로컬 BE에 붙이려면 `npm run dev:local`
+- BE가 꺼져 있어도 화면은 뜹니다. 화면 아래에 "서버에 연결할 수 없어요" 안내만 나옵니다.
 
-# 로컬 개발 환경
-npm run dev:local
+### 자주 쓰는 명령
 
-# 프로덕션 개발 환경
-npm run dev:prod
+| 명령 | 하는 일 |
+|---|---|
+| `npm run dev` / `dev:local` | 개발 서버 (test / local 환경) |
+| `npm run lint` | ESLint |
+| `npm run build` | 타입 검사 포함 빌드. 커밋 전에 한 번 |
+| `npm run api:types` | API 명세(`../j-planner-product/08-openapi.yaml`)가 바뀌면 타입(`types/api/schema.d.ts`)을 다시 만든다 |
 
-# 프로덕션 빌드
-npm run build:prod
+## BE 없이 확인하는 개발용 페이지
+
+실제 화면에 기능이 연결되면 지웁니다.
+
+| 주소 | 확인할 것 |
+|---|---|
+| `/dev/api-status` | 서버 상태 확인, 404·400 오류 안내, 화면 오류 안내 (US-03) |
+| `/dev/categories` | 카테고리 관리 창 (US-04) |
+| `/dev/schedule-form` | 일정 추가·수정 창 (US-05) |
+
+## 폴더 구조
+
+```
+app/
+  layout.tsx            # 글꼴·Redux·테마·안내·서버 상태 확인·앱 데이터 불러오기
+  page.tsx              # 첫 화면 (AppShell + 달력 자리)
+  error.tsx             # 화면 오류 시 안내 + 다시 시도
+  dev/                  # 개발용 확인 페이지
+components/
+  layouts/app/          # AppShell(반응형 틀), PC·모바일 헤더, 사이드바 자리
+  dialog/DialogFrame    # 입력·관리 창 공통 틀 (가운데 창 / 모바일 전체 화면, 작성 취소 확인)
+  button/ThemeButton    # 테마색 버튼 (흰 버튼 없음, D-022)
+  icons/LineIcon        # 선 아이콘
+  theme/                # 테마 색(theme_color.ts), CSS 변수 적용, 항목 색 6가지
+  notice/               # 화면 아래 짧은 안내, 서버 상태 확인
+  category/             # 카테고리 관리 (OV-04, MO-21)
+  schedule/             # 일정 입력 (OV-01, MO-08)
+types/api/              # API 타입 (schema.d.ts는 생성 파일, index.ts에서 이름 붙임)
+utils/
+  api/                  # apiClient, 오류 처리, 리소스별 API 함수 (자세히: utils/api/README.md)
+  store/                # Redux store와 slices(theme, notice, category)
+  hooks/                # useMediaQuery, useErrorNotice
+env/config.ts           # 환경 변수 읽기, logger
 ```
 
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 결과를 확인하세요.
+## 개발할 때 알아 둘 것
 
-## 📁 프로젝트 구조
+- **화면 폭 규칙 (D-018)**: Tailwind `fold:`(600) · `tablet:`(768) · `pc:`(1024) · `wide:`(1920). 기본 스타일이 모바일입니다.
+- **테마 색 (D-038)**: 색값을 직접 쓰지 않고 `bg-tp-primary`, `text-tp-muted` 같은 `tp-*` 색을 씁니다. 자세한 규칙은 [CODING_STANDARDS.md](./CODING_STANDARDS.md)의 Styling
+- **API**: 화면은 `@utils/api`의 리소스 함수(`categoryApi`, `scheduleApi` …)와 `@/types/api` 타입만 씁니다. 실패는 `useErrorNotice()`로 짧은 안내를 띄웁니다. 자세히: [utils/api/README.md](./utils/api/README.md)
+- **입력·관리 창**: `DialogFrame`으로 만들고 `isDirty`를 넘깁니다. 바꾼 것이 있으면 닫을 때 "작성을 취소할까요?"가 뜹니다 (D-037).
+- **기획에 없는 동작**은 FE가 정하지 않고 PO 창에 묻습니다. API를 바꾸고 싶으면 BE 창에 요청합니다 (`j-planner-product/00-working-rules.md`).
 
-```
-├── app/                    # Next.js App Router 페이지
-│   ├── calender/          # 달력 페이지
-│   └── example/           # 예시 페이지
-├── components/            # 재사용 가능한 컴포넌트
-│   ├── calendar/         # 달력 관련 컴포넌트
-│   ├── button/           # 버튼 컴포넌트
-│   └── layouts/          # 레이아웃 컴포넌트
-├── utils/                # 유틸리티 함수들
-│   ├── api/              # API 클라이언트 및 훅
-│   └── store/            # Redux 스토어 설정
-└── env/                  # 환경 설정 및 환경별 파일들
-    ├── config.ts         # 환경변수 유틸리티
-    └── .env.*            # 환경별 설정 파일
-```
+### 주의
 
-## 🔧 개발 가이드
+- 폴더 이름을 `icon`으로 짓지 마세요. `.gitignore`의 macOS `Icon` 규칙에 걸려 git에 안 올라갑니다.
+- 글꼴을 `next/font/google`로 바꾸지 마세요. 빌드할 때 글꼴을 내려받아서 네트워크가 막힌 곳에서 빌드가 실패합니다 (D-038).
+- `.env.*` 파일은 git에 올라가 있습니다. 실제 키·비밀번호는 넣지 마세요.
 
-### 환경변수 관리
-환경별 설정은 `env/` 폴더에서 관리됩니다. 자세한 내용은 [env/README.md](./env/README.md)를 참조하세요.
+## 문서
 
-### API 사용법
-백엔드 연동 방법은 [utils/api/README.md](./utils/api/README.md)를 참조하세요.
-
-### 컴포넌트 개발
-- 모든 컴포넌트는 TypeScript로 작성
-- Redux 연동시 typed hooks 사용 (`app/hooks.ts`)
-- 테마 시스템을 활용한 일관된 디자인
-
-### 코드 품질
-```bash
-npm run lint        # ESLint 검사
-npm run build       # 타입 체크 포함 빌드
-```
-
-## 🚀 배포
-
-### 환경별 배포
-```bash
-# 테스트 환경 배포
-npm run build:test && npm run start:test
-
-# 프로덕션 배포  
-npm run build:prod && npm run start:prod
-```
-
-### CI/CD 고려사항
-- 환경별 환경변수는 CI/CD에서 주입
-- `env/` 폴더의 파일들은 템플릿으로만 사용
-- 실제 시크릿 값은 별도 관리 필요
-
-## 📋 사용 가능한 스크립트
-
-### 개발 서버
-- `npm run dev` - 기본 개발서버 (test 환경)
-- `npm run dev:local` - 로컬 환경으로 개발서버 실행
-- `npm run dev:test` - 테스트 환경으로 개발서버 실행
-- `npm run dev:prod` - 프로덕션 환경으로 개발서버 실행
-
-### 빌드
-- `npm run build` - 기본 빌드 (test 환경)
-- `npm run build:local` - 로컬 환경으로 빌드
-- `npm run build:test` - 테스트 환경으로 빌드  
-- `npm run build:prod` - 프로덕션 환경으로 빌드
-
-### 서버 시작
-- `npm run start` - 기본 서버 시작 (test 환경)
-- `npm run start:local` - 로컬 환경으로 서버 시작
-- `npm run start:test` - 테스트 환경으로 서버 시작
-- `npm run start:prod` - 프로덕션 환경으로 서버 시작
-
-### 유틸리티
-- `npm run env:setup` - 환경변수 초기 설정
-- `npm run env:validate` - 환경설정 검증
-- `npm run env:clean` - 임시 .env 파일 정리
-- `npm run lint` - ESLint 검사
-
-### 더 많은 도움이 필요하다면:
-- [환경설정 가이드](./env/README.md)
-- [API 사용법](./utils/api/README.md)
-- [프로젝트 설명서](./CLAUDE.md)
-
-### 개발 규칙
-- 코드 작성 전 `npm run lint` 실행
-- 커밋 전 빌드 테스트 필수
-- TypeScript 엄격 모드 준수
-- 컴포넌트는 반드시 타입 정의와 함께 작성
-
-## 📚 관련 문서
-
-- [Next.js Documentation](https://nextjs.org/docs) - Next.js 기능 및 API 학습
-- [Redux Toolkit](https://redux-toolkit.js.org/) - 상태 관리 라이브러리
-- [Tailwind CSS](https://tailwindcss.com/) - 유틸리티 우선 CSS 프레임워크
-- [TypeScript](https://www.typescriptlang.org/) - 타입이 있는 JavaScript
-
-## 📄 라이센스
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Developed with ❤️ by the AwesomeDesk Team**
+- [CLAUDE.md](./CLAUDE.md) — AI 작업 창(FE 창)용 안내
+- [CODING_STANDARDS.md](./CODING_STANDARDS.md) — 코딩 규칙
+- [utils/api/README.md](./utils/api/README.md) — API 클라이언트 사용법

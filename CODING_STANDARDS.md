@@ -23,7 +23,9 @@ This document defines the coding standards and best practices for the J's Planne
 ### 파일 명명 규칙
 
 #### 컴포넌트 파일
-- **형식**: `snake_case` for files, `PascalCase` for exports
+- **형식**: 컴포넌트 파일과 export는 모두 `PascalCase` (`CategoryManagerDialog.tsx`)
+  - 예전 파일 중 snake_case인 것(`components/theme/theme_color.ts`)은 그대로 둔다. 새 파일은 이 규칙을 따른다.
+  - 폴더 이름을 `icon`으로 짓지 않는다. `.gitignore`의 macOS `Icon` 규칙 때문에 git에 안 올라간다 (아이콘은 `components/icons/`).
 - **원칙**: 파일명은 컴포넌트의 역할을 명확히 표현
   ```
   ✅ components/calendar/monthly/CalendarMonthly.tsx  (월간 캘린더 뷰)
@@ -436,22 +438,20 @@ utils/store/
   ├── store.ts          # Store configuration
   ├── provider.tsx      # Store provider
   └── slices/
-      ├── mainThemeSlice.ts
-      ├── mainMenuSlice.ts
-      └── calendarViewSlice.ts
+      ├── themeSlice.ts     # 색 테마·다크 모드 (US-02)
+      ├── noticeSlice.ts    # 화면 아래 짧은 안내 (US-03)
+      └── categorySlice.ts  # 카테고리 목록 (US-04)
 ```
 
 ### Usage
 ```tsx
-// ✅ Good: Typed selectors
-const themeColor = useSelector(getThemeColor);
-const viewMode = useSelector(getCalendarViewMode);
+// ✅ Good: app/hooks.ts의 타입 있는 훅 + 슬라이스의 selector
+const categories = useAppSelector(selectCategories);
+const dispatch = useAppDispatch();
+dispatch(showNotice('저장했어요', 'info'));
 
-// ✅ Good: Dispatch with actions
-dispatch(setViewMode('day'));
-
-// ❌ Bad: Direct state access
-const state = useSelector(state => state.calendar.viewMode);
+// ❌ Bad: 상태를 직접 꺼내기
+const items = useSelector((state) => state.category.items);
 ```
 
 ---
@@ -469,26 +469,47 @@ Use Tailwind for layout and common styles:
 <div style={{ display: 'flex', padding: '1rem' }}>
 ```
 
-### Dynamic Styles
-Use inline styles for theme-dependent colors:
+### Theme Colors (D-038)
+테마 색은 CSS 변수(`--tp-*`)로 적용되고, Tailwind에서는 `tp-*` 색 이름으로 쓴다 (`tailwind.config.ts`).
+테마·다크 모드를 바꾸면 변수만 바뀌고 화면 전체가 따라간다.
 
 ```tsx
-// ✅ Good: Theme colors via inline styles
-<div
-  className="p-4 rounded-lg"
-  style={{
-    backgroundColor: colors.background,
-    color: colors.text
-  }}
->
+// ✅ Good: 테마 색은 tp-* 클래스
+<div className="rounded-lg border border-tp-line bg-tp-panel text-tp-text">
+<button className="bg-tp-primary text-tp-on-primary">
 
-// ❌ Bad: Hardcoded colors in Tailwind
+// ✅ Good: 데이터가 가진 색(카테고리·일정 색)만 inline style
+<span style={{ backgroundColor: getCategoryListColor(category) }} />
+
+// ❌ Bad: 테마 색을 직접 적기 / Tailwind 기본 색 쓰기
+<div style={{ backgroundColor: '#40543B' }}>
 <div className="bg-blue-500 text-white">
 ```
 
+| 색 이름 | 쓰는 곳 |
+|---|---|
+| `tp-bg`, `tp-text`, `tp-muted` | 바탕, 글자, 보조 글자 |
+| `tp-panel`, `tp-line` | 카드·섹션 바탕, 구분선·테두리 |
+| `tp-primary` + `tp-on-primary` | 헤더, 주 버튼 |
+| `tp-secondary` + `tp-secondary-line` + `tp-on-secondary` | 보조 버튼·드롭다운 |
+| `danger` | 삭제·오류 |
+
+- 버튼은 `components/button/ThemeButton.tsx`를 쓴다. 흰색 버튼은 만들지 않는다 (D-022). 입력칸은 흰색 유지.
+
+### Screen Widths (D-018)
+| Tailwind | 폭 | 화면 |
+|---|---|---|
+| (기본) | 600px 미만 | 모바일 |
+| `fold:` | 600px 이상 | 폴드 펼침: 모바일 구성 + 오른쪽 패널, 입력 창은 가운데 창 |
+| `tablet:` | 768px 이상 | PC 헤더, 사이드바 닫힘으로 시작 |
+| `pc:` | 1024px 이상 | PC |
+| `wide:` | 1920px 이상 | 사이드바 360px 고정 |
+
+JS에서 폭이 필요하면 `utils/hooks/useMediaQuery.ts`의 `useMediaQuery`와 `BREAKPOINT`를 쓴다.
+
 ### Style Priority
-1. **Tailwind** for layout, spacing, typography
-2. **Inline styles** for dynamic theme colors
+1. **Tailwind** for layout, spacing, typography, and theme colors (`tp-*`)
+2. **Inline styles** only for data colors (category/item colors)
 3. **CSS modules** for complex component-specific styles (if needed)
 
 ---
@@ -768,6 +789,8 @@ git commit -m "Docs: 코딩 표준에 Git 커밋 가이드라인 추가"
 
 ## Pull Requests
 
+> 지금은 1인 개발이라 **main에 바로 커밋**한다 (D-005). 아래 PR 규칙은 여러 명이 함께 개발하게 되면 쓴다.
+
 ### PR 가이드라인
 
 #### 1. PR 템플릿 사용
@@ -899,8 +922,8 @@ PR을 생성하기 전에 확인하세요:
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSelector } from 'react-redux';
-import { getThemeColor } from '@utils/store/slices/mainThemeSlice';
+import { useAppSelector } from '@/app/hooks';
+import { selectCategories } from '@store/slices/categorySlice';
 import { useCalendarNavigation } from '../hooks/useCalendarNavigation';
 import { CalendarProps } from '../types';
 
@@ -908,7 +931,7 @@ import { CalendarProps } from '../types';
  * CalendarMonthly - Monthly calendar view component
  */
 export default function CalendarMonthly({ viewDate, onDateClick }: CalendarProps) {
-  const themeColors = useSelector(getThemeColor);
+  const categories = useAppSelector(selectCategories);
   const { navigateToDailyView } = useCalendarNavigation();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -918,10 +941,7 @@ export default function CalendarMonthly({ viewDate, onDateClick }: CalendarProps
   };
 
   return (
-    <div
-      className="p-4 rounded-lg"
-      style={{ backgroundColor: themeColors.Light }}
-    >
+    <div className="rounded-lg bg-tp-panel p-4 text-tp-text">
       <Link
         href="/calendar/daily/2025-01-01"
         className="text-sm hover:underline"
@@ -939,16 +959,16 @@ export default function CalendarMonthly({ viewDate, onDateClick }: CalendarProps
 
 **Golden Rules:**
 1. 📛 Naming: 역할을 명확히 표현하는 이름 사용 (리뷰어가 즉시 이해 가능하도록)
-2. 📁 Files: `snake_case`, Exports: `PascalCase`
+2. 📁 Files: 컴포넌트 `PascalCase`, 훅·유틸 `camelCase`
 3. 🔗 Navigation: Custom hooks for user actions, `<Link>` for clickable elements
-4. 🎨 Styling: Tailwind for layout, inline styles for theme colors
+4. 🎨 Styling: Tailwind + 테마 색 `tp-*` (D-038), inline style은 데이터 색만
 5. 📦 State: Redux with typed selectors
 6. 🪝 Hooks: Generic in `utils/`, feature-specific in `components/[feature]/hooks/`
 7. 📝 Types: Separate files, interfaces for objects
 8. 💬 Comments: Only when adding value
 9. 📝 Commits: Korean messages, feature-based separation
-10. 🔀 PRs: Follow `.github/PULL_REQUEST_TEMPLATE.md`
+10. 🔀 Commits: 1인 개발 동안 main에 바로 커밋 (D-005). PR은 `.github/PULL_REQUEST_TEMPLATE.md`
 
 ---
 
-**Last Updated:** 2025-11-01
+**Last Updated:** 2026-09-25
