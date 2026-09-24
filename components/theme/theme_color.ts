@@ -46,3 +46,32 @@ export const grayColorTheme : ThemeColor = {
 export const defaultTheme:ThemeStateType = {
   themeColor: greenColorTheme, isDark: false 
 };
+
+// ---------------------------------------------------------------- 설정 값과 연결 (D-024)
+
+/** 설정의 색 테마 값 (08-api-design 9절 `colorTheme`) */
+export type ColorThemeCode = 'GREEN' | 'BROWN' | 'GRAY';
+
+export const COLOR_THEMES: Record<ColorThemeCode, ThemeColor> = {
+  GREEN: greenColorTheme,
+  BROWN: brownColorTheme,
+  GRAY: grayColorTheme,
+};
+
+/** 기본값: 녹색 · 라이트 (D-024) */
+export const DEFAULT_COLOR_THEME: ColorThemeCode = 'GREEN';
+export const DEFAULT_DARK_MODE = false;
+
+/** 화면에 실제로 쓰는 5색 */
+export type ThemePalette = Pick<ThemeColor, 'Dark' | 'Theme1' | 'Theme2' | 'Theme3' | 'Light'>;
+
+/**
+ * 테마 + 다크 모드 → 화면에 쓸 5색
+ * 다크 모드는 Dark↔Light, Theme1↔Theme3를 서로 바꾼다. Theme2는 그대로 (06-screens 팔레트, US-02)
+ */
+export const resolveThemePalette = (code: ColorThemeCode, isDark: boolean): ThemePalette => {
+  const { Dark, Theme1, Theme2, Theme3, Light } = COLOR_THEMES[code];
+  return isDark
+    ? { Dark: Light, Theme1: Theme3, Theme2, Theme3: Theme1, Light: Dark }
+    : { Dark, Theme1, Theme2, Theme3, Light };
+};

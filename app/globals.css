@@ -2,11 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS 변수는 테마 시스템에서 동적으로 관리됩니다 */
+/*
+ * 테마 색 (US-02)
+ * 기본값 = 녹색·라이트 (components/theme/theme_color.ts greenColorTheme).
+ * ThemeProvider가 테마·다크 모드에 맞춰 --tp-dark ~ --tp-light를 바꾼다.
+ * 나머지(--tp-muted 등)는 5색을 섞어 만들어서 따라 바뀐다.
+ */
+:root {
+  --tp-dark: #243119;
+  --tp-theme1: #40543B;
+  --tp-theme2: #CCD5AE;
+  --tp-theme3: #E9EDC9;
+  --tp-light: #FEFAE0;
+
+  --tp-muted: color-mix(in srgb, var(--tp-dark) 68%, var(--tp-light));
+  --tp-panel: color-mix(in srgb, var(--tp-theme3) 45%, var(--tp-light));
+  --tp-line: color-mix(in srgb, var(--tp-theme2) 70%, var(--tp-light));
+}
+
+html,
+body {
+  height: 100%;
+}
 
 body {
   margin: 0;
   padding: 0;
+  background-color: var(--tp-light);
+  color: var(--tp-dark);
+  font-family: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+button {
+  font-family: inherit;
 }
 
 @layer utilities {
