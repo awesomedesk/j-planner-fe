@@ -7,6 +7,7 @@ import type {
   ScheduleCreateRequest,
   ScheduleUpdateRequest,
 } from '@/types/api';
+import { ITEM_COLOR_OPTIONS } from '@components/theme/itemColorOptions';
 
 /**
  * 일정 입력 창(OV-01, MO-08)의 폼 값 ⇄ API 변환·검사
@@ -16,14 +17,7 @@ import type {
  */
 
 /** 일정 색 선택지 (화면기획서 OV-01 ③). null = 선택 안 함 → 테마 Theme2 (D-030) */
-export const SCHEDULE_COLOR_OPTIONS: readonly HexColor[] = [
-  '#2F62A8',
-  '#A6323F',
-  '#2F7A4B',
-  '#8A5A00',
-  '#5B5F97',
-  '#3F3F3F',
-];
+export const SCHEDULE_COLOR_OPTIONS = ITEM_COLOR_OPTIONS;
 
 export const TITLE_MAX_LENGTH = 255;
 export const URL_MAX_LENGTH = 2048;

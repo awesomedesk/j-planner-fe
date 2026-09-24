@@ -3,6 +3,7 @@ import ReduxApp from "@utils/store/ReduxApp";
 import ThemeProvider from "@components/theme/ThemeProvider";
 import NoticeCenter from "@components/notice/NoticeCenter";
 import ServerStatusCheck from "@components/notice/ServerStatusCheck";
+import AppDataLoader from "@components/app/AppDataLoader";
 
 export const metadata = {
   title: "J's Planner",
@@ -36,6 +37,7 @@ export default function RootLayout({
             {children}
             <NoticeCenter />
             <ServerStatusCheck />
+            <AppDataLoader />
           </ThemeProvider>
         </ReduxApp>
       </body>
