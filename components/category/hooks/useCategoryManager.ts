@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { Category, HexColor, Id } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { ITEM_COLOR_OPTIONS } from '@components/theme/itemColorOptions';
 import { fetchCategories, selectCategories } from '@store/slices/categorySlice';
 
 import { categoryApi, isApiError } from '@utils/api';
@@ -24,12 +23,13 @@ export const useCategoryManager = () => {
 
   // 2. State
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState<HexColor>(ITEM_COLOR_OPTIONS[0]);
+  /** 처음엔 아무 색도 고르지 않은 상태. 안 고르고 추가하면 null (D-037) */
+  const [newColor, setNewColor] = useState<HexColor | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<Id | null>(null);
   const [editName, setEditName] = useState('');
-  const [editColor, setEditColor] = useState<HexColor>(ITEM_COLOR_OPTIONS[0]);
+  const [editColor, setEditColor] = useState<HexColor | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<Id | null>(null);
@@ -69,6 +69,7 @@ export const useCategoryManager = () => {
     try {
       await categoryApi.create({ name: newName.trim(), color: newColor });
       setNewName('');
+      setNewColor(null);
       setAddError(null);
       await reload();
     } catch (error) {
@@ -106,7 +107,7 @@ export const useCategoryManager = () => {
     }
     const patch = {
       ...(editName.trim() !== original.name ? { name: editName.trim() } : {}),
-      ...(editColor !== original.color ? { color: editColor } : {}),
+      ...(editColor !== null && editColor !== original.color ? { color: editColor } : {}),
     };
     if (Object.keys(patch).length === 0) {
       cancelEdit();
@@ -124,7 +125,7 @@ export const useCategoryManager = () => {
     }
   }, [cancelEdit, categories, editColor, editName, editingId, handleMutationError, reload]);
 
-  /** 삭제는 두 번 눌러 확인한다 (삭제 → 삭제 확인) */
+  /** 삭제는 줄에서 한 번 더 확인한다 (확인 / 취소, D-037) */
   const deleteCategory = useCallback(
     async (category: Category) => {
       if (deleteConfirmId !== category.id) {
@@ -165,9 +166,17 @@ export const useCategoryManager = () => {
     [categories, notifyError, reload]
   );
 
+  /** 입력하거나 바꾼 것이 있는가 → 닫을 때 "작성을 취소할까요?" (D-037) */
+  const isDirty = useMemo(() => {
+    if (newName.trim() !== '' || newColor !== null) return true;
+    const editing = categories.find((c) => c.id === editingId);
+    return Boolean(editing && (editName.trim() !== editing.name || editColor !== editing.color));
+  }, [categories, editColor, editName, editingId, newColor, newName]);
+
   // 4. Return
   return {
     categories,
+    isDirty,
     newName,
     newColor,
     addError,

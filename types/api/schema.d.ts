@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 상태 확인 (FE가 BE 연결 확인, DB는 확인 안 함) */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -361,7 +378,10 @@ export interface components {
         };
         /** @description RFC 9457 Problem Details + code, errors */
         Problem: {
-            /** @default about:blank */
+            /**
+             * @description 보내지 않음 (없으면 about:blank)
+             * @default about:blank
+             */
             type: string;
             title: string;
             status: number;
@@ -399,7 +419,40 @@ export interface components {
             latitude?: number | null;
             longitude?: number | null;
         };
-        ScheduleFields: {
+        Schedule: {
+            title: string;
+            allDay: boolean;
+            start: components["schemas"]["LocalDateTime"];
+            end: components["schemas"]["LocalDateTime"];
+            /**
+             * Format: int64
+             * @description 생략하면 미지정
+             */
+            categoryId: number;
+            /** @description null = 테마의 Theme2 (D-030) */
+            color: components["schemas"]["Color"] | null;
+            description: string | null;
+            location: components["schemas"]["Location"] | null;
+            url: string | null;
+            id: components["schemas"]["Id"];
+        };
+        ScheduleCreateRequest: {
+            title: string;
+            allDay: boolean;
+            start: components["schemas"]["LocalDateTime"];
+            end: components["schemas"]["LocalDateTime"];
+            /**
+             * Format: int64
+             * @description 생략하면 미지정
+             */
+            categoryId?: number;
+            /** @description null = 테마의 Theme2 (D-030) */
+            color?: components["schemas"]["Color"] | null;
+            description?: string | null;
+            location?: components["schemas"]["Location"] | null;
+            url?: string | null;
+        };
+        ScheduleUpdateRequest: {
             title?: string;
             allDay?: boolean;
             start?: components["schemas"]["LocalDateTime"];
@@ -415,18 +468,53 @@ export interface components {
             location?: components["schemas"]["Location"] | null;
             url?: string | null;
         };
-        Schedule: components["schemas"]["ScheduleFields"] & {
-            id: components["schemas"]["Id"];
-        };
-        ScheduleCreateRequest: components["schemas"]["ScheduleFields"] & Record<string, never>;
-        ScheduleUpdateRequest: components["schemas"]["ScheduleFields"];
         /** @enum {string} */
         TodoType: "DAY" | "PERIOD" | "WEEK" | "MONTH";
         TodoTime: {
             start: components["schemas"]["LocalTime"];
             durationMinutes: number;
         };
-        TodoFields: {
+        Todo: {
+            title: string;
+            type: components["schemas"]["TodoType"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** @description null = 시간 없음 (목록에만) */
+            time: components["schemas"]["TodoTime"] | null;
+            /**
+             * Format: int64
+             * @description 생략하면 미지정
+             */
+            categoryId: number;
+            /** @description null = 테마의 Theme2 (D-030) */
+            color: components["schemas"]["Color"] | null;
+            id: components["schemas"]["Id"];
+            completed: boolean;
+            readonly completedAt: components["schemas"]["LocalDateTime"] | null;
+            readonly sortOrder: number;
+            /** @description 미완료이고 endDate < 오늘 */
+            readonly overdue: boolean;
+        };
+        TodoCreateRequest: {
+            title: string;
+            type: components["schemas"]["TodoType"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** @description null = 시간 없음 (목록에만) */
+            time?: components["schemas"]["TodoTime"] | null;
+            /**
+             * Format: int64
+             * @description 생략하면 미지정
+             */
+            categoryId?: number;
+            /** @description null = 테마의 Theme2 (D-030) */
+            color?: components["schemas"]["Color"] | null;
+        };
+        TodoUpdateRequest: {
             title?: string;
             type?: components["schemas"]["TodoType"];
             /** Format: date */
@@ -442,17 +530,6 @@ export interface components {
             categoryId?: number;
             /** @description null = 테마의 Theme2 (D-030) */
             color?: components["schemas"]["Color"] | null;
-        };
-        Todo: components["schemas"]["TodoFields"] & {
-            id: components["schemas"]["Id"];
-            completed: boolean;
-            readonly completedAt: components["schemas"]["LocalDateTime"] | null;
-            readonly sortOrder: number;
-            /** @description 미완료이고 endDate < 오늘 */
-            readonly overdue: boolean;
-        };
-        TodoCreateRequest: components["schemas"]["TodoFields"] & Record<string, never>;
-        TodoUpdateRequest: components["schemas"]["TodoFields"] & {
             /** @description true면 completedAt = 지금 */
             completed?: boolean;
         };
@@ -473,14 +550,12 @@ export interface components {
             /** @description COUNTUP만 */
             yearly?: boolean;
         };
-        DdayFields: {
-            title?: string;
+        Dday: {
+            title: string;
             /** Format: date */
-            targetDate?: string;
-            countType?: components["schemas"]["DdayCountType"];
-            display?: components["schemas"]["DdayDisplay"];
-        };
-        Dday: components["schemas"]["DdayFields"] & {
+            targetDate: string;
+            countType: components["schemas"]["DdayCountType"];
+            display: components["schemas"]["DdayDisplay"];
             id: components["schemas"]["Id"];
             readonly sortOrder: number;
             readonly today: {
@@ -493,8 +568,20 @@ export interface components {
                 label: string;
             };
         };
-        DdayCreateRequest: components["schemas"]["DdayFields"] & Record<string, never>;
-        DdayUpdateRequest: components["schemas"]["DdayFields"];
+        DdayCreateRequest: {
+            title: string;
+            /** Format: date */
+            targetDate: string;
+            countType?: components["schemas"]["DdayCountType"];
+            display?: components["schemas"]["DdayDisplay"];
+        };
+        DdayUpdateRequest: {
+            title?: string;
+            /** Format: date */
+            targetDate?: string;
+            countType?: components["schemas"]["DdayCountType"];
+            display?: components["schemas"]["DdayDisplay"];
+        };
         DdayMark: {
             /** Format: int64 */
             ddayId: number;
@@ -536,7 +623,28 @@ export interface components {
             type: "TODO" | "DDAY" | "DIARY" | "MEMO";
             visible: boolean;
         };
-        SettingsFields: {
+        Settings: {
+            /** @enum {string} */
+            weekStartDay: "SUN" | "MON";
+            /**
+             * @description LAST = 마지막에 본 화면 (브라우저 localStorage, 서버 저장 없음)
+             * @enum {string}
+             */
+            startView: "MONTH" | "WEEK" | "DAY" | "LAST";
+            /** @enum {string} */
+            timeFormat: "24H" | "12H";
+            timetableStartHour: number;
+            timetableEndHour: number;
+            /** @enum {integer} */
+            slotMinutes: 30 | 60;
+            darkMode: boolean;
+            /** @enum {string} */
+            colorTheme: "GREEN" | "BROWN" | "GRAY";
+            sidebarOpen: boolean;
+            /** @description 배열 순서 = 표시 순서. 보낼 때 4개 전체 */
+            sidebarItems: components["schemas"]["SidebarItem"][];
+        };
+        SettingsUpdateRequest: {
             /** @enum {string} */
             weekStartDay?: "SUN" | "MON";
             /**
@@ -557,8 +665,6 @@ export interface components {
             /** @description 배열 순서 = 표시 순서. 보낼 때 4개 전체 */
             sidebarItems?: components["schemas"]["SidebarItem"][];
         };
-        Settings: components["schemas"]["SettingsFields"] & Record<string, never>;
-        SettingsUpdateRequest: components["schemas"]["SettingsFields"];
     };
     responses: {
         /** @description 입력값 오류 (VALIDATION_FAILED) 또는 조회 조건 오류 (INVALID_QUERY) */
@@ -618,6 +724,29 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "UP";
+                    };
+                };
+            };
+        };
+    };
     listCategories: {
         parameters: {
             query?: never;

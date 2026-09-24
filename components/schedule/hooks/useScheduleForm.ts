@@ -8,6 +8,7 @@ import { isApiError, scheduleApi } from '@utils/api';
 import {
   API_FIELD_TO_FORM_FIELD,
   createEmptyFormValues,
+  isFormChanged,
   scheduleToFormValues,
   shiftEndWithStart,
   toCreateRequest,
@@ -38,11 +39,12 @@ export interface UseScheduleFormOptions {
  */
 export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormOptions) => {
   // 1. State
-  const [values, setValues] = useState<ScheduleFormValues>(() =>
+  const [initialValues] = useState<ScheduleFormValues>(() =>
     target.mode === 'edit'
       ? scheduleToFormValues(target.schedule)
       : createEmptyFormValues(target.baseDate, target.startTime)
   );
+  const [values, setValues] = useState<ScheduleFormValues>(initialValues);
   const [errors, setErrors] = useState<ScheduleFormErrors>({});
   /** 칸에 속하지 않는 오류 (네트워크, 404 등) */
   const [formError, setFormError] = useState<string | null>(null);
@@ -50,6 +52,7 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
 
   const isEdit = target.mode === 'edit';
+  const isDirty = useMemo(() => isFormChanged(initialValues, values), [initialValues, values]);
 
   // 2. Handlers
   const setField = useCallback(<K extends ScheduleFormField>(field: K, value: ScheduleFormValues[K]) => {
@@ -137,6 +140,7 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
       errors,
       formError,
       isEdit,
+      isDirty,
       isSubmitting,
       isDeleteConfirming,
       setField,
@@ -145,6 +149,6 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
       handleDelete,
       cancelDeleteConfirm,
     }),
-    [values, errors, formError, isEdit, isSubmitting, isDeleteConfirming, setField, setStart, handleSubmit, handleDelete, cancelDeleteConfirm]
+    [values, errors, formError, isEdit, isDirty, isSubmitting, isDeleteConfirming, setField, setStart, handleSubmit, handleDelete, cancelDeleteConfirm]
   );
 };

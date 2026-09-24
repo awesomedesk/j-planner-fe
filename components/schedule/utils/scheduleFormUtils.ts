@@ -79,25 +79,35 @@ const fromMinutes = (minutes: number) => {
 // ---------------------------------------------------------------- 초기값
 
 /**
- * 새 일정의 초기값
- * @param baseDate 선택한 날짜 (기본 오늘)
- * @param startTime 시작 시각. 없으면 지금 다음 정각 (선택한 날짜가 오늘이 아니면 09:00)
+ * '지금 이후 가장 가까운 정각' (D-037). 정각이면 그 시각. 14:17 → 15:00
+ * @returns 시(0~24). 24면 다음 날 00:00
+ */
+export const nextTopOfHour = (now: Date) => {
+  const isExactHour = now.getMinutes() === 0 && now.getSeconds() === 0 && now.getMilliseconds() === 0;
+  return isExactHour ? now.getHours() : now.getHours() + 1;
+};
+
+/**
+ * 새 일정의 초기값 (D-037)
+ * - 시간표의 시간을 눌러 열면(startTime 있음): 누른 시각부터 1시간
+ * - 추가 버튼으로 열면: 고른 날짜의 '지금 이후 가장 가까운 정각'부터 1시간. 밤 11시대면 다음 날 00:00~01:00
+ * @param baseDate 고른 날짜 (기본 오늘)
  */
 export const createEmptyFormValues = (
   baseDate: LocalDate,
   startTime?: string,
   now: Date = new Date()
 ): ScheduleFormValues => {
-  const isToday = baseDate === toLocalDateString(now);
-  const defaultStartTime = isToday ? `${pad(Math.min(now.getHours() + 1, 23))}:00` : '09:00';
-  const start = startTime ?? defaultStartTime;
-  const end = fromMinutes(toMinutes(baseDate, start) + DEFAULT_DURATION_MINUTES);
+  const start = startTime
+    ? { date: baseDate, time: startTime }
+    : fromMinutes(toMinutes(baseDate, '00:00') + nextTopOfHour(now) * 60);
+  const end = fromMinutes(toMinutes(start.date, start.time) + DEFAULT_DURATION_MINUTES);
 
   return {
     title: '',
     allDay: false,
-    startDate: baseDate,
-    startTime: start,
+    startDate: start.date,
+    startTime: start.time,
     endDate: end.date,
     endTime: end.time,
     categoryId: null,
@@ -107,6 +117,10 @@ export const createEmptyFormValues = (
     description: '',
   };
 };
+
+/** 처음 값과 달라졌는가 → 닫을 때 "작성을 취소할까요?" (D-037) */
+export const isFormChanged = (initial: ScheduleFormValues, current: ScheduleFormValues) =>
+  (Object.keys(initial) as ScheduleFormField[]).some((key) => initial[key] !== current[key]);
 
 /** 수정할 일정 → 폼 값 */
 export const scheduleToFormValues = (schedule: Schedule): ScheduleFormValues => {
@@ -244,5 +258,3 @@ export const toUpdateRequest = (original: Schedule, values: ScheduleFormValues):
   return patch;
 };
 
-/** 카테고리 목록에서 기본 카테고리(`미지정`) */
-export const findDefaultCategory = (categories: Category[]) => categories.find((c) => c.isDefault) ?? null;
