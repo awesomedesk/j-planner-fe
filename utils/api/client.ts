@@ -125,9 +125,9 @@ class ApiClient {
       });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new ApiError({ message: '응답이 늦어 요청을 멈췄습니다. 다시 시도하세요.', status: 0, code: 'TIMEOUT' });
+        throw new ApiError({ message: '응답이 늦어 요청을 멈췄어요. 다시 시도하세요.', status: 0, code: 'TIMEOUT' });
       }
-      throw new ApiError({ message: '서버에 연결할 수 없습니다. 네트워크를 확인하세요.', status: 0, code: 'NETWORK_ERROR' });
+      throw new ApiError({ message: '서버에 연결할 수 없어요. 잠시 후 다시 시도하세요.', status: 0, code: 'NETWORK_ERROR' });
     } finally {
       clearTimeout(timeoutId);
     }
@@ -165,7 +165,7 @@ class ApiClient {
 
     logger.error('API error (not Problem Details)', { status: response.status, url: response.url });
     return new ApiError({
-      message: '요청을 처리하지 못했습니다. 잠시 후 다시 시도하세요.',
+      message: '요청을 처리하지 못했어요. 잠시 후 다시 시도하세요.',
       status: response.status,
       code: 'UNKNOWN_ERROR',
     });
