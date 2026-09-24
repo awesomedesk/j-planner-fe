@@ -1,17 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit'
-import mainThemeReducer from '@utils/store/slices/mainThemeSlice'
-import mainMenuReducer from '@utils/store/slices/mainMenuSlice'
-import calendarViewReducer from '@utils/store/slices/calendarViewSlice'
 
+// 슬라이스를 만들면 여기에 추가한다. 예: calendarView: calendarViewReducer
 export const store = configureStore({
-  reducer: {
-    mainTheme:mainThemeReducer,
-    mainMenu:mainMenuReducer,
-    calendarView:calendarViewReducer,
-  },
+  reducer: {},
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>
-// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch
