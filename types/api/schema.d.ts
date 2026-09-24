@@ -397,7 +397,8 @@ export interface components {
         Category: {
             id: components["schemas"]["Id"];
             name: string;
-            color: components["schemas"]["Color"];
+            /** @description null = 고르지 않음, 화면 기본색 */
+            color: components["schemas"]["Color"] | null;
             /** @description true = 미지정 */
             readonly isDefault: boolean;
             readonly sortOrder: number;
@@ -408,12 +409,15 @@ export interface components {
         };
         CategoryCreateRequest: {
             name: string;
-            color: components["schemas"]["Color"];
+            /** @description 생략하거나 null = 고르지 않음 (D-037) */
+            color?: components["schemas"]["Color"] | null;
         };
+        /** @description 미지정은 이름·색을 바꿀 수 없다 (409 DEFAULT_CATEGORY_LOCKED, D-037) */
         CategoryUpdateRequest: {
             name?: string;
-            color?: components["schemas"]["Color"];
+            color?: components["schemas"]["Color"] | null;
         };
+        /** @description 이름만 저장 가능 (좌표 null, D-037). 좌표는 둘 다 있거나 둘 다 없음. 이름을 바꿀 때는 좌표를 null로 함께 보내 지운다 */
         Location: {
             name?: string | null;
             latitude?: number | null;
