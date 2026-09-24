@@ -70,7 +70,8 @@ export default function CategoryManagerDialog({ onClose }: CategoryManagerDialog
             <span>추가</span>
           </ThemeButton>
         </div>
-        <ColorPicker label="새 카테고리 색 (고르지 않으면 기본색)" value={manager.newColor} onChange={manager.setNewColor} />
+        {/* 고른 색을 다시 누르면 선택 해제 → 선택 없음(기본색) (D-039) */}
+        <ColorPicker label="새 카테고리 색 (고르지 않으면 기본색)" value={manager.newColor} onChange={manager.setNewColor} allowDeselect />
         {manager.addError && (
           <p id="category-add-error" className="text-xs text-danger">
             {manager.addError}
@@ -234,22 +235,25 @@ interface ColorPickerProps {
   label: string;
   /** null = 아무것도 고르지 않음 */
   value: HexColor | null;
-  onChange: (color: HexColor) => void;
+  onChange: (color: HexColor | null) => void;
+  /** 고른 색을 다시 누르면 선택 해제(null) */
+  allowDeselect?: boolean;
 }
 
-function ColorPicker({ label, value, onChange }: ColorPickerProps) {
+function ColorPicker({ label, value, onChange, allowDeselect = false }: ColorPickerProps) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-2.5 py-1">
+    <div role={allowDeselect ? 'group' : 'radiogroup'} aria-label={label} className="flex flex-wrap items-center gap-2.5 py-1">
       {ITEM_COLOR_OPTIONS.map((color) => {
         const isSelected = value !== null && color.toUpperCase() === value.toUpperCase();
         return (
           <button
             key={color}
             type="button"
-            role="radio"
-            aria-checked={isSelected}
+            role={allowDeselect ? undefined : 'radio'}
+            aria-checked={allowDeselect ? undefined : isSelected}
+            aria-pressed={allowDeselect ? isSelected : undefined}
             aria-label={`색 ${color}`}
-            onClick={() => onChange(color)}
+            onClick={() => onChange(isSelected && allowDeselect ? null : color)}
             className="h-[26px] w-[26px] rounded-full fold:h-6 fold:w-6"
             style={{ backgroundColor: color, boxShadow: isSelected ? `0 0 0 2px #FFFFFF, 0 0 0 4px ${color}` : undefined }}
           />
