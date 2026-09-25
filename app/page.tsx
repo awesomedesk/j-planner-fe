@@ -1,10 +1,6 @@
 import AppShell from "@components/layouts/app/AppShell";
-import CalendarPlaceholder from "@components/layouts/app/CalendarPlaceholder";
 
+/** 첫 화면 = 월간 (D-009) */
 export default function Home() {
-  return (
-    <AppShell>
-      <CalendarPlaceholder />
-    </AppShell>
-  );
+  return <AppShell />;
 }

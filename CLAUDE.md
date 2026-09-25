@@ -36,9 +36,9 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   cancel all go through one close request and show "작성을 취소할까요?" when dirty (D-037). Buttons inside use `useDialogRequestClose()`.
 - **API**: `utils/api/client.ts` (`apiClient`, `ApiError`, pure REST + Problem Details, D-031), resource functions in `utils/api/resources/`,
   types in `types/api/index.ts` (never edit `schema.d.ts`). Show failures with `useErrorNotice()` (`utils/hooks`) → `noticeSlice` → `NoticeCenter`.
-- **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category`. Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
+- **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category`, `calendar` (viewMode · viewDate · selectedDate), `schedule` (visible-range schedules; `refreshSchedules()` after save/delete). Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
 - **App start** (`app/layout.tsx`): `ServerStatusCheck` (GET /api/v1/health) and `AppDataLoader` (categories).
-- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form). Feature hooks in `components/<feature>/hooks/`,
+- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form), `components/calendar/` (US-06 month; date/grid rules in `calendar/utils/calendarUtils.ts`). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
 - **Dev pages**: `app/dev/*` — for checking features before the real entry points exist. Remove them when the feature is wired into real screens.
 
