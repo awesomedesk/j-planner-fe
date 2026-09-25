@@ -40,12 +40,15 @@ export default function PcAddMenu({ onSelect }: PcAddMenuProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <ThemeButton onClick={toggle} aria-haspopup="menu" aria-expanded={isOpen} className="hidden pc:inline-flex">
+      {/* 버튼 하나로: 1024px 이상은 아이콘+글자, 768~1023px은 아이콘만 (글자는 화면에서만 숨기고 이름은 남김) */}
+      <ThemeButton
+        onClick={toggle}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        className="h-9 w-9 justify-center !p-0 pc:h-auto pc:w-auto pc:!px-3 pc:!py-1.5"
+      >
         <Icon name="plus" />
-        <span>추가</span>
-      </ThemeButton>
-      <ThemeButton onClick={toggle} aria-haspopup="menu" aria-expanded={isOpen} iconOnly size="md" aria-label="추가" className="pc:hidden">
-        <Icon name="plus" />
+        <span className="sr-only pc:not-sr-only">추가</span>
       </ThemeButton>
 
       {isOpen && (
