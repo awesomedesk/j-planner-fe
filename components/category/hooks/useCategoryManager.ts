@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { Category, HexColor, Id } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
@@ -36,6 +36,11 @@ export const useCategoryManager = () => {
   const [busyId, setBusyId] = useState<Id | 'new' | null>(null);
 
   const reload = useCallback(() => dispatch(fetchCategories()), [dispatch]);
+
+  // 창을 열 때마다 새로 받는다: 연결 개수(일정 n · Todo n)는 일정·Todo가 바뀌면 달라지므로 (BE 권장)
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   /** 이름 중복(409)은 칸 아래 문구로, 그 밖의 오류는 짧은 안내로 */
   const handleMutationError = useCallback(
