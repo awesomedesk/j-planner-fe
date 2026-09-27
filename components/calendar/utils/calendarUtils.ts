@@ -1,4 +1,4 @@
-import { endOfMonth, endOfWeek, format, getWeek, parseISO, startOfMonth, startOfWeek, addDays } from 'date-fns';
+import { endOfMonth, endOfWeek, format, getISOWeek, parseISO, startOfMonth, startOfWeek, addDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 import type { LocalDate, Schedule } from '@/types/api';
@@ -28,7 +28,7 @@ export interface CalendarDay {
 }
 
 export interface CalendarWeek {
-  /** 주차 (CAL-05). 1월 1일이 들어 있는 주가 1주차 */
+  /** 주차 (CAL-05). 국제 표준(ISO 8601) 주차, 그 줄 월요일 기준 (D-041) */
   weekNumber: number;
   days: CalendarDay[];
 }
@@ -51,7 +51,9 @@ export const buildMonthGrid = (anchor: LocalDate, weekStart: WeekStartDay, today
       const date = toLocalDate(day);
       return { date, dayOfMonth: day.getDate(), weekday: day.getDay(), inMonth: day.getMonth() === month, isToday: date === today };
     });
-    weeks.push({ weekNumber: getWeek(cursor, { ...options, firstWeekContainsDate: 1 }), days });
+    // 주 시작이 일요일이어도 그 줄 월요일의 ISO 주차를 쓴다 (D-041)
+    const monday = addDays(cursor, (8 - cursor.getDay()) % 7);
+    weeks.push({ weekNumber: getISOWeek(monday), days });
   }
   return weeks;
 };

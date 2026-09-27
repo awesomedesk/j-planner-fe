@@ -42,7 +42,7 @@ const WEEKDAY_COLOR: Record<number, string> = { 0: 'text-[#A6323F]', 6: 'text-[#
 
 /**
  * CalendarMonthly - 월간 달력 (US-06, PC-01 · MO-01)
- * - 주차 열(CAL-05), 오늘 강조(CAL-06)
+ * - 주차 열(CAL-05, ISO 주차), 오늘 강조(CAL-06), 고른 날짜 옅은 테두리 (D-041)
  * - PC·태블릿: 일정 막대, 칸을 넘으면 '+n 더보기'. 모바일: 카테고리 색 점
  * - 날짜를 한 번 누르면 그날 선택(사이드바·시트 기준), 두 번 누르면 일간으로 (D-015)
  * - Todo 요약·지난 미완료는 표시하지 않는다 (D-021). D-Day(US-23)·일기 펜(US-24)은 M3
@@ -131,6 +131,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
                   schedules={daySchedules}
                   categoriesById={categoriesById}
                   capacity={capacity}
+                  isSelected={day.date === selectedDate}
                   isMoreOpen={moreDate === day.date}
                   onSelect={handleSelect}
                   onOpenDay={(date) => dispatch(openDayView(date))}
@@ -166,11 +167,20 @@ const TODAY_CELL_STYLE = {
   boxShadow: 'inset 0 0 0 2px var(--tp-theme1)',
 };
 
+/** 고른 날짜(오늘이 아닌 날): 옅은 테두리 (D-041) */
+const SELECTED_CELL_STYLE = {
+  boxShadow: 'inset 0 0 0 2px var(--tp-theme2)',
+};
+
+const cellStyle = (day: CalendarDay, isSelected: boolean) =>
+  day.isToday ? TODAY_CELL_STYLE : isSelected ? SELECTED_CELL_STYLE : undefined;
+
 interface BarCellProps {
   day: CalendarDay;
   schedules: Schedule[];
   categoriesById: Map<Id, Category>;
   capacity: number;
+  isSelected: boolean;
   isMoreOpen: boolean;
   onSelect: (date: LocalDate) => void;
   onOpenDay: (date: LocalDate) => void;
@@ -179,7 +189,7 @@ interface BarCellProps {
   onCloseMore: () => void;
 }
 
-function BarCell({ day, schedules, categoriesById, capacity, isMoreOpen, onSelect, onOpenDay, onOpenSchedule, onOpenMore, onCloseMore }: BarCellProps) {
+function BarCell({ day, schedules, categoriesById, capacity, isSelected, isMoreOpen, onSelect, onOpenDay, onOpenSchedule, onOpenMore, onCloseMore }: BarCellProps) {
   const overflow = schedules.length > capacity;
   const visible = overflow ? schedules.slice(0, Math.max(capacity - 1, 0)) : schedules;
   const hiddenCount = schedules.length - visible.length;
@@ -187,7 +197,7 @@ function BarCell({ day, schedules, categoriesById, capacity, isMoreOpen, onSelec
   return (
     <div
       className="relative flex min-h-0 min-w-0 cursor-pointer flex-col gap-[3px] border-l border-dashed border-tp-line p-1.5"
-      style={day.isToday ? TODAY_CELL_STYLE : undefined}
+      style={cellStyle(day, isSelected)}
       onClick={() => onSelect(day.date)}
       onDoubleClick={() => onOpenDay(day.date)}
     >
@@ -269,7 +279,7 @@ function DotCell({ day, schedules, categoriesById, isSelected, onSelect }: DotCe
       aria-pressed={isSelected}
       onClick={() => onSelect(day.date)}
       className="flex min-h-[50px] flex-col items-center gap-[3px] border-t border-dashed border-tp-line px-0.5 pt-[3px]"
-      style={day.isToday ? { backgroundColor: TODAY_CELL_STYLE.backgroundColor } : undefined}
+      style={day.isToday ? { backgroundColor: TODAY_CELL_STYLE.backgroundColor } : isSelected ? SELECTED_CELL_STYLE : undefined}
     >
       <DateLabel day={day} compact />
       <span className="flex gap-0.5" aria-hidden="true">
