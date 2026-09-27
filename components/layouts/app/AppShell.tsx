@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
+import ClientOnly from '@components/common/ClientOnly';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
@@ -44,6 +45,15 @@ import SidebarSections from './SidebarSections';
  * | 600px 미만 | 모바일 헤더 + 월간(색 점) + 날짜를 누르면 아래 시트 + 오른쪽 아래 + 버튼 |
  */
 export default function AppShell() {
+  // 날짜('오늘')에 따라 달라지는 화면이라 브라우저에서만 그린다 (빌드 시각이 남지 않게)
+  return (
+    <ClientOnly fallback={<div className="h-dvh bg-tp-bg" />}>
+      <AppShellContent />
+    </ClientOnly>
+  );
+}
+
+function AppShellContent() {
   const dispatch = useAppDispatch();
   const isPc = useMediaQuery(`(min-width: ${BREAKPOINT.pc}px)`, true);
   const isTabletUp = useMediaQuery(`(min-width: ${BREAKPOINT.tablet}px)`, true);
