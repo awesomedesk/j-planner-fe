@@ -17,12 +17,14 @@ interface CalendarState {
   selectedDate: LocalDate;
 }
 
-const today = toLocalDate(new Date());
-
-const initialState: CalendarState = {
-  viewMode: 'MONTH', // 첫 화면 = 월간 (D-009). 설정의 처음 화면은 US-27
-  viewDate: today,
-  selectedDate: today,
+/** store를 만들 때의 오늘로 시작한다 (테스트에서 시각을 고정할 수 있게 함수로) */
+const initialState = (): CalendarState => {
+  const today = toLocalDate(new Date());
+  return {
+    viewMode: 'MONTH', // 첫 화면 = 월간 (D-009). 설정의 처음 화면은 US-27
+    viewDate: today,
+    selectedDate: today,
+  };
 };
 
 const calendarSlice = createSlice({

@@ -6,17 +6,20 @@ import categoryReducer from './slices/categorySlice'
 import calendarReducer from './slices/calendarSlice'
 import scheduleReducer from './slices/scheduleSlice'
 
-// 슬라이스를 만들면 여기에 추가한다
-export const store = configureStore({
-  reducer: {
-    theme: themeReducer,
-    notice: noticeReducer,
-    category: categoryReducer,
-    calendar: calendarReducer,
-    schedule: scheduleReducer,
-  },
-});
+const reducer = {
+  theme: themeReducer,
+  notice: noticeReducer,
+  category: categoryReducer,
+  calendar: calendarReducer,
+  schedule: scheduleReducer,
+};
+
+/** 새 store를 만든다. 앱은 아래 `store` 하나를 쓰고, 테스트는 매번 새로 만든다 */
+export const makeStore = () => configureStore({ reducer });
+
+export const store = makeStore();
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export type AppStore = ReturnType<typeof makeStore>
+export type RootState = ReturnType<AppStore['getState']>
+export type AppDispatch = AppStore['dispatch']

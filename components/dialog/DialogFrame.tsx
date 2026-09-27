@@ -69,7 +69,7 @@ export default function DialogFrame({
   return (
     <DialogCloseContext.Provider value={requestClose}>
       <div className="fixed inset-0 z-50 flex fold:items-center fold:justify-center fold:p-6">
-        <div className="absolute inset-0 hidden bg-black/45 fold:block" aria-hidden="true" onClick={requestClose} />
+        <div data-testid="dialog-backdrop" className="absolute inset-0 hidden bg-black/45 fold:block" aria-hidden="true" onClick={requestClose} />
         <div
           role="dialog"
           aria-modal="true"
