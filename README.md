@@ -33,6 +33,7 @@ npm run dev          # http://localhost:3000
 | 명령 | 하는 일 |
 |---|---|
 | `npm run dev` / `dev:local` | 개발 서버 (test / local 환경) |
+| `npm test` / `npm run test:watch` | 테스트 (Vitest). 커밋 전에 lint와 같이 |
 | `npm run lint` | ESLint |
 | `npm run build` | 타입 검사 포함 빌드. 커밋 전에 한 번 |
 | `npm run api:types` | API 명세(`../j-planner-product/08-openapi.yaml`)가 바뀌면 타입(`types/api/schema.d.ts`)을 다시 만든다 |
@@ -78,6 +79,7 @@ env/config.ts           # 환경 변수 읽기, logger
 - **테마 색 (D-038)**: 색값을 직접 쓰지 않고 `bg-tp-primary`, `text-tp-muted` 같은 `tp-*` 색을 씁니다. 자세한 규칙은 [CODING_STANDARDS.md](./CODING_STANDARDS.md)의 Styling
 - **API**: 화면은 `@utils/api`의 리소스 함수(`categoryApi`, `scheduleApi` …)와 `@/types/api` 타입만 씁니다. 실패는 `useErrorNotice()`로 짧은 안내를 띄웁니다. 자세히: [utils/api/README.md](./utils/api/README.md)
 - **입력·관리 창**: `DialogFrame`으로 만들고 `isDirty`를 넘깁니다. 바꾼 것이 있으면 닫을 때 "작성을 취소할까요?"가 뜹니다 (D-037).
+- **TDD**: 스토리마다 완료 기준(09-backlog)·결정(D-xxx)을 먼저 테스트로 쓰고(실패 확인) → 구현 → 정리 순서로 만듭니다. 테스트는 코드 옆 `*.test.ts(x)`, 도우미는 `test/` 폴더 (`renderWithStore`, `mockApi`, `fixtures`). 자세히: [CODING_STANDARDS.md](./CODING_STANDARDS.md)의 Testing
 - **기획에 없는 동작**은 FE가 정하지 않고 PO 창에 묻습니다. API를 바꾸고 싶으면 BE 창에 요청합니다 (`j-planner-product/00-working-rules.md`).
 
 ### 주의

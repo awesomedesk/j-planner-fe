@@ -16,10 +16,13 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
    - Want an API change → ask the BE window. Follow `08-api-design.md` (it wins over `08-openapi.yaml` if they differ).
 4. When a story is done, report "US-xx 완료, 검수 요청" with what was built and how to check it (screenshots at 1440 / 820 / 390px).
 5. Write user-facing text and comments in Korean, plain words, 해요체 for UI messages.
+6. **TDD (user request 2026-09-28)**: every story is test-first. Turn the story's acceptance criteria and the decisions it
+   cites (D-xxx, screen ids like MO-01) into failing tests, then implement until green, then refactor. See "Testing" below.
 
 ## Commands
 
 - `npm run dev` (test env) / `npm run dev:local` — http://localhost:3000
+- `npm test` (Vitest, once) / `npm run test:watch` — run with lint before every commit
 - `npm run lint`, `npm run build` (includes type check) — run before committing
 - `npm run api:types` — regenerate `types/api/schema.d.ts` from `../j-planner-product/08-openapi.yaml`
 
@@ -50,6 +53,20 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - New schedule default time: clicked timetable slot → that time; add button → next top of the hour after now, 1 hour (D-037).
 - Discard confirm wording "작성을 취소할까요?" [계속 작성] [작성 취소]; a picked new-category color can be tapped again to unselect (D-039).
 - Add menu (PC header '추가', mobile + button MO-07): 일정 / Todo / D-Day. Todo·D-Day stay disabled until their forms exist (`addMenuItems.ts`).
+
+## Testing (TDD)
+
+- Vitest 3 + jsdom + Testing Library. Config `vitest.config.mts` (TZ fixed to Asia/Seoul, API base `http://api.test`).
+- Tests sit next to the code: `Foo.tsx` → `Foo.test.tsx`, `fooUtils.ts` → `fooUtils.test.ts`.
+- `describe`/`it` names are Korean and cite the source: `describe('월간 달력 (US-06)')`, `it('... (D-041)')`.
+- Helpers in `test/`: `renderWithStore` (fresh `makeStore()` + `user`), `mockApi({'GET /schedules': () => json(200, [...])})`
+  (stubs fetch; `calls(key)` returns method/path/query/body), `problem(status, code, detail)`, `fixtures.ts` (`CATEGORIES`, `schedule()`),
+  `seed.ts` (BE-like schedules), `viewport.ts` (`setViewportWidth`, `setResizeHeight` for ResizeObserver).
+- Time: `vi.useFakeTimers({ toFake: ['Date'], shouldAdvanceTime: true })` + `vi.setSystemTime(...)` **before** `makeStore()`
+  (calendar initial state reads today).
+- jsdom does not apply Tailwind classes — only JS-driven width differences (`useMediaQuery`) are testable; CSS-only layout is
+  checked with the 1440/820/390 screenshots.
+- Query by role and accessible name (what the user sees), not by class names.
 
 ## Gotchas
 

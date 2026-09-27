@@ -10,6 +10,7 @@ This document defines the coding standards and best practices for the J's Planne
 - [Styling](#styling)
 - [TypeScript](#typescript)
 - [Hooks](#hooks)
+- [Testing (TDD)](#testing-tdd)
 - [Git Commits](#git-commits)
 - [Pull Requests](#pull-requests)
 
@@ -657,6 +658,36 @@ try {
 
 ---
 
+## Testing (TDD)
+
+### 순서
+1. **Red** — 스토리의 완료 기준(`09-backlog.md`)과 관련 결정(D-xxx)·화면 id(MO-01 등)를 테스트로 먼저 쓰고, 실패하는 것을 확인한다.
+2. **Green** — 테스트를 통과할 만큼 구현한다.
+3. **Refactor** — 테스트가 초록인 채로 정리한다. 커밋 전 `npm test` + `npm run lint`.
+
+### 규칙
+- 테스트는 코드 옆에 둔다: `CalendarMonthly.tsx` ↔ `CalendarMonthly.test.tsx`
+- 이름에 근거를 적는다: `describe('카테고리 관리 (US-04)')`, `it('같은 이름은 요청 없이 막는다 (D-035)')`
+- 사용자가 보는 것으로 찾는다: `getByRole('button', { name: '추가' })`, `getByLabelText('제목')`. class·DOM 구조로 찾지 않는다.
+- API는 `test/mockApi.ts`로 흉내 낸다. 보낸 요청(메서드·경로·쿼리·본문)이 `08-api-design.md`와 같은지 확인한다.
+- 날짜·시각은 가짜 시계로 고정한다 (`vi.setSystemTime`). 시간대는 Asia/Seoul.
+- 순수 함수(`*Utils.ts`)는 단위 테스트, 화면은 컴포넌트 테스트(`renderWithStore`)로 확인한다.
+- CSS만으로 달라지는 배치(Tailwind 폭 규칙)는 jsdom에서 확인할 수 없으니 1440/820/390 캡처로 확인한다.
+
+```tsx
+describe('일정 입력 (US-05)', () => {
+  it('새 일정 기본 시각 = 지금 다음 정각부터 1시간 (D-037)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 8, 24, 14, 17));
+    const api = mockApi({ 'POST /schedules': ({ body }) => json(201, { id: 1, ...body }) });
+    renderWithStore(<ScheduleFormDialog target={{ mode: 'create', baseDate: '2026-09-24' }} ... />);
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('15:00');
+  });
+});
+```
+
+---
+
 ## Git Commits
 
 ### 커밋 가이드라인
@@ -906,11 +937,12 @@ PR을 생성하기 전에 확인하세요:
 
 ### Before Committing
 1. ✅ No TypeScript errors
-2. ✅ No ESLint warnings (run `npm run lint`)
-3. ✅ Code follows this style guide
-4. ✅ Imports are organized correctly
-5. ✅ No unused variables/imports
-6. ✅ Descriptive variable/function names
+2. ✅ All tests pass (run `npm test`)
+3. ✅ No ESLint warnings (run `npm run lint`)
+4. ✅ Code follows this style guide
+5. ✅ Imports are organized correctly
+6. ✅ No unused variables/imports
+7. ✅ Descriptive variable/function names
 
 ---
 
