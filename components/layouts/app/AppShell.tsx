@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
+import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
 import { fromLocalDate } from '@components/calendar/utils/calendarUtils';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
@@ -23,7 +24,7 @@ import { refreshSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
 
 import type { AddTarget } from './addMenuItems';
-import { formatSidebarDate } from './appLayoutUtils';
+import { formatSidebarDate, formatViewTitle } from './appLayoutUtils';
 import CalendarPlaceholder from './CalendarPlaceholder';
 import MobileAddMenu from './MobileAddMenu';
 import MobileHeader from './MobileHeader';
@@ -86,20 +87,22 @@ export default function AppShell() {
           if (!isFoldUp) setSheetDate(date);
         }}
       />
+    ) : viewMode === 'WEEK' ? (
+      <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} onOpenSchedule={openSchedule} />
     ) : (
-      <CalendarPlaceholder label={viewMode === 'WEEK' ? '주간 달력 자리 (US-07)' : '일간 달력 자리 (US-08)'} />
+      <CalendarPlaceholder label="일간 달력 자리 (US-08)" />
     );
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-tp-bg text-tp-text">
       <PcHeader
         className="hidden tablet:flex"
-        baseDate={fromLocalDate(viewDate)}
+        title={formatViewTitle(viewMode, viewDate)}
         viewMode={viewMode}
         onChangeViewMode={(mode) => dispatch(setViewMode(mode))}
         onSelectAdd={handleSelectAdd}
       />
-      <MobileHeader className="flex tablet:hidden" baseDate={fromLocalDate(viewDate)} />
+      <MobileHeader className="flex tablet:hidden" title={formatViewTitle(viewMode, viewDate)} viewMode={viewMode} />
 
       <div className="relative flex min-h-0 flex-1">
         <main className="flex min-w-0 flex-1 flex-col fold:w-[400px] fold:flex-none tablet:w-auto tablet:flex-1">{mainContent}</main>

@@ -5,10 +5,11 @@ import Icon from '@components/icons/LineIcon';
 
 import type { AddTarget } from './addMenuItems';
 import PcAddMenu from './PcAddMenu';
-import { VIEW_MODE_LABEL, formatHeaderMonth, type CalendarViewMode } from './appLayoutUtils';
+import { VIEW_MODE_LABEL, type CalendarViewMode } from './appLayoutUtils';
 
 interface PcHeaderProps {
-  baseDate: Date;
+  /** 가운데 날짜 제목 (월간 `2026년 9월`, 주간 `9월 20일 – 26일`) */
+  title: string;
   viewMode: CalendarViewMode;
   onChangeViewMode: (viewMode: CalendarViewMode) => void;
   /** 추가 메뉴에서 고른 항목 (일정 / Todo / D-Day) */
@@ -26,7 +27,7 @@ interface PcHeaderProps {
  * 날짜 이동(US-09)·필터(US-11)는 각 스토리에서 동작을 붙인다. 추가는 일정 입력 창을 연다 (US-05).
  */
 export default function PcHeader({
-  baseDate,
+  title,
   viewMode,
   onChangeViewMode,
   onSelectAdd,
@@ -42,9 +43,9 @@ export default function PcHeader({
         <ThemeButton iconOnly aria-label="이전">
           <Icon name="chevronLeft" />
         </ThemeButton>
-        <div className="whitespace-nowrap text-center text-[17px] font-bold pc:min-w-[140px] pc:text-[19px]" suppressHydrationWarning>
-          {formatHeaderMonth(baseDate)}
-        </div>
+        <h1 className="whitespace-nowrap text-center text-[17px] font-bold pc:min-w-[140px] pc:text-[19px]" suppressHydrationWarning>
+          {title}
+        </h1>
         <ThemeButton iconOnly aria-label="다음">
           <Icon name="chevronRight" />
         </ThemeButton>

@@ -1,0 +1,203 @@
+"use client";
+
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
+import type { Category, Id, Schedule } from '@/types/api';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
+import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
+import { selectCategories } from '@store/slices/categorySlice';
+import { showNotice } from '@store/slices/noticeSlice';
+import { fetchSchedules, selectSchedules } from '@store/slices/scheduleSlice';
+
+import TimetableBlock from '../common/TimetableBlock';
+import { DEFAULT_WEEK_START, formatDayTitle, readableTextColor, toLocalDate, type CalendarDay } from '../utils/calendarUtils';
+import {
+  DEFAULT_TIMETABLE_HOURS,
+  allDaySchedulesOn,
+  buildWeekDays,
+  getHourLabels,
+  getWeekRange,
+  layoutDayBlocks,
+  nowLineMinutes,
+} from '../utils/timetableUtils';
+
+interface CalendarWeeklyProps {
+  /** PC·태블릿(PC-02) / 모바일 7칸(MO-05) */
+  variant: 'pc' | 'mobile';
+  onOpenSchedule: (schedule: Schedule) => void;
+}
+
+/** 크기 (화면기획서 PC-02 · MO-05) */
+const SIZE = {
+  pc: { hourHeight: 46, timeColumn: 56, fontSize: 11 },
+  mobile: { hourHeight: 38, timeColumn: 30, fontSize: 10 },
+} as const;
+
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+/** 모바일 요일 글자색: 일요일 빨강, 토요일 파랑 (MO-05) */
+const MOBILE_WEEKDAY_COLOR: Record<number, string> = { 0: 'text-[#A6323F]', 6: 'text-[#2F62A8]' };
+
+const hhmm = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+/**
+ * CalendarWeekly - 주간 시간표 (US-07, PC-02 · MO-05)
+ * - 7일 머리글(오늘 강조) + 종일 줄 + 시간표(표시 시간 06:00~24:00, 1시간 간격, D-024 기본값)
+ * - 현재 시각 선은 오늘 칸에만, 1분마다 갱신 (CAL-06). 처음 열면 현재 시각 1시간 전이 맨 위
+ * - 날짜 머리글: 한 번 누르면 그날 선택, 두 번 누르면 일간 (월간과 같게, D-015·D-041)
+ * - 빈 시간 눌러 빠른 추가(US-10)·Todo 블록(US-15)·D-Day(US-23)는 각 스토리에서 붙인다
+ */
+export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeeklyProps) {
+  const dispatch = useAppDispatch();
+  const viewDate = useAppSelector(selectViewDate);
+  const selectedDate = useAppSelector(selectSelectedDate);
+  const schedules = useAppSelector(selectSchedules);
+  const categories = useAppSelector(selectCategories);
+  const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);
+  const size = SIZE[variant];
+  const hours = DEFAULT_TIMETABLE_HOURS;
+
+  // 현재 시각 (1분마다)
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const today = toLocalDate(now);
+
+  const days = useMemo(() => buildWeekDays(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
+  const range = useMemo(() => getWeekRange(viewDate, DEFAULT_WEEK_START), [viewDate]);
+
+  useEffect(() => {
+    dispatch(fetchSchedules(range))
+      .unwrap()
+      .catch((message: string) => dispatch(showNotice(message, 'error')));
+  }, [dispatch, range]);
+
+  const nowMinutes = nowLineMinutes(now, hours);
+  const hasToday = days.some((day) => day.isToday);
+
+  // 처음 열 때(주가 바뀔 때) 현재 시각 1시간 전이 맨 위에 오도록
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const minutes = hasToday && nowMinutes !== null ? Math.max(nowMinutes - 60, 0) : 0;
+    element.scrollTop = (minutes / 60) * size.hourHeight;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 주가 바뀔 때만
+  }, [range.from, variant]);
+
+  const hourLabels = getHourLabels(hours);
+  const gridColumns = { gridTemplateColumns: `${size.timeColumn}px repeat(7, minmax(0, 1fr))` };
+  const isMobile = variant === 'mobile';
+
+  const handleSelect = (day: CalendarDay) => dispatch(selectDate(day.date));
+
+  return (
+    <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-2' : ''}`} aria-label="주간 시간표">
+      {/* 요일·날짜 머리글 */}
+      <div className="grid border-b border-tp-line" style={gridColumns}>
+        <div />
+        {days.map((day) => {
+          const isSelected = day.date === selectedDate && !day.isToday;
+          return (
+            <button
+              key={day.date}
+              type="button"
+              aria-label={formatDayTitle(day.date)}
+              aria-current={day.isToday ? 'date' : undefined}
+              aria-pressed={day.date === selectedDate}
+              onClick={() => handleSelect(day)}
+              onDoubleClick={() => dispatch(openDayView(day.date))}
+              className={`flex items-center justify-center rounded-md ${isMobile ? 'flex-col gap-px py-1' : 'gap-1 py-2'}`}
+              style={isSelected ? { boxShadow: 'inset 0 0 0 2px var(--tp-theme2)' } : undefined}
+            >
+              <span className={isMobile ? `text-[10px] ${MOBILE_WEEKDAY_COLOR[day.weekday] ?? 'text-tp-muted'}` : 'text-xs text-tp-muted'}>
+                {WEEKDAY_LABELS[day.weekday]}
+              </span>
+              <span
+                className={`font-bold ${isMobile ? 'text-[13px]' : 'text-[15px]'} ${
+                  day.isToday ? `rounded-full bg-tp-primary text-tp-on-primary ${isMobile ? 'px-[5px]' : 'px-2'}` : 'text-tp-text'
+                }`}
+              >
+                {day.dayOfMonth}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 종일 줄 (PC-02 ⑤) */}
+      <section aria-label="종일" className="grid border-b border-tp-line" style={{ ...gridColumns, minHeight: isMobile ? 24 : 32 }}>
+        <div className={`flex items-center justify-center text-tp-muted ${isMobile ? 'text-[9px]' : 'text-[11px]'}`}>종일</div>
+        {days.map((day) => (
+          <div key={day.date} className={`flex min-w-0 flex-col gap-0.5 border-l border-tp-line ${isMobile ? 'p-0.5' : 'p-1'}`}>
+            {allDaySchedulesOn(schedules, day.date).map((schedule) => {
+              const category = categoriesById.get(schedule.categoryId);
+              const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
+              return (
+                <button
+                  key={schedule.id}
+                  type="button"
+                  title={schedule.title}
+                  onClick={() => onOpenSchedule(schedule)}
+                  className={`truncate rounded text-left ${isMobile ? 'py-px pl-[11px] text-[9px] font-semibold' : 'py-0.5 pl-[11px] pr-1.5 text-[11px] font-medium'}`}
+                  style={{
+                    background: `linear-gradient(to right, ${stripe} 0 5px, ${schedule.color ?? 'var(--tp-theme2)'} 5px)`,
+                    color: readableTextColor(schedule.color),
+                  }}
+                >
+                  {schedule.title}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </section>
+
+      {/* 시간표 */}
+      <div ref={scrollRef} data-testid="timetable-scroll" className="min-h-0 flex-1 overflow-y-auto pt-2">
+        <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
+          {/* 시간 눈금 + 점선 */}
+          <div className="pointer-events-none absolute inset-0">
+            {hourLabels.map((label, i) => (
+              <div key={label} className="absolute inset-x-0 border-t border-dashed border-tp-line" style={{ top: i * size.hourHeight }}>
+                <span
+                  className={`absolute -top-2 bg-tp-bg text-right text-tp-muted ${isMobile ? 'text-[9px]' : 'pr-2 text-[11px]'}`}
+                  style={{ width: size.timeColumn - (isMobile ? 3 : 0) }}
+                >
+                  {isMobile ? String(Number(label.slice(0, 2))) : label}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div />
+          {days.map((day) => (
+            <div key={day.date} role="group" aria-label={`${formatDayTitle(day.date)} 시간표`} className="relative border-l border-tp-line">
+              {layoutDayBlocks(schedules, day.date, hours).map((layout) => (
+                <TimetableBlock
+                  key={layout.schedule.id}
+                  layout={layout}
+                  category={categoriesById.get(layout.schedule.categoryId) ?? null}
+                  hourHeight={size.hourHeight}
+                  fontSize={size.fontSize}
+                  onOpen={onOpenSchedule}
+                />
+              ))}
+              {day.isToday && nowMinutes !== null && (
+                <div
+                  role="separator"
+                  aria-label={`현재 시각 ${hhmm(now)}`}
+                  className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger"
+                  style={{ top: `${(nowMinutes / 60) * size.hourHeight}px` }}
+                >
+                  {!isMobile && <span className="absolute -left-[5px] -top-[6px] h-2.5 w-2.5 rounded-full bg-danger" />}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

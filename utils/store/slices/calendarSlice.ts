@@ -31,8 +31,10 @@ const calendarSlice = createSlice({
   name: 'calendar',
   initialState,
   reducers: {
+    /** 보기 전환: 고른 날짜가 들어 있는 달·주·날을 본다 (US-07) */
     setViewMode(state, action: PayloadAction<CalendarViewMode>) {
       state.viewMode = action.payload;
+      state.viewDate = state.selectedDate;
     },
     selectDate(state, action: PayloadAction<LocalDate>) {
       state.selectedDate = action.payload;
