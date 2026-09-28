@@ -162,6 +162,22 @@ describe('주간 시간표 (US-07, PC-02)', () => {
     });
   });
 
+  it('시간표 스크롤바 폭만큼 머리글·종일 줄도 비워 세로선을 맞춘다 (US-07 검수)', async () => {
+    // 스크롤바가 항상 보이는 환경: 바깥 폭 1000, 안쪽 폭 985 → 스크롤바 15px
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(1000);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(985);
+    await setup();
+    const head = screen.getByRole('button', { name: '9월 20일 (일)' }).parentElement as HTMLElement;
+    expect(head.style.paddingRight).toBe('15px');
+    expect(screen.getByRole('region', { name: '종일' }).style.paddingRight).toBe('15px');
+    vi.restoreAllMocks();
+  });
+
+  it('스크롤바가 겹쳐 뜨는 환경(폭 0)이면 비우지 않는다', async () => {
+    await setup();
+    expect(screen.getByRole('region', { name: '종일' }).style.paddingRight).toBe('0px');
+  });
+
   it('날짜 머리글을 한 번 누르면 선택, 두 번 누르면 일간 (D-015, 월간과 같게)', async () => {
     const { store, user } = await setup();
     await user.click(screen.getByRole('button', { name: '9월 23일 (수)' }));

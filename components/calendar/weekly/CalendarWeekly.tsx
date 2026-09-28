@@ -10,6 +10,8 @@ import { selectCategories } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
 import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
+import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
+
 import TimetableBlock from '../common/TimetableBlock';
 import { DEFAULT_WEEK_START, formatDayTitle, readableTextColor, toLocalDate, type CalendarDay } from '../utils/calendarUtils';
 import {
@@ -108,13 +110,16 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   });
 
   const gridColumns = { gridTemplateColumns: `${size.timeColumn}px repeat(7, minmax(0, 1fr))` };
+  // 시간표 스크롤바 폭만큼 머리글·종일 줄도 비워 세로선을 맞춘다
+  const scrollbarWidth = useScrollbarWidth(scrollRef);
+  const headerStyle = { ...gridColumns, paddingRight: scrollbarWidth };
 
   const handleSelect = (day: CalendarDay) => dispatch(selectDate(day.date));
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-2' : ''}`} aria-label="주간 시간표">
       {/* 요일·날짜 머리글 */}
-      <div className="grid border-b border-tp-line" style={gridColumns}>
+      <div className="grid border-b border-tp-line" style={headerStyle}>
         <div />
         {days.map((day) => {
           const isSelected = day.date === selectedDate && !day.isToday;
@@ -146,7 +151,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
       </div>
 
       {/* 종일 줄 (PC-02 ⑤) */}
-      <section aria-label="종일" className="grid border-b border-tp-line" style={{ ...gridColumns, minHeight: isMobile ? 24 : 32 }}>
+      <section aria-label="종일" className="grid border-b border-tp-line" style={{ ...headerStyle, minHeight: isMobile ? 24 : 32 }}>
         <div className={`flex items-center justify-center text-tp-muted ${isMobile ? 'text-[9px]' : 'text-[11px]'}`}>종일</div>
         {days.map((day) => (
           <div key={day.date} className={`flex min-w-0 flex-col gap-0.5 border-l border-tp-line ${isMobile ? 'p-0.5' : 'p-1'}`}>
