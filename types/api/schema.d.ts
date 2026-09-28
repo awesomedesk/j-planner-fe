@@ -638,8 +638,6 @@ export interface components {
             startView: "MONTH" | "WEEK" | "DAY" | "LAST";
             /** @enum {string} */
             timeFormat: "24H" | "12H";
-            timetableStartHour: number;
-            timetableEndHour: number;
             /** @enum {integer} */
             slotMinutes: 30 | 60;
             darkMode: boolean;
@@ -659,8 +657,6 @@ export interface components {
             startView?: "MONTH" | "WEEK" | "DAY" | "LAST";
             /** @enum {string} */
             timeFormat?: "24H" | "12H";
-            timetableStartHour?: number;
-            timetableEndHour?: number;
             /** @enum {integer} */
             slotMinutes?: 30 | 60;
             darkMode?: boolean;
@@ -747,6 +743,26 @@ export interface operations {
                     "application/json": {
                         /** @enum {string} */
                         status: "UP";
+                        /**
+                         * @description build.gradle version
+                         * @example 1.0-SNAPSHOT
+                         */
+                        version: string | null;
+                        /**
+                         * @description 빌드할 때의 git 마지막 커밋 (짧은 해시). git 정보가 없으면 null
+                         * @example ad94ea5
+                         */
+                        commit: string | null;
+                        /**
+                         * @description 그 커밋 시각 (한국 시각, 시간대 없음)
+                         * @example 2026-09-28T11:17:04
+                         */
+                        commitTime: string | null;
+                        /**
+                         * @description 빌드한 시각 (한국 시각, 시간대 없음). 빌드 정보가 없으면 null
+                         * @example 2026-09-28T11:20:14
+                         */
+                        buildTime: string | null;
                     };
                 };
             };
