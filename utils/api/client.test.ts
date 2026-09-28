@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
+
+import type { components } from '@/types/api/schema';
 
 import { json, mockApi, problem } from '@/test/mockApi';
 
 import apiClient, { ApiError, isApiError } from './client';
 import { toErrorMessage } from './errorMessage';
+import type { ApiErrorCode } from './types';
 
 describe('API 연결 — 순수 REST (US-03, D-031)', () => {
   it('성공 응답은 감싸기 없이 JSON 그대로, 주소 앞에 /api/v1', async () => {
@@ -39,6 +42,24 @@ describe('오류 → ApiError (US-03, 08-api-design 2-6)', () => {
     expect(isApiError(error)).toBe(true);
     expect(error).toMatchObject({ status: 400, code: 'VALIDATION_FAILED', message: '입력값을 확인하세요.' });
     expect((error as ApiError).errors).toEqual([{ field: 'title', message: '제목을 입력하세요.' }]);
+  });
+
+  it('동시 저장 충돌 409 CONFLICT: 서버 detail을 그대로 안내 (BE a84d59c)', async () => {
+    mockApi({ 'PUT /diaries/2026-09-25': () => problem(409, 'CONFLICT', '다른 요청과 겹쳐 저장하지 못했습니다. 다시 시도하세요.') });
+    const error = await apiClient.put('/diaries/2026-09-25', { content: '오늘' }).catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 409, code: 'CONFLICT' });
+    expect(toErrorMessage(error)).toBe('다른 요청과 겹쳐 저장하지 못했습니다. 다시 시도하세요.');
+  });
+
+  it('FE 오류 코드 목록은 API 명세(openapi)와 같다', () => {
+    expectTypeOf<ApiErrorCode>().toEqualTypeOf<components['schemas']['Problem']['code']>();
+  });
+
+  it('형식이 틀린 값도 errors에 필드 이름이 온다 → 필드별로 받을 수 있다', async () => {
+    mockApi({ 'POST /todos': () => problem(400, 'VALIDATION_FAILED', '입력값을 확인하세요', [{ field: 'type', message: '올바른 값이 아닙니다' }]) });
+    const error = (await apiClient.post('/todos', { type: 'YEAR' }).catch((e) => e)) as ApiError;
+    expect(error.errors).toEqual([{ field: 'type', message: '올바른 값이 아닙니다' }]);
   });
 
   it('Problem Details가 아닌 오류는 UNKNOWN_ERROR + 기본 문구', async () => {

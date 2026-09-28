@@ -388,7 +388,7 @@ export interface components {
             detail?: string;
             instance?: string;
             /** @enum {string} */
-            code: "VALIDATION_FAILED" | "INVALID_QUERY" | "NOT_FOUND" | "CATEGORY_NAME_DUPLICATED" | "DEFAULT_CATEGORY_LOCKED" | "UNSUPPORTED_REQUEST" | "INTERNAL_ERROR";
+            code: "VALIDATION_FAILED" | "INVALID_QUERY" | "NOT_FOUND" | "CATEGORY_NAME_DUPLICATED" | "DEFAULT_CATEGORY_LOCKED" | "CONFLICT" | "UNSUPPORTED_REQUEST" | "INTERNAL_ERROR";
             errors?: {
                 field: string;
                 message: string;
@@ -695,7 +695,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description 규칙 충돌 (CATEGORY_NAME_DUPLICATED, DEFAULT_CATEGORY_LOCKED) */
+        /** @description 규칙 충돌 (CATEGORY_NAME_DUPLICATED, DEFAULT_CATEGORY_LOCKED) 또는 동시 저장 충돌 (CONFLICT) */
         Conflict: {
             headers: {
                 [name: string]: unknown;

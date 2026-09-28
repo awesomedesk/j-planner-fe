@@ -7,15 +7,13 @@
  * 규칙: j-planner-product/08-api-design.md, 08-openapi.yaml
  */
 
-/** 서버가 보내는 오류 코드 (08-api-design.md 2-6절) */
-export type ApiErrorCode =
-  | 'VALIDATION_FAILED'
-  | 'INVALID_QUERY'
-  | 'NOT_FOUND'
-  | 'CATEGORY_NAME_DUPLICATED'
-  | 'DEFAULT_CATEGORY_LOCKED'
-  | 'UNSUPPORTED_REQUEST'
-  | 'INTERNAL_ERROR';
+import type { components } from '@/types/api/schema';
+
+/**
+ * 서버가 보내는 오류 코드 (08-api-design.md 2-6절)
+ * API 명세(openapi)에서 그대로 가져온다 — `npm run api:types`만 하면 새 코드(예: CONFLICT)가 따라 들어온다
+ */
+export type ApiErrorCode = components['schemas']['Problem']['code'];
 
 /** 서버 응답을 받지 못했거나 Problem Details가 아닌 응답일 때 FE가 붙이는 코드 */
 export type ClientErrorCode = 'TIMEOUT' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR';
