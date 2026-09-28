@@ -9,12 +9,12 @@ import { fromLocalDate, occursOn, toLocalDate, type CalendarDay, type WeekStartD
  * 위치·높이는 모두 "표시 시작 시각부터의 분"으로 계산하고, 화면에서 1시간 높이(px)를 곱한다.
  */
 
-/** 표시 시간 (설정 D-024 기본 06:00 ~ 24:00, 1시간 간격). 설정 연결은 US-26 */
+/** 그리는 시간. 시간표는 항상 00:00 ~ 24:00 전체를 그리고 세로로 스크롤한다 (D-046, 설정의 '표시 시간' 없음) */
 export interface TimetableHours {
   startHour: number;
   endHour: number;
 }
-export const DEFAULT_TIMETABLE_HOURS: TimetableHours = { startHour: 6, endHour: 24 };
+export const DEFAULT_TIMETABLE_HOURS: TimetableHours = { startHour: 0, endHour: 24 };
 
 /** 아주 짧은 일정도 제목이 보이도록 하는 최소 높이 (분) */
 export const MIN_BLOCK_MINUTES = 20;
@@ -73,8 +73,6 @@ export interface TimetableBlockLayout {
   /** 전날부터 이어짐 / 다음 날로 이어짐 */
   continuesBefore: boolean;
   continuesAfter: boolean;
-  /** 표시 시간 밖에 있어 가장자리에 붙여 그렸는지 */
-  outside: 'before' | 'after' | null;
 }
 
 /** `YYYY-MM-DDTHH:mm:ss` → 그날 0시부터의 분 (날짜가 다르면 앞뒤 날로 넘침) */
@@ -85,8 +83,7 @@ const minutesFromDayStart = (dateTime: string, date: LocalDate) => {
 
 /**
  * 그날 시간표 블록 배치
- * - 종일 일정은 빼고(종일 줄), 자정을 넘는 일정은 그날 부분만
- * - 표시 시간에 걸치면 보이는 부분만, 완전히 밖이면 가까운 가장자리에 최소 높이로 붙인다
+ * - 종일 일정은 빼고(종일 줄), 자정을 넘거나 여러 날인 일정은 그날 부분만 (D-045)
  * - 겹치는 일정은 칸을 나눠 나란히 둔다 (먼저 시작한 일정이 왼쪽, 빈 칸은 다시 쓴다)
  */
 export const layoutDayBlocks = (schedules: Schedule[], date: LocalDate, hours: TimetableHours): TimetableBlockLayout[] => {
@@ -99,25 +96,12 @@ export const layoutDayBlocks = (schedules: Schedule[], date: LocalDate, hours: T
     .map((schedule) => {
       const start = minutesFromDayStart(schedule.start, date);
       const end = minutesFromDayStart(schedule.end, date);
-      const dayStart = Math.max(start, 0);
-      const dayEnd = Math.min(end, 1440);
-      let outside: TimetableBlockLayout['outside'] = null;
-      let top: number;
-      let height: number;
-      if (dayEnd <= rangeStart) {
-        outside = 'before';
-        top = 0;
-        height = MIN_BLOCK_MINUTES;
-      } else if (dayStart >= rangeEnd) {
-        outside = 'after';
-        top = total - MIN_BLOCK_MINUTES;
-        height = MIN_BLOCK_MINUTES;
-      } else {
-        top = Math.max(dayStart, rangeStart) - rangeStart;
-        height = Math.max(Math.min(dayEnd, rangeEnd) - rangeStart - top, MIN_BLOCK_MINUTES);
-        top = Math.min(top, total - height);
-      }
-      return { schedule, top, height, continuesBefore: start < 0, continuesAfter: end > 1440, outside };
+      const dayStart = Math.max(start, 0, rangeStart);
+      const dayEnd = Math.min(end, 1440, rangeEnd);
+      const height = Math.max(dayEnd - dayStart, MIN_BLOCK_MINUTES);
+      // 끝에 붙은 짧은 일정도 칸 안에 들어오게
+      const top = Math.min(dayStart - rangeStart, total - height);
+      return { schedule, top, height, continuesBefore: start < 0, continuesAfter: end > 1440 };
     })
     .sort((a, b) => a.top - b.top || b.height - a.height || a.schedule.title.localeCompare(b.schedule.title, 'ko'));
 
@@ -143,11 +127,32 @@ export const layoutDayBlocks = (schedules: Schedule[], date: LocalDate, hours: T
   return result;
 };
 
-/** 현재 시각 선 위치 (표시 시작부터의 분). 표시 시간 밖이면 null */
+/** 현재 시각 선 위치 (그리는 시작부터의 분). 그리는 시간 밖이면 null */
 export const nowLineMinutes = (now: Date, { startHour, endHour }: TimetableHours) => {
   const minutes = now.getHours() * 60 + now.getMinutes();
   if (minutes < startHour * 60 || minutes >= endHour * 60) return null;
   return minutes - startHour * 60;
+};
+
+/**
+ * 처음 보이는 위치 (D-046) — 시간이 없는 화면(월간)에서 들어오거나 처음 열 때
+ * 1. 보이는 날짜에 오늘이 있으면 현재 시각을 가운데
+ * 2. 오늘이 없고 시각 있는 일정이 있으면 가장 이른 일정을 위쪽에 (1시간 여유). 종일 일정은 제외
+ * 3. 일정도 없으면 현재 시각을 가운데
+ * 가운데로 못 오면 스크롤 끝까지만 — px로 바꿀 때 화면에서 맞춘다
+ */
+export interface ScrollTarget {
+  /** 00:00부터의 분 */
+  minutes: number;
+  align: 'center' | 'top';
+}
+const EARLIEST_MARGIN_MINUTES = 60;
+export const initialScrollTarget = (days: CalendarDay[], schedules: Schedule[], now: Date): ScrollTarget => {
+  const nowTarget: ScrollTarget = { minutes: now.getHours() * 60 + now.getMinutes(), align: 'center' };
+  if (days.some((day) => day.isToday)) return nowTarget;
+  const tops = days.flatMap((day) => layoutDayBlocks(schedules, day.date, DEFAULT_TIMETABLE_HOURS).map((block) => block.top));
+  if (!tops.length) return nowTarget;
+  return { minutes: Math.max(Math.min(...tops) - EARLIEST_MARGIN_MINUTES, 0), align: 'top' };
 };
 
 /** 블록 높이(px)에 들어가는 제목 줄 수 (D-023: 줄바꿈 후 칸이 부족하면 '…') */

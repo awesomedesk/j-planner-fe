@@ -104,7 +104,7 @@ describe('보기 전환 (PC-01, US-07)', () => {
     const { store } = await setup(390);
     act(() => { store.dispatch(setViewMode('WEEK')); });
     const weekly = screen.getByLabelText('주간 시간표');
-    expect(within(weekly).getByText('6')).toBeInTheDocument(); // 모바일 눈금은 시만
+    expect(within(weekly).getByText('0')).toBeInTheDocument(); // 모바일 눈금은 시만
     expect(screen.getByRole('button', { name: '화면 선택' })).toHaveTextContent('주간'); // 지금 보기 (D-022)
   });
 });

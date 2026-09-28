@@ -8,7 +8,7 @@ import { getCategoryStripeColor } from '@components/category/utils/categoryUtils
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategories } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
-import { fetchSchedules, selectSchedules } from '@store/slices/scheduleSlice';
+import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
 import TimetableBlock from '../common/TimetableBlock';
 import { DEFAULT_WEEK_START, formatDayTitle, readableTextColor, toLocalDate, type CalendarDay } from '../utils/calendarUtils';
@@ -18,6 +18,7 @@ import {
   buildWeekDays,
   getHourLabels,
   getWeekRange,
+  initialScrollTarget,
   layoutDayBlocks,
   nowLineMinutes,
 } from '../utils/timetableUtils';
@@ -33,6 +34,10 @@ const SIZE = {
   pc: { hourHeight: 46, timeColumn: 56, fontSize: 11 },
   mobile: { hourHeight: 38, timeColumn: 30, fontSize: 10 },
 } as const;
+/** 시간표 위 여백 (pt-2) */
+const TOP_PADDING = 8;
+/** 위쪽 맞춤일 때 눈금 글자(선보다 8px 위)가 잘리지 않게 남기는 여유 */
+const LABEL_ROOM = 8;
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 /** 모바일 요일 글자색: 일요일 빨강, 토요일 파랑 (MO-05) */
@@ -42,8 +47,10 @@ const hhmm = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${Stri
 
 /**
  * CalendarWeekly - 주간 시간표 (US-07, PC-02 · MO-05)
- * - 7일 머리글(오늘 강조) + 종일 줄 + 시간표(표시 시간 06:00~24:00, 1시간 간격, D-024 기본값)
- * - 현재 시각 선은 오늘 칸에만, 1분마다 갱신 (CAL-06). 처음 열면 현재 시각 1시간 전이 맨 위
+ * - 7일 머리글(오늘 강조) + 종일 줄 + 시간표(항상 00:00~24:00을 그리고 스크롤, 1시간 간격, D-046)
+ * - 현재 시각 선은 오늘 칸에만, 1분마다 갱신 (CAL-06)
+ * - 처음 보이는 위치는 D-046 규칙 (오늘 있으면 현재 시각 가운데, 없으면 가장 이른 일정 위쪽)
+ * - 겹치는 일정은 나란히, 시각 있는 여러 날 일정은 날마다 나눠서 (D-045)
  * - 날짜 머리글: 한 번 누르면 그날 선택, 두 번 누르면 일간 (월간과 같게, D-015·D-041)
  * - 빈 시간 눌러 빠른 추가(US-10)·Todo 블록(US-15)·D-Day(US-23)는 각 스토리에서 붙인다
  */
@@ -52,10 +59,14 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
   const schedules = useAppSelector(selectSchedules);
+  const scheduleStatus = useAppSelector(selectScheduleStatus);
+  const scheduleRange = useAppSelector(selectScheduleRange);
   const categories = useAppSelector(selectCategories);
   const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);
   const size = SIZE[variant];
+  const isMobile = variant === 'mobile';
   const hours = DEFAULT_TIMETABLE_HOURS;
+  const hourLabels = getHourLabels(hours);
 
   // 현재 시각 (1분마다)
   const [now, setNow] = useState(() => new Date());
@@ -75,21 +86,28 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   }, [dispatch, range]);
 
   const nowMinutes = nowLineMinutes(now, hours);
-  const hasToday = days.some((day) => day.isToday);
 
-  // 처음 열 때(주가 바뀔 때) 현재 시각 1시간 전이 맨 위에 오도록
+  // 처음 보이는 위치 (D-046). 이 화면을 처음 그릴 때 한 번만 — 그 뒤 주를 옮겨도 보던 시간은 그대로
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isScrollPlaced = useRef(false);
+  const isRangeLoaded =
+    scheduleRange?.from === range.from && scheduleRange?.to === range.to && (scheduleStatus === 'succeeded' || scheduleStatus === 'failed');
   useLayoutEffect(() => {
     const element = scrollRef.current;
-    if (!element) return;
-    const minutes = hasToday && nowMinutes !== null ? Math.max(nowMinutes - 60, 0) : 0;
-    element.scrollTop = (minutes / 60) * size.hourHeight;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 주가 바뀔 때만
-  }, [range.from, variant]);
+    if (!element || isScrollPlaced.current) return;
+    const hasToday = days.some((day) => day.isToday);
+    // 오늘이 없으면 일정을 받은 뒤에 정한다
+    if (!hasToday && !isRangeLoaded) return;
+    const target = initialScrollTarget(days, scheduleStatus === 'succeeded' ? schedules : [], now);
+    // 그 시각 선의 실제 위치 (위 여백 포함)
+    const linePx = TOP_PADDING + (target.minutes / 60) * size.hourHeight;
+    const maxScroll = Math.max(hourLabels.length * size.hourHeight + TOP_PADDING - element.clientHeight, 0);
+    const wanted = target.align === 'center' ? linePx - element.clientHeight / 2 : linePx - LABEL_ROOM;
+    element.scrollTop = Math.min(Math.max(wanted, 0), maxScroll);
+    isScrollPlaced.current = true;
+  });
 
-  const hourLabels = getHourLabels(hours);
   const gridColumns = { gridTemplateColumns: `${size.timeColumn}px repeat(7, minmax(0, 1fr))` };
-  const isMobile = variant === 'mobile';
 
   const handleSelect = (day: CalendarDay) => dispatch(selectDate(day.date));
 
@@ -182,6 +200,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
                   hourHeight={size.hourHeight}
                   fontSize={size.fontSize}
                   onOpen={onOpenSchedule}
+                  showLink={!isMobile}
                 />
               ))}
               {day.isToday && nowMinutes !== null && (

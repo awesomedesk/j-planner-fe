@@ -4,6 +4,7 @@ import { schedule } from '@/test/fixtures';
 
 import {
   DEFAULT_TIMETABLE_HOURS,
+  initialScrollTarget,
   MIN_BLOCK_MINUTES,
   allDaySchedulesOn,
   buildWeekDays,
@@ -15,7 +16,7 @@ import {
   nowLineMinutes,
 } from './timetableUtils';
 
-const HOURS = DEFAULT_TIMETABLE_HOURS; // 06:00 ~ 24:00 (D-024 기본값)
+const HOURS = DEFAULT_TIMETABLE_HOURS; // 항상 00:00 ~ 24:00 (D-046)
 
 describe('주간 범위 (CAL-02, 주 시작 요일 D-024)', () => {
   it('일요일 시작: 2026-09-24(목) → 9/20(일) ~ 9/26(토)', () => {
@@ -46,12 +47,12 @@ describe('주간 제목 (PC-02·MO-05 헤더)', () => {
   });
 });
 
-describe('시간 눈금 (D-024 표시 시간 06:00~24:00, 1시간 간격)', () => {
-  it('06:00 ~ 23:00 눈금 18개', () => {
+describe('시간 눈금 (D-046: 항상 00~24시, 1시간 간격)', () => {
+  it('00:00 ~ 23:00 눈금 24개', () => {
     const labels = getHourLabels(HOURS);
-    expect(labels).toHaveLength(18);
-    expect(labels[0]).toBe('06:00');
-    expect(labels[17]).toBe('23:00');
+    expect(labels).toHaveLength(24);
+    expect(labels[0]).toBe('00:00');
+    expect(labels[23]).toBe('23:00');
   });
 });
 
@@ -66,10 +67,10 @@ describe('종일 줄 (PC-02 ⑤)', () => {
 });
 
 describe('시간표 블록 배치 (PC-02 ⑥)', () => {
-  it('위치·높이는 표시 시작(06:00)부터의 분', () => {
+  it('위치·높이는 00:00부터의 분', () => {
     const s = schedule({ id: 1, start: '2026-09-21T10:00:00', end: '2026-09-21T11:30:00' });
     expect(layoutDayBlocks([s], '2026-09-21', HOURS)).toEqual([
-      expect.objectContaining({ schedule: s, top: 240, height: 90, column: 0, columns: 1 }),
+      expect.objectContaining({ schedule: s, top: 600, height: 90, column: 0, columns: 1 }),
     ]);
   });
 
@@ -80,24 +81,25 @@ describe('시간표 블록 배치 (PC-02 ⑥)', () => {
 
   it('자정을 넘는 일정은 날마다 나눠 그린다 (23:00~01:00)', () => {
     const s = schedule({ id: 7, start: '2026-09-29T23:00:00', end: '2026-09-30T01:00:00' });
-    expect(layoutDayBlocks([s], '2026-09-29', HOURS)[0]).toMatchObject({ top: 1020, height: 60, continuesAfter: true });
-    // 다음 날 00:00~01:00은 표시 시간(06:00~) 앞 → 맨 위 가장자리에 최소 높이로
-    expect(layoutDayBlocks([s], '2026-09-30', HOURS)[0]).toMatchObject({
-      top: 0,
-      height: MIN_BLOCK_MINUTES,
-      continuesBefore: true,
-      outside: 'before',
-    });
+    expect(layoutDayBlocks([s], '2026-09-29', HOURS)[0]).toMatchObject({ top: 1380, height: 60, continuesAfter: true });
+    expect(layoutDayBlocks([s], '2026-09-30', HOURS)[0]).toMatchObject({ top: 0, height: 60, continuesBefore: true });
   });
 
-  it('표시 시간에 걸치면 보이는 부분만 (05:00~07:00 → 06:00~07:00)', () => {
-    const s = schedule({ id: 1, start: '2026-09-21T05:00:00', end: '2026-09-21T07:00:00' });
-    expect(layoutDayBlocks([s], '2026-09-21', HOURS)[0]).toMatchObject({ top: 0, height: 60, outside: null });
+  it('시각이 있는 여러 날 일정: 월 10~24시, 화 하루 전체, 수 00~18시 (D-045)', () => {
+    const s = schedule({ id: 9, start: '2026-09-21T10:00:00', end: '2026-09-23T18:00:00' });
+    expect(layoutDayBlocks([s], '2026-09-21', HOURS)[0]).toMatchObject({ top: 600, height: 840 });
+    expect(layoutDayBlocks([s], '2026-09-22', HOURS)[0]).toMatchObject({ top: 0, height: 1440 });
+    expect(layoutDayBlocks([s], '2026-09-23', HOURS)[0]).toMatchObject({ top: 0, height: 1080 });
   });
 
   it('아주 짧은 일정도 최소 높이 (10분 → 20분 높이)', () => {
     const s = schedule({ id: 1, start: '2026-09-21T09:00:00', end: '2026-09-21T09:10:00' });
-    expect(layoutDayBlocks([s], '2026-09-21', HOURS)[0]).toMatchObject({ top: 180, height: MIN_BLOCK_MINUTES });
+    expect(layoutDayBlocks([s], '2026-09-21', HOURS)[0]).toMatchObject({ top: 540, height: MIN_BLOCK_MINUTES });
+  });
+
+  it('23:55에 시작하는 짧은 일정도 칸 안에 (끝에 맞춤)', () => {
+    const s = schedule({ id: 1, start: '2026-09-21T23:55:00', end: '2026-09-21T23:59:00' });
+    expect(layoutDayBlocks([s], '2026-09-21', HOURS)[0]).toMatchObject({ top: 1440 - MIN_BLOCK_MINUTES, height: MIN_BLOCK_MINUTES });
   });
 
   it('겹치는 일정은 칸을 나눠 나란히, 안 겹치면 한 칸 전체', () => {
@@ -121,11 +123,40 @@ describe('시간표 블록 배치 (PC-02 ⑥)', () => {
 });
 
 describe('현재 시각 선 (CAL-06)', () => {
-  it('표시 시간 안이면 시작부터의 분', () => {
-    expect(nowLineMinutes(new Date(2026, 8, 25, 14, 30), HOURS)).toBe(510);
+  it('00:00부터의 분 (새벽에도 보인다, D-046)', () => {
+    expect(nowLineMinutes(new Date(2026, 8, 25, 14, 30), HOURS)).toBe(870);
+    expect(nowLineMinutes(new Date(2026, 8, 25, 3, 0), HOURS)).toBe(180);
   });
-  it('표시 시간 밖(새벽 3시)이면 없음', () => {
-    expect(nowLineMinutes(new Date(2026, 8, 25, 3, 0), HOURS)).toBeNull();
+});
+
+describe('처음 보이는 위치 (D-046)', () => {
+  const week = buildWeekDays('2026-10-06', 'SUN', '2026-09-25'); // 10/4~10/10, 오늘 없음
+  const now = new Date(2026, 8, 25, 14, 30);
+
+  it('1. 보이는 날짜에 오늘이 있으면 현재 시각이 가운데', () => {
+    const thisWeek = buildWeekDays('2026-09-25', 'SUN', '2026-09-25');
+    expect(initialScrollTarget(thisWeek, [], now)).toEqual({ minutes: 870, align: 'center' });
+  });
+
+  it('2. 오늘이 없으면 가장 이른 시각 일정이 위쪽에 1시간 여유 (화 09시·목 19시 → 08시)', () => {
+    const tue = schedule({ id: 1, start: '2026-10-06T09:00:00', end: '2026-10-06T10:00:00' });
+    const thu = schedule({ id: 2, start: '2026-10-08T19:00:00', end: '2026-10-08T20:00:00' });
+    expect(initialScrollTarget(week, [thu, tue], now)).toEqual({ minutes: 480, align: 'top' });
+  });
+
+  it('종일 일정과 다른 주 일정은 세지 않는다', () => {
+    const allDay = schedule({ id: 1, allDay: true, start: '2026-10-06T00:00:00', end: '2026-10-06T23:59:59' });
+    const otherWeek = schedule({ id: 2, start: '2026-10-12T07:00:00', end: '2026-10-12T08:00:00' });
+    expect(initialScrollTarget(week, [allDay, otherWeek], now)).toEqual({ minutes: 870, align: 'center' });
+  });
+
+  it('00:30 일정이면 맨 위(0)까지만', () => {
+    const early = schedule({ id: 1, start: '2026-10-07T00:30:00', end: '2026-10-07T01:00:00' });
+    expect(initialScrollTarget(week, [early], now)).toEqual({ minutes: 0, align: 'top' });
+  });
+
+  it('3. 일정도 없으면 현재 시각이 가운데', () => {
+    expect(initialScrollTarget(week, [], now)).toEqual({ minutes: 870, align: 'center' });
   });
 });
 

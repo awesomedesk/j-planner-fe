@@ -15,6 +15,8 @@ interface TimetableBlockProps {
   /** 제목 글자 크기 (px) */
   fontSize: number;
   onOpen: (schedule: Schedule) => void;
+  /** URL 링크 아이콘 (모바일 7칸은 숨김, D-045) */
+  showLink?: boolean;
 }
 
 /** 블록 사이 틈 (위아래·오른쪽 1px) */
@@ -26,9 +28,9 @@ const timeText = (schedule: Schedule) => `${schedule.start.slice(11, 16)}~${sche
  * TimetableBlock - 시간표(주간·일간)의 일정 블록 (PC-02 ⑥, MO-05)
  * - 왼쪽 5px 띠 = 카테고리 색(미지정은 테마 Theme2), 몸통 = 일정 색(안 고르면 Theme2) (D-019, D-030)
  * - 제목은 칸 안에서 줄바꿈, 높이가 모자라면 마지막 줄 끝 '…' (D-023)
- * - 누르면 수정 창, URL이 있으면 링크 아이콘으로 새 탭 (D-021)
+ * - 누르면 수정 창, URL이 있으면 링크 아이콘으로 새 탭 (D-021). 좁은 모바일 7칸은 아이콘 없이 수정 창에서 (D-045)
  */
-export default function TimetableBlock({ layout, category, hourHeight, fontSize, onOpen }: TimetableBlockProps) {
+export default function TimetableBlock({ layout, category, hourHeight, fontSize, onOpen, showLink = true }: TimetableBlockProps) {
   const { schedule } = layout;
   const toPx = (minutes: number) => (minutes / 60) * hourHeight;
   const height = toPx(layout.height);
@@ -72,7 +74,7 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
             {schedule.title}
           </span>
         </button>
-        {schedule.url && (
+        {showLink && schedule.url && (
           <a
             href={schedule.url}
             target="_blank"

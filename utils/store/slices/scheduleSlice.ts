@@ -65,5 +65,7 @@ const scheduleSlice = createSlice({
 
 export const selectSchedules = (state: { schedule: ScheduleState }) => state.schedule.items;
 export const selectScheduleStatus = (state: { schedule: ScheduleState }) => state.schedule.status;
+/** 지금 받았거나 받는 중인 기간 */
+export const selectScheduleRange = (state: { schedule: ScheduleState }) => state.schedule.range;
 
 export default scheduleSlice.reducer;

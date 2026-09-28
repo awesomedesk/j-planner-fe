@@ -24,9 +24,9 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-const setup = async (variant: 'pc' | 'mobile' = 'pc', viewDate?: string) => {
+const setup = async (variant: 'pc' | 'mobile' = 'pc', viewDate?: string, schedules = SCHEDULES) => {
   const api = mockApi({
-    'GET /schedules': () => json(200, SCHEDULES),
+    'GET /schedules': () => json(200, schedules),
     'GET /categories': () => json(200, CATEGORIES),
   });
   const store = makeStore();
@@ -54,11 +54,11 @@ describe('주간 시간표 (US-07, PC-02)', () => {
     expect(screen.getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');
   });
 
-  it('시간 눈금 06:00~23:00 (D-024 기본 표시 시간)', async () => {
+  it('시간 눈금은 항상 00:00~23:00 (D-046)', async () => {
     await setup();
-    expect(screen.getByText('06:00')).toBeInTheDocument();
+    expect(screen.getByText('00:00')).toBeInTheDocument();
     expect(screen.getByText('23:00')).toBeInTheDocument();
-    expect(screen.queryByText('05:00')).not.toBeInTheDocument();
+    expect(screen.queryByText('24:00')).not.toBeInTheDocument();
   });
 
   it('종일 줄: 종일 일정은 걸친 날마다, 시간표에는 두지 않는다 (PC-02 ⑤)', async () => {
@@ -72,7 +72,7 @@ describe('주간 시간표 (US-07, PC-02)', () => {
     await setup();
     const block = await within(column('9월 21일 (월)')).findByRole('button', { name: /팀 주간 회의/ });
     const box = block.closest('[data-block]') as HTMLElement;
-    expect(box.style.top).toBe(`${(4 * 46).toString()}px`); // 10:00 - 06:00 = 4시간
+    expect(box.style.top).toBe(`${10 * 46}px`); // 00:00부터 10시간
     expect(box.style.height).toBe('46px');
   });
 
@@ -118,7 +118,7 @@ describe('주간 시간표 (US-07, PC-02)', () => {
   it('현재 시각 선은 오늘 칸에만, 1분마다 움직인다 (CAL-06)', async () => {
     await setup();
     const line = within(column('9월 25일 (금)')).getByRole('separator', { name: '현재 시각 14:30' });
-    expect(line.style.top).toBe(`${(8.5 * 46).toString()}px`);
+    expect(line.style.top).toBe(`${14.5 * 46}px`);
     expect(within(column('9월 24일 (목)')).queryByRole('separator')).not.toBeInTheDocument();
     act(() => { vi.advanceTimersByTime(60_000); });
     expect(within(column('9월 25일 (금)')).getByRole('separator', { name: '현재 시각 14:31' })).toBeInTheDocument();
@@ -129,9 +129,37 @@ describe('주간 시간표 (US-07, PC-02)', () => {
     expect(screen.queryByRole('separator', { name: /현재 시각/ })).not.toBeInTheDocument();
   });
 
-  it('처음 열면 현재 시각 1시간 전이 맨 위에 오도록 스크롤', async () => {
-    await setup();
-    expect(screen.getByTestId('timetable-scroll').scrollTop).toBe(7.5 * 46); // 13:30 - 06:00
+  // 시간표 위 여백 8px → HH:mm 선의 실제 위치 = 8 + 시간 × 46
+  describe('처음 보이는 위치 (D-046, 화면 높이 600px)', () => {
+    beforeEach(() => {
+      vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
+    });
+    afterEach(() => vi.restoreAllMocks());
+    const scrollTop = () => screen.getByTestId('timetable-scroll').scrollTop;
+
+    it('오늘이 있는 주: 현재 시각(14:30)이 가운데', async () => {
+      await setup();
+      expect(scrollTop()).toBe(8 + 14.5 * 46 - 300);
+    });
+
+    it('늦은 밤(23:50)이라 가운데로 못 오면 끝까지만', async () => {
+      vi.setSystemTime(new Date(2026, 8, 25, 23, 50));
+      await setup();
+      expect(scrollTop()).toBe(24 * 46 + 8 - 600);
+    });
+
+    it('오늘이 없는 주: 일정을 받은 뒤 가장 이른 일정이 위쪽에 1시간 여유 (화 09시·목 19시 → 08시)', async () => {
+      await setup('pc', '2026-10-06', [
+        schedule({ id: 30, title: '목 저녁', start: '2026-10-08T19:00:00', end: '2026-10-08T20:00:00' }),
+        schedule({ id: 31, title: '화 회의', start: '2026-10-06T09:00:00', end: '2026-10-06T10:00:00' }),
+      ]);
+      await waitFor(() => expect(scrollTop()).toBe(8 * 46)); // 08:00 선이 맨 위 + 눈금 글자가 잘리지 않게 8px 여유
+    });
+
+    it('오늘도 일정도 없는 주: 현재 시각이 가운데', async () => {
+      await setup('pc', '2026-10-06', []);
+      await waitFor(() => expect(scrollTop()).toBe(8 + 14.5 * 46 - 300));
+    });
   });
 
   it('날짜 머리글을 한 번 누르면 선택, 두 번 누르면 일간 (D-015, 월간과 같게)', async () => {
@@ -144,11 +172,17 @@ describe('주간 시간표 (US-07, PC-02)', () => {
 });
 
 describe('모바일 주간 7칸 시간표 (MO-05)', () => {
-  it('같은 7칸, 1시간 = 38px, 눈금은 시만 (6 … 23)', async () => {
+  it('같은 7칸, 1시간 = 38px, 눈금은 시만 (0 … 23)', async () => {
     await setup('mobile');
-    expect(screen.getByText('6')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
     const block = await within(column('9월 21일 (월)')).findByRole('button', { name: /팀 주간 회의/ });
-    expect((block.closest('[data-block]') as HTMLElement).style.top).toBe(`${4 * 38}px`);
+    expect((block.closest('[data-block]') as HTMLElement).style.top).toBe(`${10 * 38}px`);
+  });
+
+  it('모바일 7칸에서는 링크 아이콘을 숨긴다 — 수정 창에서 연다 (D-045)', async () => {
+    await setup('mobile');
+    expect(await screen.findByRole('button', { name: /팀 주간 회의/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '팀 주간 회의 링크 열기' })).not.toBeInTheDocument();
   });
 
   it('긴 제목 줄 수도 모바일 크기로 (2시간 = 76px → 5줄)', async () => {
