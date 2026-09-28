@@ -68,6 +68,40 @@ describe('주간 시간표 (US-07, PC-02)', () => {
     expect(within(column('9월 26일 (토)')).queryByRole('button', { name: /가족 여행/ })).not.toBeInTheDocument();
   });
 
+  describe('여러 날 종일 일정', () => {
+    const TRIP = schedule({ id: 40, title: '출장', allDay: true, start: '2026-09-22T00:00:00', end: '2026-09-24T23:59:59' });
+    const CONT = schedule({ id: 42, title: '지난주부터', allDay: true, start: '2026-09-18T00:00:00', end: '2026-09-21T23:59:59' });
+    const allDayCell = (label: string) => screen.getByRole('group', { name: `${label} 종일` });
+
+    it('종일 줄에 걸친 날마다 한 칸씩, 시간표 칸에는 없음', async () => {
+      await setup('pc', undefined, [TRIP]);
+      for (const day of ['9월 22일 (화)', '9월 23일 (수)', '9월 24일 (목)']) {
+        expect(await within(allDayCell(day)).findByRole('button', { name: '출장' })).toBeInTheDocument();
+        expect(within(column(day)).queryByRole('button', { name: /출장/ })).not.toBeInTheDocument();
+      }
+      expect(within(allDayCell('9월 21일 (월)')).queryByRole('button', { name: '출장' })).not.toBeInTheDocument();
+      expect(within(allDayCell('9월 25일 (금)')).queryByRole('button', { name: '출장' })).not.toBeInTheDocument();
+    });
+
+    it('지난주부터 이어지면 이번 주 일·월에만', async () => {
+      await setup('pc', undefined, [CONT]);
+      expect(await within(allDayCell('9월 20일 (일)')).findByRole('button', { name: '지난주부터' })).toBeInTheDocument();
+      expect(within(allDayCell('9월 21일 (월)')).getByRole('button', { name: '지난주부터' })).toBeInTheDocument();
+      expect(within(allDayCell('9월 22일 (화)')).queryByRole('button', { name: '지난주부터' })).not.toBeInTheDocument();
+    });
+
+    it('어느 날 칸을 눌러도 같은 일정의 수정 창', async () => {
+      const { onOpenSchedule, user } = await setup('pc', undefined, [TRIP]);
+      await user.click(await within(allDayCell('9월 23일 (수)')).findByRole('button', { name: '출장' }));
+      expect(onOpenSchedule).toHaveBeenCalledWith(expect.objectContaining({ id: 40 }));
+    });
+
+    it('모바일 7칸 종일 줄도 같다', async () => {
+      await setup('mobile', undefined, [TRIP]);
+      expect(await within(allDayCell('9월 24일 (목)')).findByRole('button', { name: '출장' })).toBeInTheDocument();
+    });
+  });
+
   it('시간 일정은 시각에 맞는 위치·높이 (46px = 1시간)', async () => {
     await setup();
     const block = await within(column('9월 21일 (월)')).findByRole('button', { name: /팀 주간 회의/ });

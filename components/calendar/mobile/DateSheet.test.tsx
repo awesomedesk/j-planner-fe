@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES } from '@/test/fixtures';
@@ -35,6 +35,22 @@ describe('모바일 날짜 시트 (MO-01 ③, US-06)', () => {
     expect(screen.getByText('치과')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '하루 계획 보기' }));
     expect(onOpenDayPlan).toHaveBeenCalledWith('2026-09-25');
+  });
+
+  it('여러 날 종일 일정은 걸친 날의 목록 맨 위에 "종일"로', () => {
+    const trip = { ...SEED_SCHEDULES[0], id: 40, title: '출장', allDay: true, start: '2026-09-24T00:00:00', end: '2026-09-26T23:59:59', url: null };
+    render(
+      <DateSheet
+        date="2026-09-25"
+        schedules={[...SEED_SCHEDULES, trip]}
+        categoriesById={new Map(CATEGORIES.map((c) => [c.id, c]))}
+        onOpenSchedule={vi.fn()}
+        onOpenDayPlan={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    const items = within(screen.getByRole('list', { name: '일정 목록' })).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('종일출장');
   });
 
   it('손잡이를 누르면 닫힌다', () => {

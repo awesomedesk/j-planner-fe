@@ -154,7 +154,12 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
       <section aria-label="종일" className="grid border-b border-tp-line" style={{ ...headerStyle, minHeight: isMobile ? 24 : 32 }}>
         <div className={`flex items-center justify-center text-tp-muted ${isMobile ? 'text-[9px]' : 'text-[11px]'}`}>종일</div>
         {days.map((day) => (
-          <div key={day.date} className={`flex min-w-0 flex-col gap-0.5 border-l border-tp-line ${isMobile ? 'p-0.5' : 'p-1'}`}>
+          <div
+            key={day.date}
+            role="group"
+            aria-label={`${formatDayTitle(day.date)} 종일`}
+            className={`flex min-w-0 flex-col gap-0.5 border-l border-tp-line ${isMobile ? 'p-0.5' : 'p-1'}`}
+          >
             {allDaySchedulesOn(schedules, day.date).map((schedule) => {
               const category = categoriesById.get(schedule.categoryId);
               const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';

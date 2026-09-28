@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CATEGORIES } from '@/test/fixtures';
+import { CATEGORIES, schedule } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
@@ -17,9 +17,9 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-const setup = async (variant: 'bars' | 'dots' = 'bars') => {
+const setup = async (variant: 'bars' | 'dots' = 'bars', schedules = SEED_SCHEDULES) => {
   const api = mockApi({
-    'GET /schedules': () => json(200, SEED_SCHEDULES),
+    'GET /schedules': () => json(200, schedules),
     'GET /categories': () => json(200, CATEGORIES),
   });
   const store = makeStore();
@@ -106,6 +106,44 @@ describe('월간 달력 (US-06)', () => {
     const { api } = await setup();
     await screen.findAllByRole('button', { name: /새벽 배포/ });
     expect(api.all().some((r) => r.path.startsWith('/todos'))).toBe(false);
+  });
+});
+
+describe('여러 날 종일 일정 (US-06)', () => {
+  const TRIP = schedule({ id: 40, title: '출장', allDay: true, start: '2026-09-22T00:00:00', end: '2026-09-24T23:59:59' });
+  const barsIn = (label: string, name: RegExp) => within(dayCell(label)).queryAllByRole('button', { name });
+
+  it('걸친 날마다 막대, 시각 없이 제목만', async () => {
+    await setup('bars', [TRIP]);
+    await screen.findAllByRole('button', { name: /출장/ });
+    for (const day of ['9월 22일 (화)', '9월 23일 (수)', '9월 24일 (목)']) {
+      const [bar] = barsIn(day, /출장/);
+      expect(bar).toHaveTextContent(/^출장$/);
+    }
+    expect(barsIn('9월 21일 (월)', /출장/)).toHaveLength(0);
+    expect(barsIn('9월 25일 (금)', /출장/)).toHaveLength(0);
+  });
+
+  it('주(줄)를 넘으면 다음 줄에도 이어서 (9/26 토 → 9/27 일)', async () => {
+    await setup('bars', [schedule({ id: 5, title: '가족 여행', allDay: true, start: '2026-09-26T00:00:00', end: '2026-09-27T23:59:59' })]);
+    await screen.findAllByRole('button', { name: /가족 여행/ });
+    expect(barsIn('9월 26일 (토)', /가족 여행/)).toHaveLength(1);
+    expect(barsIn('9월 27일 (일)', /가족 여행/)).toHaveLength(1);
+  });
+
+  it('같은 날엔 종일·여러 날 일정이 시각 일정보다 위', async () => {
+    const gym = schedule({ id: 3, title: '헬스장', start: '2026-09-23T07:00:00', end: '2026-09-23T08:00:00' });
+    await setup('bars', [gym, TRIP]);
+    await screen.findAllByRole('button', { name: /출장/ });
+    const titles = within(dayCell('9월 23일 (수)')).getAllByRole('button').map((b) => b.textContent);
+    expect(titles.indexOf('출장')).toBeLessThan(titles.indexOf('07:00헬스장'));
+  });
+
+  it('모바일 색 점: 걸친 날마다 점, 일정 수에도 들어간다', async () => {
+    await setup('dots', [TRIP]);
+    expect(await screen.findByRole('button', { name: '9월 22일 (화), 일정 1개' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '9월 24일 (목), 일정 1개' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '9월 25일 (금)' })).toBeInTheDocument();
   });
 });
 

@@ -66,6 +66,39 @@ describe('종일 줄 (PC-02 ⑤)', () => {
   });
 });
 
+describe('여러 날 종일 일정 (종일 줄, 서버가 end를 끝나는 날 23:59:59로 맞춤)', () => {
+  const trip = schedule({ id: 40, title: '출장', allDay: true, start: '2026-09-22T00:00:00', end: '2026-09-24T23:59:59' });
+  const vacation = schedule({ id: 41, title: '휴가', allDay: true, start: '2026-09-18T00:00:00', end: '2026-10-02T23:59:59' });
+  const days = buildWeekDays('2026-09-24', 'SUN', '2026-09-25').map((d) => d.date);
+
+  it('3일 종일(9/22~24)은 걸친 날마다 한 번씩, 앞뒤 날엔 없음', () => {
+    expect(days.map((date) => allDaySchedulesOn([trip], date).length)).toEqual([0, 0, 1, 1, 1, 0, 0]);
+  });
+
+  it('주를 통째로 덮는 긴 종일(9/18~10/2)은 이번 주 7일 모두', () => {
+    expect(days.map((date) => allDaySchedulesOn([vacation], date).length)).toEqual([1, 1, 1, 1, 1, 1, 1]);
+  });
+
+  it('지난주부터 이어지는 종일(9/18~9/21)은 이번 주 일·월만', () => {
+    const cont = schedule({ id: 42, allDay: true, start: '2026-09-18T00:00:00', end: '2026-09-21T23:59:59' });
+    expect(days.map((date) => allDaySchedulesOn([cont], date).length)).toEqual([1, 1, 0, 0, 0, 0, 0]);
+  });
+
+  it('같은 날 여러 개면 먼저 시작한 것부터, 같으면 제목 순', () => {
+    const b = schedule({ id: 43, title: '가 행사', allDay: true, start: '2026-09-22T00:00:00', end: '2026-09-22T23:59:59' });
+    expect(allDaySchedulesOn([trip, b, vacation], '2026-09-22').map((s) => s.title)).toEqual(['휴가', '가 행사', '출장']);
+  });
+
+  it('여러 날 종일은 어느 날에도 시간표 블록이 되지 않는다', () => {
+    expect(days.flatMap((date) => layoutDayBlocks([trip, vacation], date, HOURS))).toEqual([]);
+  });
+
+  it('처음 보이는 위치 계산에서도 빠진다 (D-046: 종일 제외)', () => {
+    const otherWeek = buildWeekDays('2026-09-24', 'SUN', '2026-10-15');
+    expect(initialScrollTarget(otherWeek, [trip, vacation], new Date(2026, 9, 15, 9, 0))).toEqual({ minutes: 540, align: 'center' });
+  });
+});
+
 describe('시간표 블록 배치 (PC-02 ⑥)', () => {
   it('위치·높이는 00:00부터의 분', () => {
     const s = schedule({ id: 1, start: '2026-09-21T10:00:00', end: '2026-09-21T11:30:00' });
