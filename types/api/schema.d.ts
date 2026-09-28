@@ -572,6 +572,7 @@ export interface components {
                 label: string;
             };
         };
+        /** @description countType을 빼면 COUNTDOWN. display를 빼거나 일부만 보내면 빠진 옵션은 기준별 기본값 (D-020) */
         DdayCreateRequest: {
             title: string;
             /** Format: date */
