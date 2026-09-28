@@ -100,6 +100,18 @@ describe('보기 전환 (PC-01, US-07)', () => {
     expect(screen.getByRole('dialog', { name: '일정 수정' })).toBeInTheDocument();
   });
 
+  it('390px에서 주간으로 바로 열어도 처음 위치는 모바일 크기(1시간 38px) 기준 (D-046, US-07 검수)', async () => {
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
+    setViewportWidth(390);
+    mockApi({ 'GET /schedules': () => json(200, SEED_SCHEDULES), 'GET /categories': () => json(200, CATEGORIES) });
+    const store = makeStore();
+    store.dispatch(setViewMode('WEEK')); // 처음 화면이 주간 (/dev/weekly, 설정 '처음 화면' US-27)
+    renderWithStore(<AppShell />, { store });
+    // 10:00 고정 시각 → 8(위 여백) + 10 × 38 − 600/2
+    expect(screen.getByTestId('timetable-scroll').scrollTop).toBe(8 + 10 * 38 - 300);
+    vi.restoreAllMocks();
+  });
+
   it('390px 주간은 모바일 7칸 시간표 (MO-05)', async () => {
     const { store } = await setup(390);
     act(() => { store.dispatch(setViewMode('WEEK')); });
