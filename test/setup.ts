@@ -27,3 +27,15 @@ class ResizeObserverStub {
   static instances: ResizeObserverStub[] = [];
 }
 globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+
+// jsdom의 PointerEvent는 clientY·pointerId를 받지 않는다 → MouseEvent 기반으로 대신한다 (끌기 테스트용)
+class TestPointerEvent extends MouseEvent {
+  pointerId: number;
+  pointerType: string;
+  constructor(type: string, init: PointerEventInit = {}) {
+    super(type, init);
+    this.pointerId = init.pointerId ?? 1;
+    this.pointerType = init.pointerType ?? 'mouse';
+  }
+}
+window.PointerEvent = TestPointerEvent as unknown as typeof PointerEvent;
