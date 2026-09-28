@@ -1,11 +1,11 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES, schedule } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
-import { selectDate, setViewMode } from '@store/slices/calendarSlice';
+import { selectDate, setTimetableTopMinutes, setViewMode } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
 import { makeStore } from '@store/store';
 
@@ -188,6 +188,25 @@ describe('주간 시간표 (US-07, PC-02)', () => {
         schedule({ id: 31, title: '화 회의', start: '2026-10-06T09:00:00', end: '2026-10-06T10:00:00' }),
       ]);
       await waitFor(() => expect(scrollTop()).toBe(8 * 46)); // 08:00 선이 맨 위 + 눈금 글자가 잘리지 않게 8px 여유
+    });
+
+    it('일간에서 주간으로 오면 보던 시간(08:00)이 그대로 맨 위 (D-046 ②)', async () => {
+      const api = mockApi({ 'GET /schedules': () => json(200, SCHEDULES), 'GET /categories': () => json(200, CATEGORIES) });
+      const store = makeStore();
+      store.dispatch(setViewMode('DAY'));
+      store.dispatch(setTimetableTopMinutes(480));
+      store.dispatch(setViewMode('WEEK'));
+      renderWithStore(<CalendarWeekly variant="pc" onOpenSchedule={vi.fn()} />, { store });
+      expect(scrollTop()).toBe(8 * 46);
+      expect(api.calls('GET /schedules')).toHaveLength(1);
+    });
+
+    it('스크롤하면 보던 시간(분)을 기억한다', async () => {
+      const { store } = await setup();
+      const scroller = screen.getByTestId('timetable-scroll');
+      scroller.scrollTop = 10 * 46;
+      fireEvent.scroll(scroller);
+      expect(store.getState().calendar.timetableTopMinutes).toBe(600);
     });
 
     it('오늘도 일정도 없는 주: 현재 시각이 가운데', async () => {

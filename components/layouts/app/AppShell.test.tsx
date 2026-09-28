@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES } from '@/test/fixtures';
@@ -84,6 +84,25 @@ describe('보기 전환 (PC-01, US-07)', () => {
     expect(within(group).getByRole('button', { name: '주' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('주간 시간표')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: '9월 20일 – 26일' }).length).toBeGreaterThan(0);
+  });
+
+  it('일을 누르면 일간 시간표, 헤더 제목은 그날 (US-08)', async () => {
+    const { user } = await setup(1440);
+    await user.click(screen.getByRole('button', { name: '9월 23일 (수)' }));
+    await user.click(within(screen.getByRole('group', { name: '보기 전환' })).getByRole('button', { name: '일' }));
+    expect(screen.getByLabelText('일간 시간표')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: '9월 23일 (수)' }).length).toBeGreaterThan(0);
+  });
+
+  it('주간에서 보던 시간은 일간으로 바꿔도 그대로 (D-046 ②)', async () => {
+    const { user } = await setup(1440);
+    const views = within(screen.getByRole('group', { name: '보기 전환' }));
+    await user.click(views.getByRole('button', { name: '주' }));
+    const weekScroll = screen.getByTestId('timetable-scroll');
+    weekScroll.scrollTop = 8 * 46; // 08:00
+    fireEvent.scroll(weekScroll);
+    await user.click(views.getByRole('button', { name: '일' }));
+    expect(screen.getByTestId('timetable-scroll').scrollTop).toBe(8 * 48);
   });
 
   it('월간에서 고른 날짜의 주로 간다', async () => {

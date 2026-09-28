@@ -17,7 +17,16 @@ interface TimetableBlockProps {
   onOpen: (schedule: Schedule) => void;
   /** URL 링크 아이콘 (모바일 7칸은 숨김, D-045) */
   showLink?: boolean;
+  /** 제목 아래 설명 줄 `일정 · 10:00-11:00 · 회의실 A` (PC 일간, PC-03) */
+  showDetail?: boolean;
 }
+
+/** 설명 줄 높이 (11px × 1.25) */
+const DETAIL_LINE_HEIGHT = 14;
+
+/** `일정 · 10:00-11:00 · 회의실 A` (PC-03) */
+export const blockDetailText = (schedule: Schedule) =>
+  ['일정', `${schedule.start.slice(11, 16)}-${schedule.end.slice(11, 16)}`, schedule.location?.name].filter(Boolean).join(' · ');
 
 /** 블록 사이 틈 (위아래·오른쪽 1px) */
 const GAP = 1;
@@ -30,12 +39,15 @@ const timeText = (schedule: Schedule) => `${schedule.start.slice(11, 16)}~${sche
  * - 제목은 칸 안에서 줄바꿈, 높이가 모자라면 마지막 줄 끝 '…' (D-023)
  * - 누르면 수정 창, URL이 있으면 링크 아이콘으로 새 탭 (D-021). 좁은 모바일 7칸은 아이콘 없이 수정 창에서 (D-045)
  */
-export default function TimetableBlock({ layout, category, hourHeight, fontSize, onOpen, showLink = true }: TimetableBlockProps) {
+export default function TimetableBlock({ layout, category, hourHeight, fontSize, onOpen, showLink = true, showDetail = false }: TimetableBlockProps) {
   const { schedule } = layout;
   const toPx = (minutes: number) => (minutes / 60) * hourHeight;
   const height = toPx(layout.height);
   const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
   const body = schedule.color ?? 'var(--tp-theme2)';
+  // 설명 줄은 제목 한 줄 + 설명 한 줄이 들어갈 높이일 때만
+  const hasDetail = showDetail && height - GAP * 2 >= fontSize * 1.25 + DETAIL_LINE_HEIGHT + 4;
+  const titleHeight = height - GAP * 2 - (hasDetail ? DETAIL_LINE_HEIGHT : 0);
 
   return (
     <div
@@ -69,10 +81,15 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
           <span
             data-title
             className="overflow-hidden break-all leading-[1.25]"
-            style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: lineClampFor(height - GAP * 2, fontSize) }}
+            style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: lineClampFor(titleHeight, fontSize) }}
           >
             {schedule.title}
           </span>
+          {hasDetail && (
+            <span className="truncate text-[11px] font-normal leading-[1.25] opacity-90" style={{ maxWidth: '100%' }}>
+              {blockDetailText(schedule)}
+            </span>
+          )}
         </button>
         {showLink && schedule.url && (
           <a

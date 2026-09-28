@@ -8,6 +8,7 @@ import DayScheduleList from '@components/calendar/common/DayScheduleList';
 import ClientOnly from '@components/common/ClientOnly';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
+import CalendarDaily from '@components/calendar/daily/CalendarDaily';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
 import { fromLocalDate } from '@components/calendar/utils/calendarUtils';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
@@ -26,7 +27,6 @@ import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
 
 import type { AddTarget } from './addMenuItems';
 import { formatSidebarDate, formatViewTitle } from './appLayoutUtils';
-import CalendarPlaceholder from './CalendarPlaceholder';
 import MobileAddMenu from './MobileAddMenu';
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
@@ -100,7 +100,7 @@ function AppShellContent() {
     ) : viewMode === 'WEEK' ? (
       <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} onOpenSchedule={openSchedule} />
     ) : (
-      <CalendarPlaceholder label="일간 달력 자리 (US-08)" />
+      <CalendarDaily variant={isTabletUp ? 'pc' : 'mobile'} onOpenSchedule={openSchedule} />
     );
 
   return (
