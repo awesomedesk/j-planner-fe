@@ -82,6 +82,13 @@ describe('일간 시간표 (US-08, PC-03)', () => {
     expect(within(timetable()).getByRole('button', { name: /헬스장/ })).toHaveTextContent('일정 · 07:00-08:00');
   });
 
+  it('PC 블록은 시간표 폭 전체를 쓴다 — 최대 폭 제한 없음 (D-048 Q3)', async () => {
+    await setup();
+    const gym = await within(timetable()).findByRole('button', { name: /헬스장/ });
+    expect(blockBox(gym).parentElement!.style.maxWidth).toBe('');
+    expect(screen.getByRole('region', { name: '종일' }).querySelector('[style*="max-width"]')).toBeNull();
+  });
+
   it('블록 색: 왼쪽 띠 = 카테고리 색, 몸통 = 일정 색 (D-019)', async () => {
     await setup();
     const dentist = await within(timetable()).findByRole('button', { name: /치과/ });
@@ -161,12 +168,17 @@ describe('일간 시간표 (US-08, PC-03)', () => {
 });
 
 describe('모바일 일간 (MO-03)', () => {
-  it('탭: 시간표 선택됨, Todo·일기는 아직 막힘 (M2·M3)', async () => {
+  it('탭: 시간표 + Todo·D-Day·일기·메모, 시간표만 열림 (D-048·D-049)', async () => {
     await setup('mobile');
     const tabs = screen.getByRole('tablist', { name: '일간 보기' });
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['시간표', 'Todo', 'D-Day', '일기', '메모']);
     expect(within(tabs).getByRole('tab', { name: '시간표' })).toHaveAttribute('aria-selected', 'true');
-    expect(within(tabs).getByRole('tab', { name: 'Todo' })).toBeDisabled();
-    expect(within(tabs).getByRole('tab', { name: '일기' })).toBeDisabled();
+    for (const name of ['Todo', 'D-Day', '일기', '메모']) expect(within(tabs).getByRole('tab', { name })).toBeDisabled();
+  });
+
+  it('탭이 다 안 들어가면 탭 줄을 좌우로 스크롤 (D-049)', async () => {
+    await setup('mobile');
+    expect(screen.getByRole('tablist', { name: '일간 보기' })).toHaveClass('overflow-x-auto');
   });
 
   it('1시간 = 46px, 블록은 제목만', async () => {

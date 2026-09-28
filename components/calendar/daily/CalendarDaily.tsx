@@ -10,6 +10,8 @@ import { selectCategories } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
 import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
+import { buildMobileDayTabs } from '@components/layouts/app/appLayoutUtils';
+
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import TimetableBlock from '../common/TimetableBlock';
@@ -28,22 +30,14 @@ const SIZE = {
   pc: { hourHeight: 48, timeColumn: 60, fontSize: 13 },
   mobile: { hourHeight: 46, timeColumn: 50, fontSize: 12 },
 } as const;
-/** PC 블록 최대 폭 — 오른쪽은 빠른 추가 팝업(US-10)이 누른 시간을 가리지 않고 뜰 자리 (PC-03) */
-const PC_BLOCK_MAX_WIDTH = 560;
-
-/** 모바일 일간 탭 (MO-03, D-021). Todo(MO-10)는 M2, 일기(MO-11)는 M3에서 연다 */
-const MOBILE_TABS = [
-  { key: 'TIMETABLE', label: '시간표', enabled: true },
-  { key: 'TODO', label: 'Todo', enabled: false },
-  { key: 'DIARY', label: '일기', enabled: false },
-] as const;
 
 const hhmm = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
 /**
  * CalendarDaily - 일간 시간표 (US-08, PC-03 · MO-03)
  * - 맨 위 종일 줄 + 시간표(항상 00:00~24:00 스크롤, D-046) + 현재 시각 선(오늘일 때, CAL-06)
- * - PC 블록은 제목 + `일정 · 10:00-11:00 · 장소`, 모바일은 제목만
+ * - PC 블록은 제목 + `일정 · 10:00-11:00 · 장소`, 시간표 폭 전체 (D-048). 모바일은 제목만
+ * - 모바일 탭: 시간표 + 사이드바 항목(설정 순서, 끈 것 숨김), 좁으면 좌우 스크롤 (D-049)
  * - 세로 위치는 주간과 같은 규칙: 시간표끼리 바꾸면 보던 시간 유지, 월간에서 오면 처음 위치 (useTimetableScroll)
  * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23), 빠른 추가(US-10), 모바일 '오늘'(US-09)은 각 스토리에서
  */
@@ -102,15 +96,19 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-3' : 'px-4 pt-4'}`} aria-label="일간 시간표">
       {isMobile ? (
-        <div role="tablist" aria-label="일간 보기" className="mb-2 flex gap-0.5 rounded-[10px] border border-tp-line bg-tp-panel p-[3px]">
-          {MOBILE_TABS.map((tab) => (
+        <div
+          role="tablist"
+          aria-label="일간 보기"
+          className="mb-2 flex shrink-0 gap-0.5 overflow-x-auto rounded-[10px] border border-tp-line bg-tp-panel p-[3px]"
+        >
+          {buildMobileDayTabs().map((tab) => (
             <button
               key={tab.key}
               type="button"
               role="tab"
               aria-selected={tab.key === 'TIMETABLE'}
               disabled={!tab.enabled}
-              className={`flex-1 rounded-[7px] py-[7px] text-[13px] disabled:opacity-40 ${
+              className={`min-w-[64px] flex-1 shrink-0 whitespace-nowrap rounded-[7px] px-2.5 py-[7px] text-[13px] disabled:opacity-40 ${
                 tab.key === 'TIMETABLE' ? 'bg-tp-primary font-semibold text-tp-on-primary' : 'font-medium text-tp-text'
               }`}
             >
@@ -129,7 +127,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
         style={{ ...gridColumns, paddingRight: scrollbarWidth, minHeight: isMobile ? 26 : 32 }}
       >
         <div className="flex items-center justify-end pr-2 text-[11px] text-tp-muted">종일</div>
-        <div className="flex min-w-0 flex-col gap-0.5 py-1" style={isMobile ? undefined : { maxWidth: PC_BLOCK_MAX_WIDTH }}>
+        <div className="flex min-w-0 flex-col gap-0.5 py-1">
           {allDaySchedules.map((schedule) => {
             const category = categoriesById.get(schedule.categoryId);
             const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
@@ -169,7 +167,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
           </div>
           <div />
           <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative">
-            <div className="relative h-full" style={isMobile ? undefined : { maxWidth: PC_BLOCK_MAX_WIDTH }}>
+            <div className="relative h-full">
               {layoutDayBlocks(schedules, viewDate, hours).map((layout) => (
                 <TimetableBlock
                   key={layout.schedule.id}
