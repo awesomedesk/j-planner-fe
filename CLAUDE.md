@@ -31,17 +31,31 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Layout**: `components/layouts/app/AppShell.tsx` is the responsive frame (D-018). PC header one line (`PcHeader`), mobile header (`MobileHeader`),
   sidebar area (`SidebarArea`, 330px / 360px at ≥1920, closed rail at 768–1023 opening as overlay), fold right panel, mobile + button.
 - **Breakpoints** (tailwind `screens`): mobile default, `fold:` 600, `tablet:` 768, `pc:` 1024, `wide:` 1920. JS: `utils/hooks/useMediaQuery.ts`.
-- **Theme** (D-024, D-038): `components/theme/theme_color.ts` holds the 3 palettes and `resolveThemePalette` (dark mode swaps Dark↔Light, Theme1↔Theme3).
+- **Theme** (D-024, D-038): `utils/theme/theme_color.ts` holds the 3 palettes and `resolveThemePalette` (dark mode swaps Dark↔Light, Theme1↔Theme3).
   `ThemeProvider` writes CSS variables `--tp-*` from `themeSlice`; defaults are also in `app/globals.css`.
-  Use Tailwind `tp-*` colors (`bg-tp-primary`, `text-tp-muted`, `border-tp-line`, …). Inline style only for data colors (category/item colors).
+  Use Tailwind `tp-*` colors (`bg-tp-primary`, `text-tp-muted`, `border-tp-line`, …). Fixed colors have names too: `ink` (text on white),
+  `sunday`/`saturday` (weekday text), `danger`, `switch-off`. Never write `text-[#…]`. Inline style only for data colors (category/item colors).
 - **Buttons**: `components/button/ThemeButton.tsx` — primary / secondary / danger. No white buttons (D-022). Inputs stay white.
 - **Dialogs**: `components/dialog/DialogFrame.tsx` — centered at ≥600px, full screen below. Pass `isDirty`; outside click / Esc / close / back /
   cancel all go through one close request and show "작성을 취소할까요?" when dirty (D-037). Buttons inside use `useDialogRequestClose()`.
 - **API**: `utils/api/client.ts` (`apiClient`, `ApiError`, pure REST + Problem Details, D-031), resource functions in `utils/api/resources/`,
   types in `types/api/index.ts` (never edit `schema.d.ts`). Show failures with `useErrorNotice()` (`utils/hooks`) → `noticeSlice` → `NoticeCenter`.
-- **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category`, `calendar` (viewMode · viewDate · selectedDate), `schedule` (visible-range schedules; `refreshSchedules()` after save/delete). Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
+- **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category` (`selectCategoriesById` for id lookups), `calendar` (viewMode · viewDate ·
+  selectedDate · timetableTopMinutes), `schedule` (visible-range schedules; late responses for an old range are ignored; `refreshSchedules()` after
+  save/delete). Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
 - **App start** (`app/layout.tsx`): `ServerStatusCheck` (GET /api/v1/health) and `AppDataLoader` (categories).
-- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form), `components/calendar/` (US-06 month; date/grid rules in `calendar/utils/calendarUtils.ts`). Feature hooks in `components/<feature>/hooks/`,
+- **Dependency direction**: `types/`, `utils/` (date, theme, api, store, hooks) never import from `components/`. Features may import `utils/`,
+  the store and shared modules (`components/sidebar`, `components/dialog`, …), but not another feature's screens or `layouts/`.
+- **Dates**: `utils/date/dateUtils.ts` — `toLocalDate`/`fromLocalDate`, week start, `formatMonthTitle` / `formatDayTitle` / `formatClock`.
+  "Now" comes from `useNow()` (`utils/hooks`, refreshes every minute) so today/current-time line follow midnight. View-mode type: `types/calendar.ts`.
+- **Calendar** (`components/calendar/`): monthly (US-06), weekly (US-07), daily (US-08).
+  - `hooks/useScheduleRange(range)` — fetch the visible range + error notice + `isLoaded` / `loadedSchedules`. Pass a memoized range.
+  - `hooks/useTimetableScroll` — D-046 initial position and keeping the viewed time between week↔day (minutes in the store).
+  - `common/` — `ScheduleBar` (month), `TimetableBlock`, `AllDayChip`, `NowLine`, `HourLabels` (week/day/3-day).
+  - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
+    `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
+- **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs (D-049).
+- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
 - **Dev pages**: `app/dev/*` — for checking features before the real entry points exist. Remove them when the feature is wired into real screens.
 

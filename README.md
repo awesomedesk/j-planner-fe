@@ -53,7 +53,7 @@ npm run dev          # http://localhost:3000
 ```
 app/
   layout.tsx            # 글꼴·Redux·테마·안내·서버 상태 확인·앱 데이터 불러오기
-  page.tsx              # 첫 화면 (AppShell + 달력 자리)
+  page.tsx              # 첫 화면 (AppShell)
   error.tsx             # 화면 오류 시 안내 + 다시 시도
   dev/                  # 개발용 확인 페이지
 components/
@@ -61,17 +61,25 @@ components/
   dialog/DialogFrame    # 입력·관리 창 공통 틀 (가운데 창 / 모바일 전체 화면, 작성 취소 확인)
   button/ThemeButton    # 테마색 버튼 (흰 버튼 없음, D-022)
   icons/LineIcon        # 선 아이콘
-  theme/                # 테마 색(theme_color.ts), CSS 변수 적용, 항목 색 6가지
+  theme/                # 테마 CSS 변수 적용(ThemeProvider), 항목 색 6가지
+  calendar/             # 월간·주간·일간 (hooks: 기간 일정 받기·시간표 스크롤, common: 막대·블록·현재 시각 선)
+  sidebar/              # 사이드바 항목 규칙 (PC 사이드바·모바일 일간 탭 공통)
   notice/               # 화면 아래 짧은 안내, 서버 상태 확인
   category/             # 카테고리 관리 (OV-04, MO-21)
   schedule/             # 일정 입력 (OV-01, MO-08)
 types/api/              # API 타입 (schema.d.ts는 생성 파일, index.ts에서 이름 붙임)
+types/calendar.ts       # 보기 종류 (월·주·일)
 utils/
   api/                  # apiClient, 오류 처리, 리소스별 API 함수 (자세히: utils/api/README.md)
-  store/                # Redux store와 slices(theme, notice, category)
-  hooks/                # useMediaQuery, useErrorNotice
+  store/                # Redux store와 slices(theme, notice, category, calendar, schedule)
+  hooks/                # useMediaQuery, useNow(1분마다 지금 시각), useScrollbarWidth, useErrorNotice
+  date/                 # 날짜 기본 도구 (LocalDate 변환, 주 시작 요일, 날짜·시각 글자)
+  theme/                # 테마 색 3가지 (theme_color.ts)
 env/config.ts           # 환경 변수 읽기, logger
+test/                   # 테스트 도우미 (renderWithStore, mockApi, fixtures, seed, viewport)
 ```
+
+기대는 방향: `types/`·`utils/`는 `components/`를 가져다 쓰지 않는다. 화면 쪽이 저장소·공통 도구를 가져다 쓴다.
 
 ## 개발할 때 알아 둘 것
 

@@ -494,6 +494,11 @@ Use Tailwind for layout and common styles:
 | `tp-primary` + `tp-on-primary` | 헤더, 주 버튼 |
 | `tp-secondary` + `tp-secondary-line` + `tp-on-secondary` | 보조 버튼·드롭다운 |
 | `danger` | 삭제·오류 |
+| `ink` | 흰 바탕(입력칸·말풍선) 위 글자 — 테마와 관계없이 같은 진한 색 |
+| `sunday`, `saturday` | 요일 글자색 (코드에서는 `weekdayTextClass(요일)`) |
+| `switch-off` | 켜고 끄는 스위치의 꺼짐 색 |
+
+- 고정 색도 `text-[#26301F]`처럼 직접 적지 않고 위 이름을 쓴다. 새 고정 색이 필요하면 `tailwind.config.ts`에 이름을 붙인다.
 
 - 버튼은 `components/button/ThemeButton.tsx`를 쓴다. 흰색 버튼은 만들지 않는다 (D-022). 입력칸은 흰색 유지.
 
