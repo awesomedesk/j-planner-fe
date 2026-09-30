@@ -4,7 +4,7 @@ import type { Category, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { blockBackground, readableTextColor } from '../utils/calendarUtils';
-import { lineClampFor, type TimetableBlockLayout } from '../utils/timetableUtils';
+import { blockDetailText, lineClampFor, type TimetableBlockLayout } from '../utils/timetableUtils';
 
 interface TimetableBlockProps {
   layout: TimetableBlockLayout;
@@ -23,9 +23,6 @@ interface TimetableBlockProps {
 /** 설명 줄 높이 (11px × 1.25) */
 const DETAIL_LINE_HEIGHT = 14;
 
-/** `일정 · 10:00-11:00 · 회의실 A` (PC-03) */
-export const blockDetailText = (schedule: Schedule) =>
-  ['일정', `${schedule.start.slice(11, 16)}-${schedule.end.slice(11, 16)}`, schedule.location?.name].filter(Boolean).join(' · ');
 
 /** 블록 사이 틈 (위아래·오른쪽 1px) */
 const GAP = 1;

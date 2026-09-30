@@ -4,6 +4,7 @@ import { schedule } from '@/test/fixtures';
 
 import {
   DEFAULT_TIMETABLE_HOURS,
+  blockDetailText,
   initialScrollTarget,
   MIN_BLOCK_MINUTES,
   allDaySchedulesOn,
@@ -199,5 +200,26 @@ describe('긴 제목 (D-023)', () => {
     expect(lineClampFor(88, 11)).toBe(6);
     expect(lineClampFor(42, 11)).toBe(2);
     expect(lineClampFor(10, 11)).toBe(1);
+  });
+});
+
+describe('블록 설명 줄 (PC-03)', () => {
+  it('하루 안 일정: 일정 · 10:00-11:00 · 장소', () => {
+    const s = schedule({ id: 50, start: '2026-09-30T10:00:00', end: '2026-09-30T11:00:00', location: { name: '회의실 A', latitude: null, longitude: null } });
+    expect(blockDetailText(s)).toBe('일정 · 10:00-11:00 · 회의실 A');
+  });
+
+  it('장소가 없으면 시각까지만', () => {
+    expect(blockDetailText(schedule({ id: 50, start: '2026-09-30T10:00:00', end: '2026-09-30T11:00:00', location: null }))).toBe('일정 · 10:00-11:00');
+  });
+
+  it('여러 날 일정은 날짜를 붙여 거꾸로 읽히지 않게 (US-08 검수)', () => {
+    const s = schedule({ id: 50, start: '2026-09-30T14:00:00', end: '2026-10-02T11:00:00', location: null });
+    expect(blockDetailText(s)).toBe('일정 · 9/30 14:00 – 10/2 11:00');
+  });
+
+  it('자정을 넘는 일정도 날짜를 붙인다', () => {
+    const s = schedule({ id: 50, start: '2026-09-29T23:00:00', end: '2026-09-30T01:00:00', location: null });
+    expect(blockDetailText(s)).toBe('일정 · 9/29 23:00 – 9/30 01:00');
   });
 });

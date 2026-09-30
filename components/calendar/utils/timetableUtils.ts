@@ -159,3 +159,19 @@ const LINE_HEIGHT_RATIO = 1.25;
 const BLOCK_VERTICAL_PADDING = 4;
 export const lineClampFor = (heightPx: number, fontSizePx: number) =>
   Math.max(1, Math.floor((heightPx - BLOCK_VERTICAL_PADDING) / (fontSizePx * LINE_HEIGHT_RATIO)));
+
+/** `9/30 14:00` — 날짜가 다른 시작·끝을 보여 줄 때 */
+const monthDayTime = (dateTime: string) => `${Number(dateTime.slice(5, 7))}/${Number(dateTime.slice(8, 10))} ${dateTime.slice(11, 16)}`;
+
+/**
+ * 블록 아래 설명 줄 (PC 일간, PC-03)
+ * - 하루 안 일정: `일정 · 10:00-11:00 · 회의실 A`
+ * - 날짜가 다르면 날짜를 붙인다: `일정 · 9/30 14:00 – 10/2 11:00` (시각만 쓰면 거꾸로 읽혀서, US-08 검수)
+ */
+export const blockDetailText = (schedule: Schedule) => {
+  const sameDay = schedule.start.slice(0, 10) === schedule.end.slice(0, 10);
+  const time = sameDay
+    ? `${schedule.start.slice(11, 16)}-${schedule.end.slice(11, 16)}`
+    : `${monthDayTime(schedule.start)} – ${monthDayTime(schedule.end)}`;
+  return ['일정', time, schedule.location?.name].filter(Boolean).join(' · ');
+};
