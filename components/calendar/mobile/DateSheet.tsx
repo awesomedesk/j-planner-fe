@@ -5,7 +5,7 @@ import { useRef, useState, type PointerEvent } from 'react';
 import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 
 import DayScheduleList from '../common/DayScheduleList';
-import { formatDayTitle } from '../utils/calendarUtils';
+import { formatDayTitle } from '@utils/date/dateUtils';
 
 interface DateSheetProps {
   date: LocalDate;

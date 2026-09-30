@@ -1,21 +1,14 @@
-import { endOfMonth, endOfWeek, format, getISOWeek, parseISO, startOfMonth, startOfWeek, addDays } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { addDays, endOfMonth, endOfWeek, getISOWeek, startOfMonth, startOfWeek } from 'date-fns';
 
 import type { LocalDate, Schedule } from '@/types/api';
+
+import { fromLocalDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
 
 /**
  * 달력 공통 계산 (US-06~08). 날짜는 `YYYY-MM-DD` 문자열로 다루고,
  * 일정의 날짜·시간은 서버가 준 문자열 그대로 비교한다 (시간대 변환 없음, D-040).
  */
 
-/** 주 시작 요일 (설정 weekStartDay, 기본 일요일 D-024). 설정 연결은 US-26 */
-export type WeekStartDay = 'SUN' | 'MON';
-export const DEFAULT_WEEK_START: WeekStartDay = 'SUN';
-
-const weekStartsOn = (weekStart: WeekStartDay) => (weekStart === 'MON' ? 1 : 0);
-
-export const toLocalDate = (date: Date): LocalDate => format(date, 'yyyy-MM-dd');
-export const fromLocalDate = (value: LocalDate): Date => parseISO(value);
 
 export interface CalendarDay {
   date: LocalDate;
@@ -70,9 +63,6 @@ export const getWeekdayLabels = (weekStart: WeekStartDay) => {
   return weekStart === 'MON' ? [...labels.slice(1), labels[0]] : labels;
 };
 
-/** 헤더·시트 날짜 표시 */
-export const formatMonthTitle = (date: LocalDate) => format(fromLocalDate(date), 'yyyy년 M월');
-export const formatDayTitle = (date: LocalDate) => format(fromLocalDate(date), 'M월 d일 (EEE)', { locale: ko });
 
 // ---------------------------------------------------------------- 일정 배치
 

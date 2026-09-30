@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import type { Category, Id, LocalDate, Schedule } from '@/types/api';
+import type { LocalDate, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
 import ClientOnly from '@components/common/ClientOnly';
@@ -10,7 +10,7 @@ import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
 import CalendarDaily from '@components/calendar/daily/CalendarDaily';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
-import { fromLocalDate } from '@components/calendar/utils/calendarUtils';
+import { formatDayTitle } from '@utils/date/dateUtils';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
 import {
@@ -20,13 +20,13 @@ import {
   selectViewMode,
   setViewMode,
 } from '@store/slices/calendarSlice';
-import { selectCategories } from '@store/slices/categorySlice';
+import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
 import { refreshSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
 
 import type { AddTarget } from './addMenuItems';
-import { formatSidebarDate, formatViewTitle } from './appLayoutUtils';
+import { formatViewTitle } from './appLayoutUtils';
 import MobileAddMenu from './MobileAddMenu';
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
@@ -64,7 +64,7 @@ function AppShellContent() {
   const selectedDate = useAppSelector(selectSelectedDate);
   const schedules = useAppSelector(selectSchedules);
   const categories = useAppSelector(selectCategories);
-  const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);
+  const categoriesById = useAppSelector(selectCategoriesById);
 
   /** 사용자가 직접 열고 닫기 전에는 폭에 따라 정한다 (PC 열림, 태블릿 닫힘) */
   const [sidebarOpenOverride, setSidebarOpenOverride] = useState<boolean | null>(null);
@@ -123,8 +123,8 @@ function AppShellContent() {
           className="hidden min-w-0 flex-1 flex-col gap-2.5 overflow-y-auto border-l border-tp-line p-3 fold:flex tablet:hidden"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold" suppressHydrationWarning>
-              {formatSidebarDate(fromLocalDate(selectedDate))}
+            <h2 className="text-base font-bold">
+              {formatDayTitle(selectedDate)}
             </h2>
             <button type="button" onClick={() => openDayPlan(selectedDate)} className="text-[13px] font-semibold text-tp-primary">
               하루 계획 보기
@@ -136,7 +136,7 @@ function AppShellContent() {
 
         <SidebarArea
           className="hidden tablet:flex"
-          selectedDate={fromLocalDate(selectedDate)}
+          selectedDate={selectedDate}
           isOpen={isSidebarOpen}
           isOverlay={!isPc}
           onOpen={() => setSidebarOpenOverride(true)}

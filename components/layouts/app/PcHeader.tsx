@@ -2,10 +2,11 @@
 
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
+import type { CalendarViewMode } from '@/types/calendar';
 
 import type { AddTarget } from './addMenuItems';
 import PcAddMenu from './PcAddMenu';
-import { VIEW_MODE_LABEL, type CalendarViewMode } from './appLayoutUtils';
+import { VIEW_MODE_LABEL } from './appLayoutUtils';
 
 interface PcHeaderProps {
   /** 가운데 날짜 제목 (월간 `2026년 9월`, 주간 `9월 20일 – 26일`) */
@@ -43,7 +44,7 @@ export default function PcHeader({
         <ThemeButton iconOnly aria-label="이전">
           <Icon name="chevronLeft" />
         </ThemeButton>
-        <h1 className="whitespace-nowrap text-center text-[17px] font-bold pc:min-w-[140px] pc:text-[19px]" suppressHydrationWarning>
+        <h1 className="whitespace-nowrap text-center text-[17px] font-bold pc:min-w-[140px] pc:text-[19px]">
           {title}
         </h1>
         <ThemeButton iconOnly aria-label="다음">

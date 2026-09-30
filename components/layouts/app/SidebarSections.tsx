@@ -1,6 +1,6 @@
 import Icon from '@components/icons/LineIcon';
 
-import { SIDEBAR_SECTIONS } from './appLayoutUtils';
+import { SIDEBAR_SECTIONS } from '@components/sidebar/sidebarItems';
 
 /**
  * SidebarSections - 사이드바·날짜 시트의 섹션 자리 (D-013)

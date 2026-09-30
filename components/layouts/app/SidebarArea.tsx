@@ -1,13 +1,16 @@
 "use client";
 
+import type { LocalDate } from '@/types/api';
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
 
-import { SIDEBAR_SECTIONS, formatSidebarDate } from './appLayoutUtils';
+import { SIDEBAR_SECTIONS } from '@components/sidebar/sidebarItems';
+import { formatDayTitle } from '@utils/date/dateUtils';
+
 import SidebarSections from './SidebarSections';
 
 interface SidebarAreaProps {
-  selectedDate: Date;
+  selectedDate: LocalDate;
   isOpen: boolean;
   /** 태블릿(768~1023px): 열면 달력 위에 겹쳐 표시 (D-018) */
   isOverlay: boolean;
@@ -45,8 +48,8 @@ export default function SidebarArea({ selectedDate, isOpen, isOverlay, onOpen, o
       }`}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold" suppressHydrationWarning>
-          {formatSidebarDate(selectedDate)}
+        <h2 className="text-base font-bold">
+          {formatDayTitle(selectedDate)}
         </h2>
         <div className="flex gap-1.5">
           <ThemeButton iconOnly aria-label="사이드바 설정">

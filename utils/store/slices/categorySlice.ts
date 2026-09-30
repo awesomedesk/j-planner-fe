@@ -1,6 +1,6 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit';
 
-import type { Category } from '@/types/api';
+import type { Category, Id } from '@/types/api';
 
 import { categoryApi, toErrorMessage } from '@utils/api';
 
@@ -54,6 +54,8 @@ const categorySlice = createSlice({
 });
 
 export const selectCategories = (state: { category: CategoryState }) => state.category.items;
+/** id → 카테고리 표 (블록 띠 색 등). 목록이 같으면 같은 표를 돌려준다 */
+export const selectCategoriesById = createSelector([selectCategories], (items) => new Map<Id, Category>(items.map((c) => [c.id, c])));
 export const selectCategoryStatus = (state: { category: CategoryState }) => state.category.status;
 export const selectCategoryError = (state: { category: CategoryState }) => state.category.error;
 

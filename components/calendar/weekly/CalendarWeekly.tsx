@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 
-import type { Category, Id, Schedule } from '@/types/api';
+import type { Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
-import { selectCategories } from '@store/slices/categorySlice';
+import { selectCategoriesById } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
 import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
@@ -15,7 +15,8 @@ import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import TimetableBlock from '../common/TimetableBlock';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
-import { DEFAULT_WEEK_START, formatDayTitle, readableTextColor, toLocalDate, type CalendarDay } from '../utils/calendarUtils';
+import { readableTextColor, type CalendarDay } from '../utils/calendarUtils';
+import { DEFAULT_WEEK_START, formatClock, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import {
   DEFAULT_TIMETABLE_HOURS,
   allDaySchedulesOn,
@@ -42,8 +43,6 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 /** 모바일 요일 글자색: 일요일 빨강, 토요일 파랑 (MO-05) */
 const MOBILE_WEEKDAY_COLOR: Record<number, string> = { 0: 'text-[#A6323F]', 6: 'text-[#2F62A8]' };
 
-const hhmm = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
 /**
  * CalendarWeekly - 주간 시간표 (US-07, PC-02 · MO-05)
  * - 7일 머리글(오늘 강조) + 종일 줄 + 시간표(항상 00:00~24:00을 그리고 스크롤, 1시간 간격, D-046)
@@ -60,8 +59,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   const schedules = useAppSelector(selectSchedules);
   const scheduleStatus = useAppSelector(selectScheduleStatus);
   const scheduleRange = useAppSelector(selectScheduleRange);
-  const categories = useAppSelector(selectCategories);
-  const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);
+  const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
   const isMobile = variant === 'mobile';
   const hours = DEFAULT_TIMETABLE_HOURS;
@@ -202,7 +200,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
               {day.isToday && nowMinutes !== null && (
                 <div
                   role="separator"
-                  aria-label={`현재 시각 ${hhmm(now)}`}
+                  aria-label={`현재 시각 ${formatClock(now)}`}
                   className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger"
                   style={{ top: `${(nowMinutes / 60) * size.hourHeight}px` }}
                 >

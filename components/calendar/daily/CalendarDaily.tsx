@@ -2,22 +2,23 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 
-import type { Category, Id, Schedule } from '@/types/api';
+import type { Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import { selectViewDate } from '@store/slices/calendarSlice';
-import { selectCategories } from '@store/slices/categorySlice';
+import { selectCategoriesById } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
 import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
-import { buildMobileDayTabs } from '@components/layouts/app/appLayoutUtils';
+import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
 
 import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import TimetableBlock from '../common/TimetableBlock';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
-import { fromLocalDate, formatDayTitle, readableTextColor, toLocalDate, type CalendarDay } from '../utils/calendarUtils';
+import { readableTextColor, type CalendarDay } from '../utils/calendarUtils';
+import { formatClock, formatDayTitle, fromLocalDate, toLocalDate } from '@utils/date/dateUtils';
 import { DEFAULT_TIMETABLE_HOURS, allDaySchedulesOn, getHourLabels, layoutDayBlocks, nowLineMinutes } from '../utils/timetableUtils';
 
 interface CalendarDailyProps {
@@ -31,8 +32,6 @@ const SIZE = {
   pc: { hourHeight: 48, timeColumn: 60, fontSize: 13 },
   mobile: { hourHeight: 46, timeColumn: 50, fontSize: 12 },
 } as const;
-
-const hhmm = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
 /**
  * CalendarDaily - 일간 시간표 (US-08, PC-03 · MO-03)
@@ -48,8 +47,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
   const schedules = useAppSelector(selectSchedules);
   const scheduleStatus = useAppSelector(selectScheduleStatus);
   const scheduleRange = useAppSelector(selectScheduleRange);
-  const categories = useAppSelector(selectCategories);
-  const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);
+  const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
   const isMobile = variant === 'mobile';
   const hours = DEFAULT_TIMETABLE_HOURS;
@@ -179,7 +177,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
             {nowMinutes !== null && (
               <div
                 role="separator"
-                aria-label={`현재 시각 ${hhmm(now)}`}
+                aria-label={`현재 시각 ${formatClock(now)}`}
                 className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger"
                 style={{ top: `${(nowMinutes / 60) * size.hourHeight}px` }}
               >

@@ -4,7 +4,7 @@ import {
   DEFAULT_COLOR_THEME,
   DEFAULT_DARK_MODE,
   type ColorThemeCode,
-} from '@components/theme/theme_color';
+} from '@utils/theme/theme_color';
 
 /**
  * 색 테마·다크 모드 상태 (THEME-01·02, D-024)

@@ -1,15 +1,15 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { LocalDate } from '@/types/api';
+import type { CalendarViewMode } from '@/types/calendar';
 
-import { toLocalDate } from '@components/calendar/utils/calendarUtils';
+import { toLocalDate } from '@utils/date/dateUtils';
 
 /**
  * 달력 보기 상태 (US-06~09)
  * - viewDate: 보고 있는 날짜(달·주·일의 기준). 날짜 이동은 US-09
  * - selectedDate: 고른 날짜 (사이드바·날짜 시트 기준, 기본 오늘, D-015)
  */
-export type CalendarViewMode = 'MONTH' | 'WEEK' | 'DAY';
 
 interface CalendarState {
   viewMode: CalendarViewMode;

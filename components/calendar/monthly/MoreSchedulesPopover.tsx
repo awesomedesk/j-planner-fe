@@ -6,7 +6,7 @@ import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import ScheduleBar from '../common/ScheduleBar';
-import { formatDayTitle } from '../utils/calendarUtils';
+import { formatDayTitle } from '@utils/date/dateUtils';
 
 interface MoreSchedulesPopoverProps {
   date: LocalDate;

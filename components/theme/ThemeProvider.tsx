@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { selectColorTheme, selectDarkMode } from '@store/slices/themeSlice';
 
-import { resolveThemePalette } from './theme_color';
+import { resolveThemePalette } from '@utils/theme/theme_color';
 import { applyThemeToDocument } from './themeCssVariables';
 
 /**

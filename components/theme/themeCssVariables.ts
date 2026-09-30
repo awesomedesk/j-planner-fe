@@ -1,4 +1,4 @@
-import type { ThemePalette } from './theme_color';
+import type { ThemePalette } from '@utils/theme/theme_color';
 
 /**
  * 테마 5색 → CSS 변수 (`--tp-*`)

@@ -6,23 +6,15 @@ import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
-import { selectCategories } from '@store/slices/categorySlice';
+import { selectCategoriesById } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
 import { fetchSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 
 import { useNow } from '@utils/hooks/useNow';
 
 import ScheduleBar from '../common/ScheduleBar';
-import {
-  DEFAULT_WEEK_START,
-  buildMonthGrid,
-  formatDayTitle,
-  getGridRange,
-  getWeekdayLabels,
-  schedulesOn,
-  toLocalDate,
-  type CalendarDay,
-} from '../utils/calendarUtils';
+import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, type CalendarDay } from '../utils/calendarUtils';
+import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import MoreSchedulesPopover from './MoreSchedulesPopover';
 
 interface CalendarMonthlyProps {
@@ -54,12 +46,11 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
   const schedules = useAppSelector(selectSchedules);
-  const categories = useAppSelector(selectCategories);
 
   const today = toLocalDate(useNow());
   const weeks = useMemo(() => buildMonthGrid(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
   const range = useMemo(() => getGridRange(weeks), [weeks]);
-  const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);
+  const categoriesById = useAppSelector(selectCategoriesById);
 
   // 보이는 기간의 일정 받기
   useEffect(() => {

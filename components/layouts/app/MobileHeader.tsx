@@ -2,8 +2,9 @@
 
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
+import type { CalendarViewMode } from '@/types/calendar';
 
-import { MOBILE_VIEW_MODE_LABEL, type CalendarViewMode } from './appLayoutUtils';
+import { MOBILE_VIEW_MODE_LABEL } from './appLayoutUtils';
 
 interface MobileHeaderProps {
   /** 가운데 날짜 제목 (월간 `2026년 9월`, 주간 `9월 20일 – 26일`) */
@@ -27,7 +28,7 @@ export default function MobileHeader({ title, viewMode, onClickMenu, onClickSett
         <button type="button" aria-label="메뉴" onClick={onClickMenu} className="inline-flex h-11 w-11 items-center justify-center">
           <Icon name="menu" size={20} />
         </button>
-        <h1 className="text-[17px] font-bold" suppressHydrationWarning>
+        <h1 className="text-[17px] font-bold">
           {title}
         </h1>
         <button type="button" aria-label="설정" onClick={onClickSettings} className="inline-flex h-11 w-11 items-center justify-center">

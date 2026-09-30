@@ -2,7 +2,8 @@ import { addDays, format, startOfWeek } from 'date-fns';
 
 import type { LocalDate, Schedule } from '@/types/api';
 
-import { fromLocalDate, occursOn, toLocalDate, type CalendarDay, type WeekStartDay } from './calendarUtils';
+import { occursOn, type CalendarDay } from './calendarUtils';
+import { fromLocalDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
 
 /**
  * 시간표(주간·일간) 계산 (US-07, US-08)
@@ -23,8 +24,6 @@ export interface DateRange {
   from: LocalDate;
   to: LocalDate;
 }
-
-const weekStartsOn = (weekStart: WeekStartDay) => (weekStart === 'MON' ? 1 : 0);
 
 /** 기준 날짜가 들어 있는 한 주 (주 시작 요일 기준) */
 export const getWeekRange = (anchor: LocalDate, weekStart: WeekStartDay): DateRange => {
