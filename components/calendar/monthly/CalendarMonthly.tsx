@@ -4,17 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
-import { showNotice } from '@store/slices/noticeSlice';
-import { fetchSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 
+import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 
 import ScheduleBar from '../common/ScheduleBar';
-import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, type CalendarDay } from '../utils/calendarUtils';
-import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
+import { useScheduleRange } from '../hooks/useScheduleRange';
+import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, stripeColorOf, type CalendarDay } from '../utils/calendarUtils';
 import MoreSchedulesPopover from './MoreSchedulesPopover';
 
 interface CalendarMonthlyProps {
@@ -45,7 +43,6 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
-  const schedules = useAppSelector(selectSchedules);
 
   const today = toLocalDate(useNow());
   const weeks = useMemo(() => buildMonthGrid(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
@@ -53,11 +50,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
   const categoriesById = useAppSelector(selectCategoriesById);
 
   // 보이는 기간의 일정 받기
-  useEffect(() => {
-    dispatch(fetchSchedules(range))
-      .unwrap()
-      .catch((message: string) => dispatch(showNotice(message, 'error')));
-  }, [dispatch, range]);
+  const { schedules } = useScheduleRange(range);
 
   // 칸 높이에 맞춰 막대 몇 개까지 보일지
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -260,7 +253,7 @@ function DotCell({ day, schedules, categoriesById, isSelected, onSelect }: DotCe
     new Set(
       schedules.map((schedule) => {
         const category = categoriesById.get(schedule.categoryId);
-        return category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
+        return stripeColorOf(category);
       })
     )
   ).slice(0, MAX_DOTS);

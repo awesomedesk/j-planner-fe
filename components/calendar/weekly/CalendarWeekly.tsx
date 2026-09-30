@@ -1,22 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 import type { Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
-import { showNotice } from '@store/slices/noticeSlice';
-import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
+import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
+import AllDayChip from '../common/AllDayChip';
+import HourLabels from '../common/HourLabels';
+import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
+import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
-import { readableTextColor, type CalendarDay } from '../utils/calendarUtils';
-import { DEFAULT_WEEK_START, formatClock, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
+import type { CalendarDay } from '../utils/calendarUtils';
 import {
   DEFAULT_TIMETABLE_HOURS,
   allDaySchedulesOn,
@@ -56,9 +57,6 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
-  const schedules = useAppSelector(selectSchedules);
-  const scheduleStatus = useAppSelector(selectScheduleStatus);
-  const scheduleRange = useAppSelector(selectScheduleRange);
   const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
   const isMobile = variant === 'mobile';
@@ -71,23 +69,17 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   const days = useMemo(() => buildWeekDays(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
   const range = useMemo(() => getWeekRange(viewDate, DEFAULT_WEEK_START), [viewDate]);
 
-  useEffect(() => {
-    dispatch(fetchSchedules(range))
-      .unwrap()
-      .catch((message: string) => dispatch(showNotice(message, 'error')));
-  }, [dispatch, range]);
+  const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
 
   const nowMinutes = nowLineMinutes(now, hours);
 
   // 세로 위치: 보던 시간 유지 또는 처음 위치 (D-046)
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isRangeLoaded =
-    scheduleRange?.from === range.from && scheduleRange?.to === range.to && (scheduleStatus === 'succeeded' || scheduleStatus === 'failed');
   const { handleScroll } = useTimetableScroll({
     scrollRef,
     days,
-    schedules: scheduleStatus === 'succeeded' ? schedules : [],
-    isLoaded: isRangeLoaded,
+    schedules: loadedSchedules,
+    isLoaded,
     hourHeight: size.hourHeight,
     hourCount: hourLabels.length,
     now,
@@ -144,25 +136,15 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
             aria-label={`${formatDayTitle(day.date)} 종일`}
             className={`flex min-w-0 flex-col gap-0.5 border-l border-tp-line ${isMobile ? 'p-0.5' : 'p-1'}`}
           >
-            {allDaySchedulesOn(schedules, day.date).map((schedule) => {
-              const category = categoriesById.get(schedule.categoryId);
-              const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
-              return (
-                <button
-                  key={schedule.id}
-                  type="button"
-                  title={schedule.title}
-                  onClick={() => onOpenSchedule(schedule)}
-                  className={`truncate rounded text-left ${isMobile ? 'py-px pl-[11px] text-[9px] font-semibold' : 'py-0.5 pl-[11px] pr-1.5 text-[11px] font-medium'}`}
-                  style={{
-                    background: `linear-gradient(to right, ${stripe} 0 5px, ${schedule.color ?? 'var(--tp-theme2)'} 5px)`,
-                    color: readableTextColor(schedule.color),
-                  }}
-                >
-                  {schedule.title}
-                </button>
-              );
-            })}
+            {allDaySchedulesOn(schedules, day.date).map((schedule) => (
+              <AllDayChip
+                key={schedule.id}
+                schedule={schedule}
+                category={categoriesById.get(schedule.categoryId)}
+                compact={isMobile}
+                onOpen={onOpenSchedule}
+              />
+            ))}
           </div>
         ))}
       </section>
@@ -170,19 +152,13 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
       {/* 시간표 */}
       <div ref={scrollRef} data-testid="timetable-scroll" onScroll={handleScroll} className="min-h-0 flex-1 overflow-y-auto pt-2">
         <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
-          {/* 시간 눈금 + 점선 */}
-          <div className="pointer-events-none absolute inset-0">
-            {hourLabels.map((label, i) => (
-              <div key={label} className="absolute inset-x-0 border-t border-dashed border-tp-line" style={{ top: i * size.hourHeight }}>
-                <span
-                  className={`absolute -top-2 bg-tp-bg text-right text-tp-muted ${isMobile ? 'text-[9px]' : 'pr-2 text-[11px]'}`}
-                  style={{ width: size.timeColumn - (isMobile ? 3 : 0) }}
-                >
-                  {isMobile ? String(Number(label.slice(0, 2))) : label}
-                </span>
-              </div>
-            ))}
-          </div>
+          <HourLabels
+            labels={hourLabels}
+            hourHeight={size.hourHeight}
+            width={size.timeColumn - (isMobile ? 3 : 0)}
+            hourOnly={isMobile}
+            className={isMobile ? 'text-[9px]' : 'pr-2 text-[11px]'}
+          />
           <div />
           {days.map((day) => (
             <div key={day.date} role="group" aria-label={`${formatDayTitle(day.date)} 시간표`} className="relative border-l border-tp-line">
@@ -198,14 +174,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
                 />
               ))}
               {day.isToday && nowMinutes !== null && (
-                <div
-                  role="separator"
-                  aria-label={`현재 시각 ${formatClock(now)}`}
-                  className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger"
-                  style={{ top: `${(nowMinutes / 60) * size.hourHeight}px` }}
-                >
-                  {!isMobile && <span className="absolute -left-[5px] -top-[6px] h-2.5 w-2.5 rounded-full bg-danger" />}
-                </div>
+                <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} showDot={!isMobile} />
               )}
             </div>
           ))}

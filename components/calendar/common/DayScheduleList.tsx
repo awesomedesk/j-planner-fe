@@ -1,10 +1,9 @@
 "use client";
 
 import type { Category, Id, LocalDate, Schedule } from '@/types/api';
-import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import Icon from '@components/icons/LineIcon';
 
-import { listTimeLabel, schedulesOn } from '../utils/calendarUtils';
+import { listTimeLabel, schedulesOn, stripeColorOf } from '../utils/calendarUtils';
 
 interface DayScheduleListProps {
   date: LocalDate;
@@ -33,7 +32,7 @@ export default function DayScheduleList({ date, schedules, categoriesById, onOpe
             <button type="button" onClick={() => onOpen(schedule)} className="flex min-h-9 min-w-0 flex-1 items-center gap-2 text-left text-[13px]">
               <span
                 className="h-[18px] w-1 shrink-0 rounded-sm"
-                style={{ backgroundColor: category ? getCategoryStripeColor(category) : 'var(--tp-theme2)' }}
+                style={{ backgroundColor: stripeColorOf(category) }}
                 aria-hidden="true"
               />
               <span className="w-10 shrink-0 text-tp-muted">{listTimeLabel(schedule, date)}</span>

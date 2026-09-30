@@ -1,6 +1,7 @@
 import { addDays, endOfMonth, endOfWeek, getISOWeek, startOfMonth, startOfWeek } from 'date-fns';
 
-import type { LocalDate, Schedule } from '@/types/api';
+import type { Category, LocalDate, Schedule } from '@/types/api';
+import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 
 import { fromLocalDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
 
@@ -119,3 +120,15 @@ export const readableTextColor = (hex: string | null) => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000 / 255;
   return brightness > 0.6 ? DARK_TEXT : LIGHT_TEXT;
 };
+
+// ---------------------------------------------------------------- 블록 색
+
+/** 색을 고르지 않은 일정의 몸통·미지정 띠 = 테마의 Theme2 (D-030, D-037) */
+const THEME2 = 'var(--tp-theme2)';
+
+/** 왼쪽 띠 색: 카테고리 색 (미지정·못 찾은 카테고리는 Theme2) */
+export const stripeColorOf = (category: Category | null | undefined) => (category ? getCategoryStripeColor(category) : THEME2);
+
+/** 일정 막대·블록 배경: 왼쪽 5px 카테고리 띠 + 몸통(일정 색, 없으면 Theme2) (D-019) */
+export const blockBackground = (category: Category | null | undefined, color: string | null) =>
+  `linear-gradient(to right, ${stripeColorOf(category)} 0 5px, ${color ?? THEME2} 5px)`;

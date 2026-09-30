@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { schedule } from '@/test/fixtures';
+import { CATEGORIES, schedule } from '@/test/fixtures';
 
 import {
   DARK_TEXT,
@@ -13,6 +13,8 @@ import {
   occursOn,
   readableTextColor,
   schedulesOn,
+  blockBackground,
+  stripeColorOf,
 } from './calendarUtils';
 
 describe('월간 칸 만들기 (US-06)', () => {
@@ -94,4 +96,20 @@ describe('막대 글자색 자동 (D-019)', () => {
     expect(readableTextColor('#A6323F')).toBe(LIGHT_TEXT);
   });
   it('밝은 몸통은 어두운 글자', () => expect(readableTextColor('#CCD5AE')).toBe(DARK_TEXT));
+});
+
+describe('블록 색 (D-019, D-030, D-037)', () => {
+  const [unassigned, study, , exercise] = CATEGORIES;
+
+  it('띠 색: 카테고리 색, 미지정·못 찾은 카테고리는 테마 Theme2, 색 없는 카테고리는 기본색', () => {
+    expect(stripeColorOf(study)).toBe('#2F62A8');
+    expect(stripeColorOf(unassigned)).toBe('var(--tp-theme2)');
+    expect(stripeColorOf(undefined)).toBe('var(--tp-theme2)');
+    expect(stripeColorOf(exercise)).toBe('#2F62A8');
+  });
+
+  it('배경: 왼쪽 5px 띠 + 몸통(일정 색, 없으면 Theme2)', () => {
+    expect(blockBackground(study, '#3F3F3F')).toBe('linear-gradient(to right, #2F62A8 0 5px, #3F3F3F 5px)');
+    expect(blockBackground(study, null)).toBe('linear-gradient(to right, #2F62A8 0 5px, var(--tp-theme2) 5px)');
+  });
 });

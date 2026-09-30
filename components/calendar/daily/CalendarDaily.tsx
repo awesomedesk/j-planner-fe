@@ -1,24 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 import type { Schedule } from '@/types/api';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
+import { useAppSelector } from '@/app/hooks';
+import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
 import { selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
-import { showNotice } from '@store/slices/noticeSlice';
-import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
 
-import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
-
+import { formatDayTitle, fromLocalDate, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
+import AllDayChip from '../common/AllDayChip';
+import HourLabels from '../common/HourLabels';
+import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
+import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
-import { readableTextColor, type CalendarDay } from '../utils/calendarUtils';
-import { formatClock, formatDayTitle, fromLocalDate, toLocalDate } from '@utils/date/dateUtils';
+import type { CalendarDay } from '../utils/calendarUtils';
 import { DEFAULT_TIMETABLE_HOURS, allDaySchedulesOn, getHourLabels, layoutDayBlocks, nowLineMinutes } from '../utils/timetableUtils';
 
 interface CalendarDailyProps {
@@ -42,11 +42,7 @@ const SIZE = {
  * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23), 빠른 추가(US-10), 모바일 '오늘'(US-09)은 각 스토리에서
  */
 export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDailyProps) {
-  const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
-  const schedules = useAppSelector(selectSchedules);
-  const scheduleStatus = useAppSelector(selectScheduleStatus);
-  const scheduleRange = useAppSelector(selectScheduleRange);
   const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
   const isMobile = variant === 'mobile';
@@ -63,20 +59,14 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
   const days = useMemo(() => [day], [day]);
   const range = useMemo(() => ({ from: viewDate, to: viewDate }), [viewDate]);
 
-  useEffect(() => {
-    dispatch(fetchSchedules(range))
-      .unwrap()
-      .catch((message: string) => dispatch(showNotice(message, 'error')));
-  }, [dispatch, range]);
+  const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isRangeLoaded =
-    scheduleRange?.from === range.from && scheduleRange?.to === range.to && (scheduleStatus === 'succeeded' || scheduleStatus === 'failed');
   const { handleScroll } = useTimetableScroll({
     scrollRef,
     days,
-    schedules: scheduleStatus === 'succeeded' ? schedules : [],
-    isLoaded: isRangeLoaded,
+    schedules: loadedSchedules,
+    isLoaded,
     hourHeight: size.hourHeight,
     hourCount: hourLabels.length,
     now,
@@ -122,43 +112,21 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
       >
         <div className="flex items-center justify-end pr-2 text-[11px] text-tp-muted">종일</div>
         <div className="flex min-w-0 flex-col gap-0.5 py-1">
-          {allDaySchedules.map((schedule) => {
-            const category = categoriesById.get(schedule.categoryId);
-            const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
-            return (
-              <button
-                key={schedule.id}
-                type="button"
-                title={schedule.title}
-                onClick={() => onOpenSchedule(schedule)}
-                className="truncate rounded py-0.5 pl-[11px] pr-1.5 text-left text-xs font-medium"
-                style={{
-                  background: `linear-gradient(to right, ${stripe} 0 5px, ${schedule.color ?? 'var(--tp-theme2)'} 5px)`,
-                  color: readableTextColor(schedule.color),
-                }}
-              >
-                {schedule.title}
-              </button>
-            );
-          })}
+          {allDaySchedules.map((schedule) => (
+            <AllDayChip key={schedule.id} schedule={schedule} category={categoriesById.get(schedule.categoryId)} onOpen={onOpenSchedule} />
+          ))}
         </div>
       </section>
 
       {/* 시간표 */}
       <div ref={scrollRef} data-testid="timetable-scroll" onScroll={handleScroll} className="min-h-0 flex-1 overflow-y-auto pt-2">
         <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
-          <div className="pointer-events-none absolute inset-0">
-            {hourLabels.map((label, i) => (
-              <div key={label} className="absolute inset-x-0 border-t border-dashed border-tp-line" style={{ top: i * size.hourHeight }}>
-                <span
-                  className={`absolute -top-2 bg-tp-bg pr-2 text-right text-tp-muted ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}
-                  style={{ width: size.timeColumn - 4 }}
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
+          <HourLabels
+            labels={hourLabels}
+            hourHeight={size.hourHeight}
+            width={size.timeColumn - 4}
+            className={`pr-2 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}
+          />
           <div />
           <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative">
             <div className="relative h-full">
@@ -174,16 +142,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
                 />
               ))}
             </div>
-            {nowMinutes !== null && (
-              <div
-                role="separator"
-                aria-label={`현재 시각 ${formatClock(now)}`}
-                className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger"
-                style={{ top: `${(nowMinutes / 60) * size.hourHeight}px` }}
-              >
-                <span className="absolute -left-[5px] -top-[6px] h-2.5 w-2.5 rounded-full bg-danger" />
-              </div>
-            )}
+            {nowMinutes !== null && <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} />}
           </div>
         </div>
       </div>

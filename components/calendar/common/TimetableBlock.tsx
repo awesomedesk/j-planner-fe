@@ -1,10 +1,9 @@
 "use client";
 
 import type { Category, Schedule } from '@/types/api';
-import { getCategoryStripeColor } from '@components/category/utils/categoryUtils';
 import Icon from '@components/icons/LineIcon';
 
-import { readableTextColor } from '../utils/calendarUtils';
+import { blockBackground, readableTextColor } from '../utils/calendarUtils';
 import { lineClampFor, type TimetableBlockLayout } from '../utils/timetableUtils';
 
 interface TimetableBlockProps {
@@ -43,8 +42,6 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
   const { schedule } = layout;
   const toPx = (minutes: number) => (minutes / 60) * hourHeight;
   const height = toPx(layout.height);
-  const stripe = category ? getCategoryStripeColor(category) : 'var(--tp-theme2)';
-  const body = schedule.color ?? 'var(--tp-theme2)';
   // 설명 줄은 제목 한 줄 + 설명 한 줄이 들어갈 높이일 때만
   const hasDetail = showDetail && height - GAP * 2 >= fontSize * 1.25 + DETAIL_LINE_HEIGHT + 4;
   const titleHeight = height - GAP * 2 - (hasDetail ? DETAIL_LINE_HEIGHT : 0);
@@ -64,7 +61,7 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
       <div
         data-block-body
         className="relative flex h-full overflow-hidden rounded"
-        style={{ background: `linear-gradient(to right, ${stripe} 0 5px, ${body} 5px)`, color: readableTextColor(schedule.color) }}
+        style={{ background: blockBackground(category, schedule.color), color: readableTextColor(schedule.color) }}
       >
         <button
           type="button"
