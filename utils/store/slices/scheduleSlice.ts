@@ -19,6 +19,9 @@ interface ScheduleState {
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
+const isCurrentRange = (state: ScheduleState, range: ScheduleRange) =>
+  state.range?.from === range.from && state.range?.to === range.to;
+
 const initialState: ScheduleState = { items: [], range: null, status: 'idle' };
 
 export const fetchSchedules = createAsyncThunk<Schedule[], ScheduleRange, { rejectValue: string }>(
@@ -53,11 +56,13 @@ const scheduleSlice = createSlice({
       })
       .addCase(fetchSchedules.fulfilled, (state, action) => {
         // 늦게 도착한 옛 기간의 응답은 버린다
-        if (state.range?.from !== action.meta.arg.from || state.range?.to !== action.meta.arg.to) return;
+        if (!isCurrentRange(state, action.meta.arg)) return;
         state.status = 'succeeded';
         state.items = action.payload;
       })
-      .addCase(fetchSchedules.rejected, (state) => {
+      .addCase(fetchSchedules.rejected, (state, action) => {
+        // 옛 기간의 실패도 지금 기간을 '실패'로 바꾸지 않는다
+        if (!isCurrentRange(state, action.meta.arg)) return;
         state.status = 'failed';
       });
   },
