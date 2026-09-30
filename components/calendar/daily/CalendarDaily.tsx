@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { Category, Id, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
@@ -12,6 +12,7 @@ import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedu
 
 import { buildMobileDayTabs } from '@components/layouts/app/appLayoutUtils';
 
+import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import TimetableBlock from '../common/TimetableBlock';
@@ -54,12 +55,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
   const hours = DEFAULT_TIMETABLE_HOURS;
   const hourLabels = getHourLabels(hours);
 
-  // 현재 시각 (1분마다)
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const now = useNow();
   const today = toLocalDate(now);
 
   const day: CalendarDay = useMemo(() => {

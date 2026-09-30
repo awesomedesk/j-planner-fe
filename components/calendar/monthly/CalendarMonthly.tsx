@@ -10,6 +10,8 @@ import { selectCategories } from '@store/slices/categorySlice';
 import { showNotice } from '@store/slices/noticeSlice';
 import { fetchSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 
+import { useNow } from '@utils/hooks/useNow';
+
 import ScheduleBar from '../common/ScheduleBar';
 import {
   DEFAULT_WEEK_START,
@@ -54,7 +56,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
   const schedules = useAppSelector(selectSchedules);
   const categories = useAppSelector(selectCategories);
 
-  const [today] = useState(() => toLocalDate(new Date()));
+  const today = toLocalDate(useNow());
   const weeks = useMemo(() => buildMonthGrid(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
   const range = useMemo(() => getGridRange(weeks), [weeks]);
   const categoriesById = useMemo(() => new Map<Id, Category>(categories.map((c) => [c.id, c])), [categories]);

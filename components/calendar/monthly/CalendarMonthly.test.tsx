@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES, schedule } from '@/test/fixtures';
@@ -106,6 +106,19 @@ describe('월간 달력 (US-06)', () => {
     const { api } = await setup();
     await screen.findAllByRole('button', { name: /새벽 배포/ });
     expect(api.all().some((r) => r.path.startsWith('/todos'))).toBe(false);
+  });
+});
+
+describe('날짜가 바뀌면 (CAL-06)', () => {
+  it('앱을 켜 둔 채 자정을 넘기면 오늘 강조가 다음 날로 옮겨 간다', async () => {
+    vi.useRealTimers(); // beforeEach의 가짜 시계(Date만)를 풀고, 1분 시계까지 가짜로 다시
+    vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(new Date(2026, 8, 25, 23, 59));
+    await setup();
+    expect(screen.getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');
+    act(() => { vi.advanceTimersByTime(2 * 60_000); });
+    expect(screen.getByRole('button', { name: '9월 26일 (토)' })).toHaveAttribute('aria-current', 'date');
+    expect(screen.getByRole('button', { name: '9월 25일 (금)' })).not.toHaveAttribute('aria-current');
   });
 });
 
