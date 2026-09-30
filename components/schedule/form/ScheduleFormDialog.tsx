@@ -22,7 +22,7 @@ export interface ScheduleFormDialogProps {
 }
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-tp-line bg-white px-3 py-2.5 text-sm text-[#26301F] outline-none focus:ring-2 focus:ring-tp-theme2 disabled:opacity-60';
+  'w-full rounded-lg border border-tp-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-tp-theme2 disabled:opacity-60';
 
 /**
  * ScheduleFormDialog - 일정 추가·수정 창
@@ -137,7 +137,7 @@ export default function ScheduleFormDialog({ target, categories, onClose, onSave
             aria-checked={values.allDay}
             aria-label="종일"
             onClick={() => form.setField('allDay', !values.allDay)}
-            className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors ${values.allDay ? 'bg-tp-primary' : 'bg-[#BDB79B]'}`}
+            className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors ${values.allDay ? 'bg-tp-primary' : 'bg-switch-off'}`}
           >
             <span className="absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-all" style={{ left: values.allDay ? 18 : 2 }} />
           </button>

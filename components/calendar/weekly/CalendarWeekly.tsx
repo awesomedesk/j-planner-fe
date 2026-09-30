@@ -17,7 +17,7 @@ import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
-import type { CalendarDay } from '../utils/calendarUtils';
+import { weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import {
   DEFAULT_TIMETABLE_HOURS,
   allDaySchedulesOn,
@@ -41,8 +41,6 @@ const SIZE = {
 } as const;
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
-/** 모바일 요일 글자색: 일요일 빨강, 토요일 파랑 (MO-05) */
-const MOBILE_WEEKDAY_COLOR: Record<number, string> = { 0: 'text-[#A6323F]', 6: 'text-[#2F62A8]' };
 
 /**
  * CalendarWeekly - 주간 시간표 (US-07, PC-02 · MO-05)
@@ -111,7 +109,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
               className={`flex items-center justify-center rounded-md ${isMobile ? 'flex-col gap-px py-1' : 'gap-1 py-2'}`}
               style={isSelected ? { boxShadow: 'inset 0 0 0 2px var(--tp-theme2)' } : undefined}
             >
-              <span className={isMobile ? `text-[10px] ${MOBILE_WEEKDAY_COLOR[day.weekday] ?? 'text-tp-muted'}` : 'text-xs text-tp-muted'}>
+              <span className={isMobile ? `text-[10px] ${weekdayTextClass(day.weekday) ?? 'text-tp-muted'}` : 'text-xs text-tp-muted'}>
                 {WEEKDAY_LABELS[day.weekday]}
               </span>
               <span

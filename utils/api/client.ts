@@ -191,14 +191,6 @@ class ApiClient {
   delete(path: string): Promise<void> {
     return this.request<void>('DELETE', path);
   }
-
-  setAuthToken(token: string) {
-    this.defaultHeaders['Authorization'] = `Bearer ${token}`;
-  }
-
-  removeAuthToken() {
-    delete this.defaultHeaders['Authorization'];
-  }
 }
 
 const apiClient = new ApiClient({

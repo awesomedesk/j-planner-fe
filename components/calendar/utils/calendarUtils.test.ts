@@ -15,6 +15,7 @@ import {
   schedulesOn,
   blockBackground,
   stripeColorOf,
+  weekdayTextClass,
 } from './calendarUtils';
 
 describe('월간 칸 만들기 (US-06)', () => {
@@ -111,5 +112,13 @@ describe('블록 색 (D-019, D-030, D-037)', () => {
   it('배경: 왼쪽 5px 띠 + 몸통(일정 색, 없으면 Theme2)', () => {
     expect(blockBackground(study, '#3F3F3F')).toBe('linear-gradient(to right, #2F62A8 0 5px, #3F3F3F 5px)');
     expect(blockBackground(study, null)).toBe('linear-gradient(to right, #2F62A8 0 5px, var(--tp-theme2) 5px)');
+  });
+});
+
+describe('요일 글자색 (월간·모바일 주간)', () => {
+  it('일요일 빨강, 토요일 파랑, 나머지는 기본', () => {
+    expect(weekdayTextClass(0)).toBe('text-sunday');
+    expect(weekdayTextClass(6)).toBe('text-saturday');
+    expect(weekdayTextClass(3)).toBeNull();
   });
 });

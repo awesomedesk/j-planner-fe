@@ -43,6 +43,13 @@ const config: Config = {
         },
         /** 삭제·경고 */
         danger: "#B42318",
+        /** 흰 바탕(입력칸·말풍선) 위 글자 — 테마와 관계없이 같은 진한 색 */
+        ink: "#26301F",
+        /** 요일 글자색: 일요일 빨강, 토요일 파랑 (월간·모바일 주간) */
+        sunday: "#A6323F",
+        saturday: "#2F62A8",
+        /** 켜고 끄는 스위치의 꺼짐 색 */
+        "switch-off": "#BDB79B",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

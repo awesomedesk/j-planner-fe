@@ -44,6 +44,12 @@ describe('월간 달력 (US-06)', () => {
     for (const week of [36, 37, 38, 39, 40]) expect(screen.getByLabelText(`${week}주차`)).toBeInTheDocument();
   });
 
+  it('요일 머리글: 일요일 빨강·토요일 파랑', async () => {
+    await setup();
+    expect(screen.getByText('일', { selector: 'div' })).toHaveClass('text-sunday');
+    expect(screen.getByText('토', { selector: 'div' })).toHaveClass('text-saturday');
+  });
+
   it('오늘 날짜 강조 (CAL-06)', async () => {
     await setup();
     expect(screen.getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');

@@ -36,7 +36,7 @@ export default function MobileAddMenu({ onSelect, className = '' }: MobileAddMen
           <div role="menu" aria-label="추가할 항목" className="flex flex-col items-end gap-3">
             {ADD_MENU_ITEMS.map((item) => (
               <div key={item.target} className={`flex items-center gap-2.5 ${item.enabled ? '' : 'opacity-50'}`}>
-                <span className="rounded-lg bg-white px-2.5 py-1.5 text-[13px] font-bold text-[#26301F] shadow-[0_2px_8px_rgba(0,0,0,0.15)]" aria-hidden="true">
+                <span className="rounded-lg bg-white px-2.5 py-1.5 text-[13px] font-bold text-ink shadow-[0_2px_8px_rgba(0,0,0,0.15)]" aria-hidden="true">
                   {item.label}
                 </span>
                 <button

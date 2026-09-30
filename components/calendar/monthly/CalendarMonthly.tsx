@@ -12,7 +12,7 @@ import { useNow } from '@utils/hooks/useNow';
 
 import ScheduleBar from '../common/ScheduleBar';
 import { useScheduleRange } from '../hooks/useScheduleRange';
-import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, stripeColorOf, type CalendarDay } from '../utils/calendarUtils';
+import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, stripeColorOf, weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import MoreSchedulesPopover from './MoreSchedulesPopover';
 
 interface CalendarMonthlyProps {
@@ -29,8 +29,6 @@ const DATE_ROW = 18;
 const BAR_SLOT = 21;
 /** 모바일 칸 안 색 점 최대 개수 (화면기획서 MO-01) */
 const MAX_DOTS = 3;
-
-const WEEKDAY_COLOR: Record<number, string> = { 0: 'text-[#A6323F]', 6: 'text-[#2F62A8]' };
 
 /**
  * CalendarMonthly - 월간 달력 (US-06, PC-01 · MO-01)
@@ -83,7 +81,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
         {getWeekdayLabels(DEFAULT_WEEK_START).map(({ label, weekday }) => (
           <div
             key={weekday}
-            className={`text-center ${isDots ? 'py-1 text-[11px]' : 'py-2 text-xs font-semibold'} ${WEEKDAY_COLOR[weekday] ?? 'text-tp-muted'}`}
+            className={`text-center ${isDots ? 'py-1 text-[11px]' : 'py-2 text-xs font-semibold'} ${weekdayTextClass(weekday) ?? 'text-tp-muted'}`}
           >
             {label}
           </div>
@@ -94,7 +92,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate }: 
         {weeks.map((week) => (
           <div key={week.weekNumber + week.days[0].date} className={`grid ${gridColumns} ${isDots ? '' : 'min-h-0 flex-1 border-b border-dashed border-tp-line'}`}>
             <div
-              className={`flex justify-center bg-tp-theme2 font-bold text-[#26301F] ${isDots ? 'pt-[5px] text-[10px]' : 'pt-2 text-[11px]'}`}
+              className={`flex justify-center bg-tp-theme2 font-bold text-ink ${isDots ? 'pt-[5px] text-[10px]' : 'pt-2 text-[11px]'}`}
               aria-label={`${week.weekNumber}주차`}
             >
               {week.weekNumber}

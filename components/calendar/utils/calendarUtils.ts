@@ -111,7 +111,7 @@ export const listTimeLabel = (schedule: Schedule, date: LocalDate) => {
  * 막대 몸통 색에 맞는 글자색 (D-019: 흰색/검은색 자동)
  * 색이 없으면(null) 테마 Theme2라 밝은 색 → 어두운 글자
  */
-export const DARK_TEXT = '#26301F';
+export const DARK_TEXT = '#26301F'; // tailwind 'ink'와 같은 색
 export const LIGHT_TEXT = '#FFFFFF';
 export const readableTextColor = (hex: string | null) => {
   if (!hex) return DARK_TEXT;
@@ -120,6 +120,10 @@ export const readableTextColor = (hex: string | null) => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000 / 255;
   return brightness > 0.6 ? DARK_TEXT : LIGHT_TEXT;
 };
+
+/** 요일 글자색 class (일요일 빨강, 토요일 파랑). 평일은 null → 화면의 기본 색 */
+const WEEKDAY_TEXT_CLASS: Record<number, string> = { 0: 'text-sunday', 6: 'text-saturday' };
+export const weekdayTextClass = (weekday: number): string | null => WEEKDAY_TEXT_CLASS[weekday] ?? null;
 
 // ---------------------------------------------------------------- 블록 색
 
