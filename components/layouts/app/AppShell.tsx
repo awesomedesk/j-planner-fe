@@ -44,6 +44,8 @@ import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
 import SidebarSections from './SidebarSections';
+import PaperPlane from './PaperPlane';
+import { useHiddenSaveNotice } from './useHiddenSaveNotice';
 import { useQuickAddState } from './useQuickAddState';
 
 /**
@@ -91,6 +93,8 @@ function AppShellContent() {
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
   const quickAdd = useQuickAddState();
+  /** 필터에서 빠진 카테고리로 저장했을 때 알려 주기 (D-056) */
+  const hiddenSave = useHiddenSaveNotice(categoryFilter, categories);
 
   /** 추가 메뉴에서 고른 항목 열기. 기준 날짜 = 고른 날짜 (D-015) */
   const handleSelectAdd = (target: AddTarget) => {
@@ -102,7 +106,8 @@ function AppShellContent() {
     if (changed) void dispatch(refreshSchedules());
   };
   const closeQuickAdd = quickAdd.close;
-  const saveQuickAdd = () => {
+  const saveQuickAdd = (schedule: Schedule) => {
+    hiddenSave.notify(schedule);
     closeQuickAdd();
     void dispatch(refreshSchedules());
   };
@@ -147,6 +152,8 @@ function AppShellContent() {
     filter: categoryFilter,
     onChange: (filter: typeof categoryFilter) => dispatch(setCategoryFilter(filter)),
     onOpenManager: () => setIsCategoryManagerOpen(true),
+    reveal: hiddenSave.reveal,
+    onRevealDone: hiddenSave.clearReveal,
   };
 
   /** 시간표(주간·일간) 공통: 블록 → 수정, 빈 시간 → 빠른 추가 (US-10) */
@@ -247,6 +254,19 @@ function AppShellContent() {
       {/* 모바일·폴드: 오른쪽 아래 + 버튼 → 추가 선택 (MO-07) */}
       <MobileAddMenu className="tablet:hidden" onSelect={handleSelectAdd} />
 
+      {hiddenSave.flight && (
+        <PaperPlane
+          from={hiddenSave.flight.from}
+          to={hiddenSave.flight.to}
+          variant={isTabletUp ? 'pc' : 'mobile'}
+          onDone={hiddenSave.finishFlight}
+        />
+      )}
+      {/* 화면에는 띄우지 않고 화면 읽기로만 (D-056) */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {hiddenSave.liveMessage}
+      </div>
+
       {isCategoryManagerOpen && <CategoryManagerDialog onClose={closeCategoryManager} />}
 
       {quickAdd.slot && (
@@ -274,7 +294,10 @@ function AppShellContent() {
           target={scheduleFormTarget}
           categories={categories}
           onClose={() => closeScheduleForm(false)}
-          onSaved={() => closeScheduleForm(true)}
+          onSaved={(schedule) => {
+            if (scheduleFormTarget.mode === 'create') hiddenSave.notify(schedule);
+            closeScheduleForm(true);
+          }}
           onDeleted={() => closeScheduleForm(true)}
         />
       )}

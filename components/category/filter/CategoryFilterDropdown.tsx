@@ -10,6 +10,7 @@ import Icon from '@components/icons/LineIcon';
 import { categoryFilterLabel, selectedCategoryIds, toCategoryFilter } from '../utils/categoryFilterUtils';
 
 import CategoryFilterList from './CategoryFilterList';
+import { useFilterReveal, type FilterReveal } from './useFilterReveal';
 
 export interface CategoryFilterProps {
   categories: Category[];
@@ -17,6 +18,9 @@ export interface CategoryFilterProps {
   onChange: (filter: CategoryFilter) => void;
   /** '카테고리 관리' → OV-04 (D-016) */
   onOpenManager: () => void;
+  /** 필터에서 빠진 카테고리로 저장했을 때 저절로 펼치기 (D-056) */
+  reveal?: FilterReveal | null;
+  onRevealDone?: () => void;
 }
 
 /**
@@ -24,9 +28,17 @@ export interface CategoryFilterProps {
  * - 버튼 '카테고리: 전체 ▾' / 고르면 '카테고리: 2개'. 태블릿은 '전체' / '2개'만
  * - 체크하면 바로 적용 (달력이 곧바로 다시 받는다). 맨 아래 '카테고리 관리'
  * - 바깥을 누르거나 Esc면 닫힌다
+ * - 필터에서 빠진 카테고리로 저장하면 저절로 펼쳐 그 줄을 보여 주고 잠시 뒤 닫힌다 (D-056)
  */
-export default function CategoryFilterDropdown({ categories, filter, onChange, onOpenManager }: CategoryFilterProps) {
+export default function CategoryFilterDropdown({ categories, filter, onChange, onOpenManager, reveal, onRevealDone }: CategoryFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const revealed = useFilterReveal(reveal, {
+    isOpen,
+    open: () => setIsOpen(true),
+    close: () => setIsOpen(false),
+    onDone: onRevealDone,
+    trackMouseMove: true,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const label = categoryFilterLabel(filter, categories);
 
@@ -48,7 +60,15 @@ export default function CategoryFilterDropdown({ categories, filter, onChange, o
 
   return (
     <div ref={containerRef} className="relative">
-      <ThemeButton aria-haspopup="dialog" aria-expanded={isOpen} aria-label={`카테고리 필터: ${label}`} onClick={() => setIsOpen((v) => !v)}>
+      <ThemeButton
+        data-category-filter-button
+        data-reveal-pulse={revealed.pulse || undefined}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={`카테고리 필터: ${label}`}
+        onClick={() => setIsOpen((v) => !v)}
+        className={`relative z-[47] ${revealed.pulse ? 'animate-reveal-pulse' : ''}`}
+      >
         <Icon name="filter" size={14} />
         <span className="hidden pc:inline">카테고리: {label}</span>
         <span className="pc:hidden" aria-hidden="true">
@@ -61,6 +81,7 @@ export default function CategoryFilterDropdown({ categories, filter, onChange, o
         <div
           role="dialog"
           aria-label="카테고리 선택"
+          {...revealed.panelProps}
           className="absolute right-0 top-[calc(100%+8px)] z-30 flex w-[250px] flex-col gap-1.5 rounded-xl border border-tp-line bg-tp-bg p-2.5 text-tp-text shadow-[0_10px_28px_rgba(0,0,0,0.18)]"
         >
           <CategoryFilterList
@@ -68,6 +89,8 @@ export default function CategoryFilterDropdown({ categories, filter, onChange, o
             categories={categories}
             checkedIds={selectedCategoryIds(filter, categories)}
             onChange={(ids) => onChange(toCategoryFilter(ids, categories))}
+            markedId={revealed.markedId}
+            glow={revealed.glow}
           />
           <div className="border-t border-tp-line pt-2">
             <button

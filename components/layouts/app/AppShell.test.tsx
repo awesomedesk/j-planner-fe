@@ -6,7 +6,7 @@ import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
 import { setViewportWidth } from '@/test/viewport';
-import { setViewMode } from '@store/slices/calendarSlice';
+import { setCategoryFilter, setViewMode } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
 import { makeStore } from '@store/store';
 
@@ -379,5 +379,52 @@ describe('빠른 추가 조절·옮기기 (D-053)', () => {
     await user.click(screen.getByRole('button', { name: '작성 취소' }));
     expect(screen.getByRole('textbox', { name: '제목' })).toHaveValue('');
     expect(screen.getByLabelText('시작 시간')).toHaveValue('15:00');
+  });
+});
+
+describe('필터에서 빠진 카테고리로 저장 (US-11, D-056)', () => {
+  const openQuickAddFiltered = async () => {
+    const view = await setup(1440);
+    act(() => {
+      view.store.dispatch(setCategoryFilter([2])); // '공부'만
+      view.store.dispatch(setViewMode('DAY'));
+    });
+    fireEvent.click(await screen.findByRole('group', { name: '9월 25일 (금) 시간표' }), { clientY: 9 * 48 + 5 });
+    return view;
+  };
+
+  it('빠진 카테고리로 저장하면 필터 목록이 펼쳐져 그 줄을 보여 주고, 화면 읽기에 알린다', async () => {
+    const { user } = await openQuickAddFiltered();
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '보고서');
+    await user.selectOptions(screen.getByRole('combobox', { name: '카테고리' }), '업무');
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const panel = await screen.findByRole('dialog', { name: '카테고리 선택' });
+    expect(within(panel).getByRole('checkbox', { name: '업무' }).closest('label')).toHaveAttribute('data-marked');
+    expect(screen.getByRole('status')).toHaveTextContent("'업무'는 필터에서 빠져 있어 달력에 보이지 않아요");
+  });
+
+  it('보이는 카테고리로 저장하면 아무 효과 없음', async () => {
+    const { user } = await openQuickAddFiltered();
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '스터디');
+    await user.selectOptions(screen.getByRole('combobox', { name: '카테고리' }), '공부');
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: '카테고리 선택' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('');
+  });
+
+  it('일정 추가 창에서 저장해도 같다', async () => {
+    const { user, store } = await setup(1440);
+    act(() => {
+      store.dispatch(setCategoryFilter([2]));
+    });
+    await user.click(screen.getAllByRole('button', { name: '추가' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: '일정' }));
+    const dialog = screen.getByRole('dialog', { name: '일정 추가' });
+    await user.type(within(dialog).getByRole('textbox', { name: '제목' }), '운동 가기');
+    await user.selectOptions(within(dialog).getByRole('combobox', { name: '카테고리' }), '운동');
+    await user.click(within(dialog).getAllByRole('button', { name: '저장' })[0]);
+    const panel = await screen.findByRole('dialog', { name: '카테고리 선택' });
+    expect(within(panel).getByRole('checkbox', { name: '운동' }).closest('label')).toHaveAttribute('data-marked');
   });
 });

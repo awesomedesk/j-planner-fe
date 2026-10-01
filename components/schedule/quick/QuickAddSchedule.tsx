@@ -254,7 +254,7 @@ export default function QuickAddSchedule({
                   취소
                 </ThemeButton>
               )}
-              <ThemeButton size="md" variant="primary" type="submit" disabled={form.isSubmitting}>
+              <ThemeButton data-save-button size="md" variant="primary" type="submit" disabled={form.isSubmitting}>
                 저장
               </ThemeButton>
             </div>

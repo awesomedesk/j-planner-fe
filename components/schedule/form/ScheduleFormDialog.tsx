@@ -49,7 +49,7 @@ export default function ScheduleFormDialog({ target, categories, onClose, onSave
       onClose={onClose}
       isDirty={form.isDirty}
       mobileHeaderAction={
-        <button type="submit" form={formId} disabled={form.isSubmitting} className="h-11 min-w-11 px-2 text-[15px] font-bold disabled:opacity-60">
+        <button data-save-button type="submit" form={formId} disabled={form.isSubmitting} className="h-11 min-w-11 px-2 text-[15px] font-bold disabled:opacity-60">
           저장
         </button>
       }
@@ -251,7 +251,7 @@ function ScheduleFormFooter({ formId, form }: { formId: string; form: ScheduleFo
         <ThemeButton size="md" onClick={requestClose}>
           취소
         </ThemeButton>
-        <ThemeButton type="submit" form={formId} size="md" variant="primary" disabled={form.isSubmitting}>
+        <ThemeButton data-save-button type="submit" form={formId} size="md" variant="primary" disabled={form.isSubmitting}>
           {form.isSubmitting ? '저장 중…' : '저장'}
         </ThemeButton>
       </div>

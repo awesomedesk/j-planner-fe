@@ -61,6 +61,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs (D-049).
 - **Category filter** (US-11): `calendar.categoryFilter` in the store (`null` = 전체, `[]` = nothing). `useScheduleRange` adds it as
   `categoryId` (server-side filter); `[]` skips the request. UI: `components/category/filter/` (PC dropdown applies at once, mobile sheet on '적용').
+  Saving into a filtered-out category (D-056): `layouts/app/useHiddenSaveNotice` → `PaperPlane` (save button `[data-save-button]` →
+  `[data-category-filter-button]`) → `reveal` prop → `useFilterReveal` (auto open, marked row, 0.4s guard, auto close).
 - **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
   AppShell owns the quick-add state and passes `draft` to the timetable). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).

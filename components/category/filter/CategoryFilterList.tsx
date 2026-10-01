@@ -14,6 +14,9 @@ interface CategoryFilterListProps {
   onChange: (checkedIds: Id[]) => void;
   /** PC 드롭다운(작게) / 모바일 시트(손가락 크기) */
   size: 'pc' | 'mobile';
+  /** 방금 저장한 카테고리 줄: 연한 바탕(marked) + 빛 고리(glow) (D-056) */
+  markedId?: Id | null;
+  glow?: boolean;
 }
 
 /**
@@ -21,7 +24,7 @@ interface CategoryFilterListProps {
  * 검색 · 전체 선택 / 모두 해제 · 여러 개 체크. 검색 중이면 전체 선택·모두 해제는 보이는 것에만.
  * 카테고리 순서는 사용자 순서, 미지정은 맨 위 (D-029). 미지정 색은 회색 (D-037)
  */
-export default function CategoryFilterList({ categories, checkedIds, onChange, size }: CategoryFilterListProps) {
+export default function CategoryFilterList({ categories, checkedIds, onChange, size, markedId = null, glow = false }: CategoryFilterListProps) {
   const [query, setQuery] = useState('');
   const visible = searchCategories(categories, query);
   const checked = new Set(checkedIds);
@@ -53,14 +56,17 @@ export default function CategoryFilterList({ categories, checkedIds, onChange, s
       <ul className={`flex min-h-0 flex-col overflow-y-auto ${isPc ? 'max-h-[280px] gap-0.5' : ''}`}>
         {visible.map((category) => {
           const isChecked = checked.has(category.id);
+          const isMarked = category.id === markedId;
           return (
             <li key={category.id}>
               <label
+                data-marked={isMarked || undefined}
+                data-glow={(isMarked && glow) || undefined}
                 className={`flex cursor-pointer items-center ${
                   isPc
                     ? `gap-2 rounded-md px-2 py-[7px] text-[13px] ${isChecked ? 'bg-tp-panel' : ''}`
                     : 'gap-3 border-b border-tp-line px-1.5 py-3 text-[15px]'
-                }`}
+                } ${isMarked ? 'rounded-md !bg-tp-theme3' : ''} ${isMarked && glow ? 'animate-reveal-ring' : ''}`}
               >
                 <input
                   type="checkbox"

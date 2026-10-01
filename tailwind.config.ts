@@ -8,6 +8,22 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // 필터에서 빠진 카테고리로 저장했을 때 (D-056): 버튼 커짐 + 빛 고리, 저장한 줄 빛 고리. 번쩍임은 쓰지 않는다
+      keyframes: {
+        "reveal-scale": { "0%, 100%": { transform: "scale(1)" }, "45%": { transform: "scale(1.1)" } },
+        "reveal-ring": {
+          "0%": { boxShadow: "0 0 0 0 color-mix(in srgb, var(--tp-theme1) 55%, transparent)" },
+          "100%": { boxShadow: "0 0 0 12px color-mix(in srgb, var(--tp-theme1) 0%, transparent)" },
+        },
+        "reveal-row-ring": {
+          "0%": { boxShadow: "0 0 0 0 color-mix(in srgb, var(--tp-theme1) 55%, transparent)" },
+          "100%": { boxShadow: "0 0 0 10px color-mix(in srgb, var(--tp-theme1) 0%, transparent)" },
+        },
+      },
+      animation: {
+        "reveal-pulse": "reveal-scale 0.32s ease-out 1, reveal-ring 0.6s ease-out 1",
+        "reveal-ring": "reveal-row-ring 0.7s ease-out 1",
+      },
       // 화면 폭 구분 (D-018). 600px 미만은 모바일(기본값)
       screens: {
         fold: "600px", // 폴드 펼침: 모바일 구성 + 오른쪽 패널
