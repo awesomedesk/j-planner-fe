@@ -17,7 +17,7 @@ import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
-import { useRevealDraft, useSlotClick, type TimetableSlot } from '../hooks/useQuickAddSlot';
+import { useRevealDraft, useTimetableQuickAdd, type TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import type { CalendarDay } from '../utils/calendarUtils';
@@ -27,6 +27,7 @@ import {
   getHourLabels,
   layoutDayBlocks,
   nowLineMinutes,
+  type MinuteRange,
   type TimetableDraft,
 } from '../utils/timetableUtils';
 
@@ -38,6 +39,8 @@ interface CalendarDailyProps {
   onAddAt?: (slot: TimetableSlot) => void;
   /** 빠른 추가 중 임시 블록 (D-017) */
   draft?: TimetableDraft | null;
+  /** 임시 블록 손잡이·몸통을 끌어 시간을 바꿀 때 (D-053) */
+  onDraftChange?: (range: MinuteRange) => void;
   /** 화면 아래를 가리는 높이 (모바일 빠른 추가 시트). 임시 블록이 그 위로 보이게 스크롤한다 (MO-12) */
   coverBottom?: number;
 }
@@ -57,7 +60,7 @@ const SIZE = {
  * - 빈 시간을 누르면 빠른 추가 + 점선 임시 블록 (US-10, D-017)
  * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23)는 각 스토리에서
  */
-export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft, coverBottom = 0 }: CalendarDailyProps) {
+export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft, onDraftChange, coverBottom = 0 }: CalendarDailyProps) {
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
@@ -88,10 +91,11 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
     now,
   });
   const scrollbarWidth = useScrollbarWidth(scrollRef);
-  const handleSlotClick = useSlotClick(size.hourHeight, onAddAt);
+  const quickAdd = useTimetableQuickAdd({ hourHeight: size.hourHeight, enableDragCreate: !isMobile, onAddAt, draft, onDraftChange });
   const draftRef = useRef<HTMLDivElement>(null);
-  const dayDraft = draft?.date === viewDate ? draft : null;
-  useRevealDraft(scrollRef, draftRef, dayDraft, coverBottom);
+  const dayDraft = quickAdd.draftFor(viewDate);
+  const visibleDraft = draft?.date === viewDate ? draft : null;
+  useRevealDraft(scrollRef, draftRef, visibleDraft, coverBottom);
 
   const nowMinutes = day.isToday ? nowLineMinutes(now, hours) : null;
   const gridColumns = { gridTemplateColumns: `${size.timeColumn}px minmax(0, 1fr)` };
@@ -145,7 +149,7 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
         data-testid="timetable-scroll"
         onScroll={handleScroll}
         className="min-h-0 flex-1 overflow-y-auto pt-2"
-        style={dayDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
+        style={visibleDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
       >
         <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
           <HourLabels
@@ -155,7 +159,7 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
             className={`pr-2 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}
           />
           <div />
-          <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative" onClick={handleSlotClick(viewDate)}>
+          <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative" {...quickAdd.columnProps(viewDate)}>
             <div className="relative h-full">
               {layoutDayBlocks(schedules, viewDate, hours).map((layout) => (
                 <TimetableBlock
@@ -169,7 +173,15 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
                 />
               ))}
             </div>
-            {dayDraft && <DraftBlock ref={draftRef} draft={dayDraft} hourHeight={size.hourHeight} fontSize={size.fontSize} />}
+            {dayDraft && (
+              <DraftBlock
+                ref={draftRef}
+                draft={dayDraft.draft}
+                hourHeight={size.hourHeight}
+                fontSize={size.fontSize}
+                onGripDown={dayDraft.isAdjustable ? quickAdd.startDrag : undefined}
+              />
+            )}
             {nowMinutes !== null && <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} />}
           </div>
         </div>

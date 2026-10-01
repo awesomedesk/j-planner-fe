@@ -3,7 +3,7 @@ import { addDays, format, startOfWeek } from 'date-fns';
 import type { LocalDate, Schedule } from '@/types/api';
 
 import { occursOn, type CalendarDay } from './calendarUtils';
-import { fromLocalDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
+import { fromLocalDate, shiftDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
 
 /**
  * 시간표(주간·일간) 계산 (US-07, US-08)
@@ -179,15 +179,22 @@ export const blockDetailText = (schedule: Schedule) => {
 const MINUTES_PER_DAY = 24 * 60;
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
+/** 빠른 추가의 시각 단위 (분). 설정의 칸 간격과 관계없이 30분 (D-053) */
+export const QUICK_ADD_SNAP_MINUTES = 30;
+
 /**
- * 빈 시간 누른 자리(px, 시간표 맨 위 기준) → 그 칸의 시작 시각 `HH:mm` (US-10)
- * - 칸 간격(`slotMinutes`) 단위로 내림. 기본 1시간(D-024), 설정 연결은 US-26
- * - 하루 끝을 넘지 않게 마지막 칸 시작으로 맞춘다
+ * 빈 시간 누른 자리(px, 시간표 맨 위 기준) → 시작 시각 `HH:mm` (US-10, D-053)
+ * 30분 단위로 내림: 칸 위쪽 절반 → 정각, 아래쪽 절반 → 30분. 하루 끝을 넘지 않게 23:30까지
  */
-export const slotStartTime = (offsetPx: number, hourHeight: number, slotMinutes = 60) => {
-  const raw = Math.floor(((offsetPx / hourHeight) * 60) / slotMinutes) * slotMinutes;
-  const minutes = Math.min(Math.max(raw, 0), MINUTES_PER_DAY - slotMinutes);
-  return `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
+export const slotStartTime = (offsetPx: number, hourHeight: number) => {
+  const raw = Math.floor(((offsetPx / hourHeight) * 60) / QUICK_ADD_SNAP_MINUTES) * QUICK_ADD_SNAP_MINUTES;
+  return minutesToClock(Math.min(Math.max(raw, 0), MINUTES_PER_DAY - QUICK_ADD_SNAP_MINUTES));
+};
+
+/** 0시부터 분 → `HH:mm` (하루를 넘으면 다음 날 시각) */
+export const minutesToClock = (minutes: number) => {
+  const inDay = ((minutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return `${pad2(Math.floor(inDay / 60))}:${pad2(inDay % 60)}`;
 };
 
 /** 빠른 추가 임시 블록 글자: `(제목 없음) · 14:00-15:00` (D-017, PC-03) */
@@ -205,10 +212,53 @@ export interface TimetableDraft {
 /** `HH:mm` → 0시부터 분 */
 export const clockToMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 
-/** 임시 블록 자리(분). 종료가 시작보다 이르거나 같으면 자정을 넘긴 것 → 하루 끝까지 */
-export const draftBlockMinutes = ({ startTime, endTime }: Pick<TimetableDraft, 'startTime' | 'endTime'>) => {
-  const top = clockToMinutes(startTime);
-  const rawEnd = clockToMinutes(endTime);
-  const end = rawEnd > top ? rawEnd : MINUTES_PER_DAY;
-  return { top, height: Math.max(end - top, MIN_BLOCK_MINUTES) };
+/** 임시 블록을 그릴 자리(분). 자정을 넘기면 하루 끝까지만 */
+export const draftBlockMinutes = (draft: Pick<TimetableDraft, 'startTime' | 'endTime'>) => {
+  const { start, end } = draftRange(draft);
+  return { top: start, height: Math.max(Math.min(end, MINUTES_PER_DAY) - start, MIN_BLOCK_MINUTES) };
+};
+
+/** 임시 블록의 시작·끝 (0시부터 분). 끝이 1440 이상이면 다음 날 */
+export interface MinuteRange {
+  start: number;
+  end: number;
+}
+
+const snap = (minutes: number, round: (n: number) => number = Math.round) =>
+  round(minutes / QUICK_ADD_SNAP_MINUTES) * QUICK_ADD_SNAP_MINUTES;
+const clampMinutes = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+/** 임시 블록 시각 → 분. 종료가 시작과 같거나 이르면 다음 날 */
+export const draftRange = ({ startTime, endTime }: Pick<TimetableDraft, 'startTime' | 'endTime'>): MinuteRange => {
+  const start = clockToMinutes(startTime);
+  const end = clockToMinutes(endTime);
+  return { start, end: end > start ? end : end + MINUTES_PER_DAY };
+};
+
+/** 분 → 입력 칸 값 (끝이 하루를 넘으면 종료 날짜는 다음 날) */
+export const rangeToTimes = (date: LocalDate, { start, end }: MinuteRange) => ({
+  startDate: date,
+  startTime: minutesToClock(start),
+  endDate: end >= MINUTES_PER_DAY ? shiftDate(date, 'day', 1) : date,
+  endTime: minutesToClock(end),
+});
+
+/** 손잡이 끌기: 누른 곳에 가까운 30분으로. 길이는 30분 이상, 하루 안 (D-053) */
+export const resizeDraftRange = (range: MinuteRange, edge: 'start' | 'end', pointerMinutes: number): MinuteRange =>
+  edge === 'start'
+    ? { ...range, start: clampMinutes(snap(pointerMinutes), 0, range.end - QUICK_ADD_SNAP_MINUTES) }
+    : { ...range, end: clampMinutes(snap(pointerMinutes), range.start + QUICK_ADD_SNAP_MINUTES, MINUTES_PER_DAY) };
+
+/** 몸통 끌기: 길이 그대로 30분 단위로 옮긴다. 하루 밖으로는 안 나감 (D-053) */
+export const moveDraftRange = (range: MinuteRange, deltaMinutes: number): MinuteRange => {
+  const length = range.end - range.start;
+  const start = clampMinutes(range.start + snap(deltaMinutes), 0, MINUTES_PER_DAY - length);
+  return { start, end: start + length };
+};
+
+/** PC 빈 시간을 누른 채 끌기: 위쪽 30분 내림 ~ 아래쪽 30분 올림, 30분 이상 (D-053) */
+export const dragCreateRange = (fromMinutes: number, toMinutes: number): MinuteRange => {
+  const start = clampMinutes(snap(Math.min(fromMinutes, toMinutes), Math.floor), 0, MINUTES_PER_DAY - QUICK_ADD_SNAP_MINUTES);
+  const end = clampMinutes(snap(Math.max(fromMinutes, toMinutes), Math.ceil), start + QUICK_ADD_SNAP_MINUTES, MINUTES_PER_DAY);
+  return { start, end };
 };

@@ -24,6 +24,8 @@ export type ScheduleFormTarget =
       mode: 'create';
       baseDate: LocalDate;
       startTime?: string;
+      /** 시작부터 길이 (분). 없으면 1시간 (D-017). PC에서 끌어 만들면 그 길이 (D-053) */
+      durationMinutes?: number;
       /** 빠른 추가 '자세히 입력'으로 넘어온 값 (US-10). 처음 값과 달라 닫을 때 확인을 묻는다 */
       draft?: Partial<ScheduleFormValues>;
     }
@@ -48,7 +50,7 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
   const [initialValues] = useState<ScheduleFormValues>(() =>
     target.mode === 'edit'
       ? scheduleToFormValues(target.schedule)
-      : createEmptyFormValues(target.baseDate, target.startTime)
+      : createEmptyFormValues(target.baseDate, target.startTime, new Date(), target.durationMinutes)
   );
   const [values, setValues] = useState<ScheduleFormValues>(() =>
     target.mode === 'create' && target.draft ? { ...initialValues, ...target.draft } : initialValues
@@ -71,6 +73,12 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
   /** 시작 날짜·시간을 바꾸면 종료도 같은 길이만큼 옮긴다 */
   const setStart = useCallback((startDate: LocalDate, startTime: string) => {
     setValues((prev) => ({ ...prev, startDate, startTime, ...shiftEndWithStart(prev, startDate, startTime) }));
+    setErrors((prev) => ({ ...prev, startDate: undefined, startTime: undefined, endDate: undefined, endTime: undefined }));
+  }, []);
+
+  /** 시작·종료를 한 번에 (빠른 추가 임시 블록을 끌어서 바꿀 때, D-053) */
+  const setTimes = useCallback((times: Pick<ScheduleFormValues, 'startDate' | 'startTime' | 'endDate' | 'endTime'>) => {
+    setValues((prev) => ({ ...prev, ...times }));
     setErrors((prev) => ({ ...prev, startDate: undefined, startTime: undefined, endDate: undefined, endTime: undefined }));
   }, []);
 
@@ -153,10 +161,11 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
       isDeleteConfirming,
       setField,
       setStart,
+      setTimes,
       handleSubmit,
       handleDelete,
       cancelDeleteConfirm,
     }),
-    [values, errors, formError, isEdit, isDirty, isSubmitting, isDeleteConfirming, setField, setStart, handleSubmit, handleDelete, cancelDeleteConfirm]
+    [values, errors, formError, isEdit, isDirty, isSubmitting, isDeleteConfirming, setField, setStart, setTimes, handleSubmit, handleDelete, cancelDeleteConfirm]
   );
 };

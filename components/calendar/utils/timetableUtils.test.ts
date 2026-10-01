@@ -16,6 +16,12 @@ import {
   layoutDayBlocks,
   lineClampFor,
   nowLineMinutes,
+  QUICK_ADD_SNAP_MINUTES,
+  dragCreateRange,
+  draftRange,
+  moveDraftRange,
+  rangeToTimes,
+  resizeDraftRange,
   slotStartTime,
 } from './timetableUtils';
 
@@ -226,16 +232,59 @@ describe('블록 설명 줄 (PC-03)', () => {
   });
 });
 
-describe('빈 시간 누르기 → 시작 시각 (US-10, D-024 칸 간격 1시간)', () => {
-  it('누른 칸의 정각부터: 14:40 자리 → 14:00', () => {
-    expect(slotStartTime(14.67 * 48, 48)).toBe('14:00');
+describe('빈 시간 누르기 → 시작 시각 (US-10, D-053 30분 단위)', () => {
+  it('칸 위쪽 절반 → 정각, 아래쪽 절반 → 30분: 14:20 자리 → 14:00, 14:40 자리 → 14:30', () => {
+    expect(slotStartTime((14 + 20 / 60) * 48, 48)).toBe('14:00');
+    expect(slotStartTime((14 + 40 / 60) * 48, 48)).toBe('14:30');
     expect(slotStartTime(0, 48)).toBe('00:00');
   });
-  it('맨 아래(23시대)를 눌러도 23:00', () => {
-    expect(slotStartTime(24 * 48 + 5, 48)).toBe('23:00');
+  it('맨 아래를 눌러도 23:30 (그러면 23:30~다음 날 00:30)', () => {
+    expect(slotStartTime(24 * 48 + 5, 48)).toBe('23:30');
   });
-  it('30분 간격이면 30분 단위로 (설정 연결은 US-26)', () => {
-    expect(slotStartTime(14.67 * 48, 48, 30)).toBe('14:30');
+  it('설정의 칸 간격과 관계없이 항상 30분 단위 (D-053)', () => {
+    expect(QUICK_ADD_SNAP_MINUTES).toBe(30);
+  });
+});
+
+describe('임시 블록 조절 — 손잡이·몸통 끌기, 끌어서 만들기 (D-053)', () => {
+  const range = { start: 14 * 60, end: 15 * 60 }; // 14:00~15:00
+
+  it('임시 블록 시각 ↔ 분: 종료가 시작보다 이르면 다음 날', () => {
+    expect(draftRange({ startTime: '14:00', endTime: '15:30' })).toEqual({ start: 840, end: 930 });
+    expect(draftRange({ startTime: '23:30', endTime: '00:30' })).toEqual({ start: 1410, end: 1470 });
+    expect(rangeToTimes('2026-09-25', { start: 1410, end: 1470 })).toEqual({
+      startDate: '2026-09-25',
+      startTime: '23:30',
+      endDate: '2026-09-26',
+      endTime: '00:30',
+    });
+    expect(rangeToTimes('2026-09-30', { start: 600, end: 1440 })).toMatchObject({ endDate: '2026-10-01', endTime: '00:00' });
+  });
+
+  it('아래 손잡이: 끝이 가까운 30분으로 (15:20 → 15:30), 시작보다 30분 이상 뒤', () => {
+    expect(resizeDraftRange(range, 'end', 15 * 60 + 20)).toEqual({ start: 840, end: 930 });
+    expect(resizeDraftRange(range, 'end', 13 * 60)).toEqual({ start: 840, end: 870 });
+    expect(resizeDraftRange(range, 'end', 25 * 60)).toEqual({ start: 840, end: 1440 });
+  });
+
+  it('위 손잡이: 시작이 가까운 30분으로, 끝보다 30분 이상 앞, 0시 밑으로는 안 감', () => {
+    expect(resizeDraftRange(range, 'start', 13 * 60 + 10)).toEqual({ start: 780, end: 900 });
+    expect(resizeDraftRange(range, 'start', 16 * 60)).toEqual({ start: 870, end: 900 });
+    expect(resizeDraftRange(range, 'start', -30)).toEqual({ start: 0, end: 900 });
+  });
+
+  it('몸통 끌기: 길이 그대로 30분 단위로 옮긴다, 하루 밖으로는 안 나감', () => {
+    expect(moveDraftRange(range, 50)).toEqual({ start: 900, end: 960 }); // 50분 → 60분
+    expect(moveDraftRange(range, 10)).toEqual(range); // 15분 미만은 그대로
+    expect(moveDraftRange(range, -20 * 60)).toEqual({ start: 0, end: 60 });
+    expect(moveDraftRange(range, 20 * 60)).toEqual({ start: 1380, end: 1440 });
+  });
+
+  it('PC 끌어서 만들기: 누른 칸 30분 내림 ~ 놓은 곳 30분 올림, 위로 끌어도 같다', () => {
+    expect(dragCreateRange(9 * 60 + 10, 10 * 60 + 40)).toEqual({ start: 540, end: 660 });
+    expect(dragCreateRange(10 * 60 + 40, 9 * 60 + 10)).toEqual({ start: 540, end: 660 });
+    expect(dragCreateRange(9 * 60 + 10, 9 * 60 + 15)).toEqual({ start: 540, end: 570 }); // 최소 30분
+    expect(dragCreateRange(23 * 60, 26 * 60)).toEqual({ start: 1380, end: 1440 });
   });
 });
 

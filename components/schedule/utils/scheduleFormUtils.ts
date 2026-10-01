@@ -91,17 +91,19 @@ export const nextTopOfHour = (now: Date) => {
  * 새 일정의 초기값 (D-037)
  * - 시간표의 시간을 눌러 열면(startTime 있음): 누른 시각부터 1시간
  * - 추가 버튼으로 열면: 고른 날짜의 '지금 이후 가장 가까운 정각'부터 1시간. 밤 11시대면 다음 날 00:00~01:00
+ * - 시간표에서 누른 채 끌어 만들면(PC): 그 길이 (durationMinutes, D-053)
  * @param baseDate 고른 날짜 (기본 오늘)
  */
 export const createEmptyFormValues = (
   baseDate: LocalDate,
   startTime?: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  durationMinutes: number = DEFAULT_DURATION_MINUTES
 ): ScheduleFormValues => {
   const start = startTime
     ? { date: baseDate, time: startTime }
     : fromMinutes(toMinutes(baseDate, '00:00') + nextTopOfHour(now) * 60);
-  const end = fromMinutes(toMinutes(start.date, start.time) + DEFAULT_DURATION_MINUTES);
+  const end = fromMinutes(toMinutes(start.date, start.time) + durationMinutes);
 
   return {
     title: '',

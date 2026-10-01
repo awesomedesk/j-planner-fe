@@ -52,7 +52,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Calendar** (`components/calendar/`): monthly (US-06), weekly (US-07), daily (US-08).
   - `hooks/useScheduleRange(range)` — fetch the visible range + error notice + `isLoaded` / `loadedSchedules`. Pass a memoized range.
   - `hooks/useTimetableScroll` — D-046 initial position and keeping the viewed time between week↔day (minutes in the store).
-  - `hooks/useQuickAddSlot` — empty-slot click → `onAddAt({date, startTime, anchor})`, mobile scroll so the sheet doesn't hide the draft (US-10).
+  - `hooks/useQuickAddSlot` (`useTimetableQuickAdd`) — empty-slot click (30-min snap) / PC drag-create → `onAddAt(slot)`, draft handle·body drag
+    → `onDraftChange(range)` (`hooks/useTimetableDrag`), mobile scroll so the sheet doesn't hide the draft (US-10, D-053). AppShell state: `layouts/app/useQuickAddState`.
   - `common/` — `ScheduleBar` (month), `TimetableBlock`, `DraftBlock` (dashed quick-add block), `AllDayChip`, `NowLine`, `HourLabels`.
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).

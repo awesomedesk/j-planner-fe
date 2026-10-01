@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 
 import type { Category, LocalDate, Schedule } from '@/types/api';
 import ThemeButton from '@components/button/ThemeButton';
@@ -28,8 +28,12 @@ export interface QuickAddScheduleProps {
   variant: 'popover' | 'sheet';
   /** 누른 날 (바꿀 수 없음. 날짜를 바꾸려면 '자세히 입력') */
   date: LocalDate;
-  /** 누른 칸 시작 `HH:mm` */
+  /** 누른 칸 시작 `HH:mm` (30분 단위, D-053) */
   startTime: string;
+  /** 길이 (분). 없으면 1시간. PC에서 끌어 만들면 그 길이 (D-053) */
+  durationMinutes?: number;
+  /** 임시 블록 손잡이·몸통을 끌어 바꾼 시간 (바뀔 때마다 시간 칸에 넣는다, D-053) */
+  times?: Pick<ScheduleFormValues, 'startDate' | 'startTime' | 'endDate' | 'endTime'> | null;
   /** 누른 칸 자리 (팝업이 가리지 않게) */
   anchor?: Rect;
   categories: Category[];
@@ -38,6 +42,8 @@ export interface QuickAddScheduleProps {
   /** '자세히 입력' → 쓴 값을 일정 입력 창으로 */
   onOpenDetail: (values: ScheduleFormValues) => void;
   onPreviewChange: (preview: QuickAddPreview) => void;
+  /** 입력한 것이 있는지 (다른 빈 시간을 누를 때 확인용, D-053 Q7) */
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 /** 크기 (화면기획서 PC-03 · MO-12) */
@@ -72,14 +78,17 @@ export default function QuickAddSchedule({
   variant,
   date,
   startTime,
+  durationMinutes,
+  times,
   anchor,
   categories,
   onClose,
   onSaved,
   onOpenDetail,
   onPreviewChange,
+  onDirtyChange,
 }: QuickAddScheduleProps) {
-  const [target] = useState(() => ({ mode: 'create' as const, baseDate: date, startTime }));
+  const [target] = useState(() => ({ mode: 'create' as const, baseDate: date, startTime, durationMinutes }));
   const form = useScheduleForm({ target, onSaved });
   const { values, errors } = form;
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -95,6 +104,32 @@ export default function QuickAddSchedule({
   useEffect(() => {
     titleInputRef.current?.focus();
   }, []);
+
+  const { setTimes } = form;
+  useEffect(() => {
+    if (times) setTimes(times);
+  }, [times, setTimes]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.isDirty);
+  }, [onDirtyChange, form.isDirty]);
+
+  /**
+   * 바깥 누르기: 그 아래가 시간표 빈 칸이면 그 칸을 누른 것으로 넘긴다 (다른 빈 시간 → 팝업 옮기기, D-053 Q7).
+   * 그 밖이면 닫기 요청
+   */
+  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
+    const backdrop = event.currentTarget;
+    backdrop.style.pointerEvents = 'none';
+    const below = document.elementFromPoint?.(event.clientX, event.clientY) ?? null;
+    backdrop.style.pointerEvents = '';
+    const slot = below?.closest('[data-quick-add-slot]');
+    if (slot && !below?.closest('button, a')) {
+      below?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, clientX: event.clientX, clientY: event.clientY }));
+      return;
+    }
+    requestClose();
+  };
 
   useEffect(() => {
     onPreviewChange({ title: values.title, startTime: values.startTime, endTime: values.endTime });
@@ -112,8 +147,8 @@ export default function QuickAddSchedule({
 
   return (
     <>
-      {/* 바깥 누르기 = 닫기 요청. 투명해서 시간표와 임시 블록이 그대로 보인다 */}
-      <div data-testid="quick-add-backdrop" className="fixed inset-0 z-40" aria-hidden="true" onClick={requestClose} />
+      {/* 바깥 누르기 = 닫기 요청 (빈 시간이면 그 칸으로 옮기기). 투명해서 시간표가 그대로 보이고, 임시 블록은 이 위에 있어 끌 수 있다 */}
+      <div data-testid="quick-add-backdrop" className="fixed inset-0 z-40" aria-hidden="true" onClick={handleBackdropClick} />
       <div
         ref={panelRef}
         role="dialog"

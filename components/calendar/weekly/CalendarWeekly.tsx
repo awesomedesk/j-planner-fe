@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from 'react';
 
-import type { Schedule } from '@/types/api';
+import type { LocalDate, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
@@ -16,7 +16,7 @@ import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
-import { useRevealDraft, useSlotClick, type TimetableSlot } from '../hooks/useQuickAddSlot';
+import { useRevealDraft, useTimetableQuickAdd, type TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import { weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
@@ -28,6 +28,7 @@ import {
   getWeekRange,
   layoutDayBlocks,
   nowLineMinutes,
+  type MinuteRange,
   type TimetableDraft,
 } from '../utils/timetableUtils';
 
@@ -39,6 +40,8 @@ interface CalendarWeeklyProps {
   onAddAt?: (slot: TimetableSlot) => void;
   /** 빠른 추가 중 임시 블록 (D-017) */
   draft?: TimetableDraft | null;
+  /** 임시 블록 손잡이·몸통을 끌어 시간을 바꿀 때 (D-053) */
+  onDraftChange?: (range: MinuteRange) => void;
   /** 화면 아래를 가리는 높이 (모바일 빠른 추가 시트). 임시 블록이 그 위로 보이게 스크롤한다 (MO-12) */
   coverBottom?: number;
 }
@@ -61,7 +64,7 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
  * - 빈 시간을 누르면 빠른 추가 + 그날 칸에 점선 임시 블록 (US-10, D-017 · D-021)
  * - Todo 블록(US-15)·D-Day(US-23)는 각 스토리에서 붙인다
  */
-export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft, coverBottom = 0 }: CalendarWeeklyProps) {
+export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -99,10 +102,23 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
   const headerStyle = { ...gridColumns, paddingRight: scrollbarWidth };
 
   const handleSelect = (day: CalendarDay) => dispatch(selectDate(day.date));
-  const handleSlotClick = useSlotClick(size.hourHeight, onAddAt);
+  const quickAdd = useTimetableQuickAdd({ hourHeight: size.hourHeight, enableDragCreate: !isMobile, onAddAt, draft, onDraftChange });
   const draftRef = useRef<HTMLDivElement>(null);
   const weekDraft = draft && days.some((day) => day.date === draft.date) ? draft : null;
   useRevealDraft(scrollRef, draftRef, weekDraft, coverBottom);
+  const renderDraft = (date: LocalDate) => {
+    const found = quickAdd.draftFor(date);
+    if (!found) return null;
+    return (
+      <DraftBlock
+        ref={found.isAdjustable ? draftRef : undefined}
+        draft={found.draft}
+        hourHeight={size.hourHeight}
+        fontSize={size.fontSize}
+        onGripDown={found.isAdjustable ? quickAdd.startDrag : undefined}
+      />
+    );
+  };
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-2' : ''}`} aria-label="주간 시간표">
@@ -184,7 +200,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
               role="group"
               aria-label={`${formatDayTitle(day.date)} 시간표`}
               className="relative border-l border-tp-line"
-              onClick={handleSlotClick(day.date)}
+              {...quickAdd.columnProps(day.date)}
             >
               {layoutDayBlocks(schedules, day.date, hours).map((layout) => (
                 <TimetableBlock
@@ -197,9 +213,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
                   showLink={!isMobile}
                 />
               ))}
-              {weekDraft?.date === day.date && (
-                <DraftBlock ref={draftRef} draft={weekDraft} hourHeight={size.hourHeight} fontSize={size.fontSize} />
-              )}
+              {renderDraft(day.date)}
               {day.isToday && nowMinutes !== null && (
                 <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} showDot={!isMobile} />
               )}

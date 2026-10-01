@@ -202,18 +202,20 @@ describe('모바일 일간 (MO-03)', () => {
 
 describe('빈 시간 눌러 빠른 추가 (US-10, D-017)', () => {
   // jsdom은 칸 위치가 모두 0이라 clientY가 곧 시간표 맨 위에서 잰 거리 (일간 PC 1시간 = 48px)
-  it('빈 시간을 누르면 그 칸 정각부터: 14:40 자리 → 14:00', async () => {
+  it('빈 시간을 누르면 30분 단위로: 14:40 자리 → 14:30, 14:10 자리 → 14:00 (D-053)', async () => {
     const onAddAt = vi.fn();
     await setup('pc', '2026-09-25', SCHEDULES, { onAddAt });
     fireEvent.click(timetable(), { clientY: 14 * 48 + 32 });
-    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-25', startTime: '14:00' }));
+    expect(onAddAt).toHaveBeenLastCalledWith(expect.objectContaining({ date: '2026-09-25', startTime: '14:30' }));
+    fireEvent.click(timetable(), { clientY: 14 * 48 + 8 });
+    expect(onAddAt).toHaveBeenLastCalledWith(expect.objectContaining({ startTime: '14:00' }));
   });
 
-  it('맨 아래 23시대를 누르면 23:00', async () => {
+  it('맨 아래(23:40 자리)를 누르면 23:30', async () => {
     const onAddAt = vi.fn();
     await setup('mobile', '2026-09-25', SCHEDULES, { onAddAt });
-    fireEvent.click(timetable(), { clientY: 23 * 46 + 40 });
-    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ startTime: '23:00' }));
+    fireEvent.click(timetable(), { clientY: 23 * 46 + 31 });
+    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ startTime: '23:30' }));
   });
 
   it('일정 블록을 누르면 수정 창 (빠른 추가 아님)', async () => {
@@ -235,5 +237,79 @@ describe('빈 시간 눌러 빠른 추가 (US-10, D-017)', () => {
   it('23:00 시작이면 자정까지 (종료 00:00)', async () => {
     await setup('pc', '2026-09-25', SCHEDULES, { draft: { date: '2026-09-25', startTime: '23:00', endTime: '00:00', title: '' } });
     expect(within(timetable()).getByTestId('draft-block')).toHaveStyle({ top: `${23 * 48}px`, height: '48px' });
+  });
+});
+
+describe('임시 블록 끌기 · PC 끌어서 만들기 (D-053)', () => {
+  // jsdom은 칸 위치가 모두 0이라 clientY = 시간표 맨 위에서 잰 거리 (일간 PC 1시간 = 48px)
+  const DRAFT = { date: '2026-09-25', startTime: '14:00', endTime: '15:00', title: '' };
+  const y = (hours: number) => hours * 48;
+
+  it('아래 손잡이를 끌면 끝이 30분 단위로 (15:00 → 16:00)', async () => {
+    const onDraftChange = vi.fn();
+    await setup('pc', '2026-09-25', SCHEDULES, { draft: DRAFT, onDraftChange });
+    fireEvent.pointerDown(screen.getByTestId('draft-handle-end'), { clientY: y(15) });
+    fireEvent.pointerMove(window, { clientY: y(16) + 5 });
+    expect(onDraftChange).toHaveBeenLastCalledWith({ start: 840, end: 960 });
+    fireEvent.pointerUp(window, { clientY: y(16) + 5 });
+    fireEvent.pointerMove(window, { clientY: y(18) });
+    expect(onDraftChange).toHaveBeenCalledTimes(1); // 놓은 뒤에는 따라가지 않음
+  });
+
+  it('위 손잡이를 끌면 시작이 바뀐다, 끝보다 30분 앞까지만', async () => {
+    const onDraftChange = vi.fn();
+    await setup('pc', '2026-09-25', SCHEDULES, { draft: DRAFT, onDraftChange });
+    fireEvent.pointerDown(screen.getByTestId('draft-handle-start'), { clientY: y(14) });
+    fireEvent.pointerMove(window, { clientY: y(13.5) });
+    expect(onDraftChange).toHaveBeenLastCalledWith({ start: 810, end: 900 });
+    fireEvent.pointerMove(window, { clientY: y(16) });
+    expect(onDraftChange).toHaveBeenLastCalledWith({ start: 870, end: 900 });
+  });
+
+  it('몸통을 끌면 길이 그대로 30분 단위로 옮긴다 (모바일 손가락도)', async () => {
+    const onDraftChange = vi.fn();
+    await setup('mobile', '2026-09-25', SCHEDULES, { draft: DRAFT, onDraftChange });
+    fireEvent.pointerDown(screen.getByTestId('draft-block'), { clientY: 14 * 46 + 10, pointerType: 'touch' });
+    fireEvent.pointerMove(window, { clientY: 15 * 46 + 10, pointerType: 'touch' }); // 1시간 아래로
+    expect(onDraftChange).toHaveBeenLastCalledWith({ start: 900, end: 960 });
+  });
+
+  it('임시 블록을 눌러도 새 빠른 추가가 열리지 않는다', async () => {
+    const onAddAt = vi.fn();
+    await setup('pc', '2026-09-25', SCHEDULES, { draft: DRAFT, onAddAt });
+    fireEvent.click(screen.getByTestId('draft-block'), { clientY: y(14) + 10 });
+    expect(onAddAt).not.toHaveBeenCalled();
+  });
+
+  it('PC: 빈 시간을 누른 채 끌면 그 길이로 (09:10 → 10:40 = 09:00~11:00)', async () => {
+    const onAddAt = vi.fn();
+    await setup('pc', '2026-09-25', SCHEDULES, { onAddAt });
+    fireEvent.pointerDown(timetable(), { clientY: y(9) + 8, button: 0 });
+    fireEvent.pointerMove(window, { clientY: y(10) + 32 });
+    // 끄는 동안 점선 블록이 보인다
+    expect(within(timetable()).getByTestId('draft-block')).toHaveTextContent('(제목 없음) · 09:00-11:00');
+    fireEvent.pointerUp(window, { clientY: y(10) + 32 });
+    fireEvent.click(timetable(), { clientY: y(10) + 32 }); // 브라우저는 놓은 뒤 click도 보낸다
+    expect(onAddAt).toHaveBeenCalledTimes(1);
+    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-25', startTime: '09:00', durationMinutes: 120 }));
+    expect(within(timetable()).queryByTestId('draft-block')).not.toBeInTheDocument();
+  });
+
+  it('PC: 거의 안 움직이고 놓으면 그냥 클릭 (1시간)', async () => {
+    const onAddAt = vi.fn();
+    await setup('pc', '2026-09-25', SCHEDULES, { onAddAt });
+    fireEvent.pointerDown(timetable(), { clientY: y(9) + 8, button: 0 });
+    fireEvent.pointerMove(window, { clientY: y(9) + 10 });
+    fireEvent.pointerUp(window, { clientY: y(9) + 10 });
+    fireEvent.click(timetable(), { clientY: y(9) + 10 });
+    expect(onAddAt).toHaveBeenCalledTimes(1);
+    expect(onAddAt.mock.calls[0][0]).not.toHaveProperty('durationMinutes');
+  });
+
+  it('모바일은 누른 채 끌어 만들기 없음 (세로 스크롤과 겹치지 않게)', async () => {
+    await setup('mobile', '2026-09-25', SCHEDULES, { onAddAt: vi.fn() });
+    fireEvent.pointerDown(timetable(), { clientY: 9 * 46, pointerType: 'touch' });
+    fireEvent.pointerMove(window, { clientY: 11 * 46, pointerType: 'touch' });
+    expect(within(timetable()).queryByTestId('draft-block')).not.toBeInTheDocument();
   });
 });

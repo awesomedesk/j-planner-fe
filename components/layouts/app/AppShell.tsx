@@ -14,11 +14,10 @@ import CategoryManagerDialog from '@components/category/CategoryManagerDialog';
 import CategoryFilterDropdown from '@components/category/filter/CategoryFilterDropdown';
 import CategoryFilterSheet from '@components/category/filter/CategoryFilterSheet';
 import ClientOnly from '@components/common/ClientOnly';
-import type { TimetableSlot } from '@components/calendar/hooks/useQuickAddSlot';
-import type { TimetableDraft } from '@components/calendar/utils/timetableUtils';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
-import QuickAddSchedule, { QUICK_ADD_SHEET_HEIGHT, type QuickAddPreview } from '@components/schedule/quick/QuickAddSchedule';
+import DiscardConfirm from '@components/dialog/DiscardConfirm';
+import QuickAddSchedule, { QUICK_ADD_SHEET_HEIGHT } from '@components/schedule/quick/QuickAddSchedule';
 import type { ScheduleFormValues } from '@components/schedule/utils/scheduleFormUtils';
 import {
   goToday,
@@ -45,6 +44,7 @@ import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
 import SidebarSections from './SidebarSections';
+import { useQuickAddState } from './useQuickAddState';
 
 /**
  * AppShell - 앱 화면 틀 + 달력 (US-01, US-06, D-018)
@@ -89,10 +89,8 @@ function AppShellContent() {
   const [scheduleFormTarget, setScheduleFormTarget] = useState<ScheduleFormTarget | null>(null);
   /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  /** 빈 시간을 눌러 연 빠른 추가 (US-10)와 입력 중인 임시 블록 값 */
-  const [quickAdd, setQuickAdd] = useState<TimetableSlot | null>(null);
-  const [quickAddPreview, setQuickAddPreview] = useState<QuickAddPreview | null>(null);
-  const draft: TimetableDraft | null = quickAdd && quickAddPreview ? { date: quickAdd.date, ...quickAddPreview } : null;
+  /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
+  const quickAdd = useQuickAddState();
 
   /** 추가 메뉴에서 고른 항목 열기. 기준 날짜 = 고른 날짜 (D-015) */
   const handleSelectAdd = (target: AddTarget) => {
@@ -103,19 +101,17 @@ function AppShellContent() {
     setScheduleFormTarget(null);
     if (changed) void dispatch(refreshSchedules());
   };
-  const closeQuickAdd = () => {
-    setQuickAdd(null);
-    setQuickAddPreview(null);
-  };
+  const closeQuickAdd = quickAdd.close;
   const saveQuickAdd = () => {
     closeQuickAdd();
     void dispatch(refreshSchedules());
   };
   /** '자세히 입력' → 쓴 값을 그대로 일정 추가 창으로 */
   const openQuickAddDetail = (values: ScheduleFormValues) => {
-    if (!quickAdd) return;
+    if (!quickAdd.slot) return;
+    const { date } = quickAdd.slot;
     closeQuickAdd();
-    setScheduleFormTarget({ mode: 'create', baseDate: quickAdd.date, startTime: values.startTime, draft: values });
+    setScheduleFormTarget({ mode: 'create', baseDate: date, startTime: values.startTime, draft: values });
   };
   /** 날짜 이동 (US-09): ‹ ›·스와이프는 보기 단위만큼, '오늘'은 오늘로. 열린 날짜 시트는 닫는다 */
   const move = (step: number) => {
@@ -156,8 +152,9 @@ function AppShellContent() {
   /** 시간표(주간·일간) 공통: 블록 → 수정, 빈 시간 → 빠른 추가 (US-10) */
   const timetableProps = {
     onOpenSchedule: openSchedule,
-    onAddAt: setQuickAdd,
-    draft,
+    onAddAt: quickAdd.addAt,
+    draft: quickAdd.draft,
+    onDraftChange: quickAdd.changeDraftRange,
     coverBottom: isTabletUp ? 0 : QUICK_ADD_SHEET_HEIGHT,
   };
 
@@ -252,20 +249,25 @@ function AppShellContent() {
 
       {isCategoryManagerOpen && <CategoryManagerDialog onClose={closeCategoryManager} />}
 
-      {quickAdd && (
+      {quickAdd.slot && (
         <QuickAddSchedule
-          key={`${quickAdd.date} ${quickAdd.startTime}`}
+          key={quickAdd.key}
           variant={isTabletUp ? 'popover' : 'sheet'}
-          date={quickAdd.date}
-          startTime={quickAdd.startTime}
-          anchor={quickAdd.anchor}
+          date={quickAdd.slot.date}
+          startTime={quickAdd.slot.startTime}
+          durationMinutes={quickAdd.slot.durationMinutes}
+          times={quickAdd.times}
+          anchor={quickAdd.slot.anchor}
           categories={categories}
           onClose={closeQuickAdd}
           onSaved={saveQuickAdd}
           onOpenDetail={openQuickAddDetail}
-          onPreviewChange={setQuickAddPreview}
+          onPreviewChange={quickAdd.setPreview}
+          onDirtyChange={quickAdd.setDirty}
         />
       )}
+      {/* 입력 중에 다른 빈 시간을 눌렀을 때 (D-053 Q7) */}
+      {quickAdd.pendingSlot && <DiscardConfirm onKeepEditing={quickAdd.keepEditing} onDiscard={quickAdd.discardAndMove} />}
 
       {scheduleFormTarget && (
         <ScheduleFormDialog

@@ -337,3 +337,47 @@ describe('카테고리 필터 (US-11)', () => {
     await waitFor(() => expect(api.calls('GET /schedules').at(-1)?.query.getAll('categoryId')).toEqual(['1', '2', '3']));
   });
 });
+
+describe('빠른 추가 조절·옮기기 (D-053)', () => {
+  // jsdom은 칸 위치가 모두 0이라 clientY = 시간표 맨 위에서 잰 거리 (일간 PC 1시간 = 48px)
+  const openDay = async () => {
+    const view = await setup(1440);
+    act(() => {
+      view.store.dispatch(setViewMode('DAY'));
+    });
+    const column = await screen.findByRole('group', { name: '9월 25일 (금) 시간표' });
+    fireEvent.click(column, { clientY: 9 * 48 + 5 });
+    return { ...view, column };
+  };
+
+  it('아래 손잡이를 끌면 팝업 종료 시간도 바뀐다', async () => {
+    await openDay();
+    fireEvent.pointerDown(screen.getByTestId('draft-handle-end'), { clientY: 10 * 48 });
+    fireEvent.pointerMove(window, { clientY: 11 * 48 + 30 });
+    fireEvent.pointerUp(window, { clientY: 11 * 48 + 30 });
+    expect(screen.getByLabelText('종료 시간')).toHaveValue('11:30');
+    expect(screen.getByTestId('draft-block')).toHaveTextContent('(제목 없음) · 09:00-11:30');
+  });
+
+  it('아무것도 안 쓰고 다른 빈 시간을 누르면 팝업이 새 자리로 (Q7)', async () => {
+    const { column } = await openDay();
+    fireEvent.click(column, { clientY: 15 * 48 + 40 });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('15:30');
+    expect(screen.getByTestId('draft-block')).toHaveTextContent('(제목 없음) · 15:30-16:30');
+  });
+
+  it('쓴 것이 있으면 "작성을 취소할까요?" → 작성 취소면 새 자리, 계속 작성이면 그대로 (Q7, D-037)', async () => {
+    const { user, column } = await openDay();
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '독서');
+    fireEvent.click(column, { clientY: 15 * 48 + 5 });
+    await user.click(screen.getByRole('button', { name: '계속 작성' }));
+    expect(screen.getByRole('textbox', { name: '제목' })).toHaveValue('독서');
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('09:00');
+
+    fireEvent.click(column, { clientY: 15 * 48 + 5 });
+    await user.click(screen.getByRole('button', { name: '작성 취소' }));
+    expect(screen.getByRole('textbox', { name: '제목' })).toHaveValue('');
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('15:00');
+  });
+});

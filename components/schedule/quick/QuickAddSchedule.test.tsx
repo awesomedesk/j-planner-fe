@@ -160,3 +160,70 @@ describe('모바일 빠른 추가 바텀 시트 (US-10, MO-12)', () => {
     expect(screen.queryByRole('button', { name: '취소' })).not.toBeInTheDocument();
   });
 });
+
+describe('빠른 추가 시간 조절 (D-053)', () => {
+  it('끌어서 만든 길이로 시작 (09:00부터 2시간), 아직 입력한 것은 없음', async () => {
+    const { user, onClose } = open({ startTime: '09:00', durationMinutes: 120 });
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('09:00');
+    expect(screen.getByLabelText('종료 시간')).toHaveValue('11:00');
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalled(); // 확인 없이 닫힘
+  });
+
+  it('임시 블록 손잡이로 바꾼 시간이 시간 칸에 들어온다', () => {
+    const view = open();
+    view.rerender(
+      <QuickAddSchedule
+        variant="popover"
+        date="2026-09-24"
+        startTime="14:00"
+        anchor={ANCHOR}
+        categories={CATEGORIES}
+        onClose={view.onClose}
+        onSaved={view.onSaved}
+        onOpenDetail={view.onOpenDetail}
+        onPreviewChange={view.onPreviewChange}
+        times={{ startDate: '2026-09-24', startTime: '14:30', endDate: '2026-09-24', endTime: '16:00' }}
+      />
+    );
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('14:30');
+    expect(screen.getByLabelText('종료 시간')).toHaveValue('16:00');
+    expect(view.onPreviewChange).toHaveBeenLastCalledWith({ title: '', startTime: '14:30', endTime: '16:00' });
+  });
+
+  it('시간 칸에서는 분을 자유롭게 (14:10)', () => {
+    open();
+    fireEvent.change(screen.getByLabelText('시작 시간'), { target: { value: '14:10' } });
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('14:10');
+    expect(screen.getByLabelText('종료 시간')).toHaveValue('15:10');
+  });
+
+  it('입력했는지를 바깥(AppShell)에 알린다 — 다른 빈 시간을 누를 때 확인용 (Q7)', async () => {
+    const onDirtyChange = vi.fn();
+    const { user } = open({ onDirtyChange });
+    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    await user.type(titleInput(), '팀');
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it('바깥을 눌렀는데 그 아래가 시간표 빈 칸이면 그 칸을 누른 것으로 넘긴다 (Q7)', async () => {
+    const column = document.createElement('div');
+    column.setAttribute('data-quick-add-slot', '');
+    const onColumnClick = vi.fn();
+    column.addEventListener('click', (event) => onColumnClick((event as MouseEvent).clientY));
+    document.body.appendChild(column);
+    const elementFromPoint = vi.fn((): Element => column);
+    Object.defineProperty(document, 'elementFromPoint', { value: elementFromPoint, configurable: true });
+
+    const { onClose } = open();
+    fireEvent.click(screen.getByTestId('quick-add-backdrop'), { clientX: 120, clientY: 400 });
+    expect(onColumnClick).toHaveBeenCalledWith(400);
+    expect(onClose).not.toHaveBeenCalled();
+
+    elementFromPoint.mockReturnValue(document.body);
+    fireEvent.click(screen.getByTestId('quick-add-backdrop'), { clientX: 5, clientY: 5 });
+    expect(onClose).toHaveBeenCalled();
+    column.remove();
+    Reflect.deleteProperty(document, 'elementFromPoint');
+  });
+});

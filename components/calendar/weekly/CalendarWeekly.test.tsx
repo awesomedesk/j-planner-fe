@@ -289,11 +289,11 @@ describe('모바일 주간 7칸 시간표 (MO-05)', () => {
 
 describe('빈 시간 눌러 빠른 추가 (US-10, D-021)', () => {
   // jsdom은 칸 위치가 모두 0이라 clientY가 곧 시간표 맨 위에서 잰 거리 (주간 PC 1시간 = 46px)
-  it('주간 칸의 빈 시간을 누르면 그날·그 칸 정각으로 빠른 추가를 연다', async () => {
+  it('주간 칸의 빈 시간을 누르면 그날·30분 단위 시각으로 빠른 추가를 연다', async () => {
     const onAddAt = vi.fn();
     await setup('pc', undefined, SCHEDULES, { onAddAt });
     fireEvent.click(column('9월 24일 (목)'), { clientY: 14 * 46 + 30 });
-    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-24', startTime: '14:00' }));
+    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-24', startTime: '14:30' })); // 30분 단위 (D-053)
   });
 
   it('일정 블록을 누르면 빠른 추가가 아니라 수정 (블록 클릭 유지)', async () => {
