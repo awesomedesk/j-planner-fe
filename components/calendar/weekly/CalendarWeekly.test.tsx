@@ -5,7 +5,7 @@ import { CATEGORIES, schedule } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
-import { selectDate, setTimetableTopMinutes, setViewMode } from '@store/slices/calendarSlice';
+import { goToday, moveView, selectDate, setTimetableTopMinutes, setViewMode } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
 import { makeStore } from '@store/store';
 
@@ -199,6 +199,26 @@ describe('주간 시간표 (US-07, PC-02)', () => {
       renderWithStore(<CalendarWeekly variant="pc" onOpenSchedule={vi.fn()} />, { store });
       expect(scrollTop()).toBe(8 * 46);
       expect(api.calls('GET /schedules')).toHaveLength(1);
+    });
+
+    it('‹ ›로 다음 주에 가도 보던 시간 그대로 (D-046 ②)', async () => {
+      const { store } = await setup();
+      const scroller = screen.getByTestId('timetable-scroll');
+      scroller.scrollTop = 10 * 46;
+      fireEvent.scroll(scroller);
+      act(() => { store.dispatch(moveView(1)); });
+      expect(screen.getByRole('button', { name: '10월 2일 (금)' })).toBeInTheDocument();
+      expect(screen.getByTestId('timetable-scroll').scrollTop).toBe(10 * 46);
+    });
+
+    it("'오늘'을 누르면 현재 시각이 다시 가운데", async () => {
+      const { store } = await setup();
+      act(() => { store.dispatch(moveView(2)); });
+      const scroller = screen.getByTestId('timetable-scroll');
+      scroller.scrollTop = 0;
+      fireEvent.scroll(scroller);
+      act(() => { store.dispatch(goToday('2026-09-25')); });
+      expect(screen.getByTestId('timetable-scroll').scrollTop).toBe(8 + 14.5 * 46 - 300);
     });
 
     it('스크롤하면 보던 시간(분)을 기억한다', async () => {

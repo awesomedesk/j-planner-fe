@@ -13,6 +13,9 @@ interface PcHeaderProps {
   title: string;
   viewMode: CalendarViewMode;
   onChangeViewMode: (viewMode: CalendarViewMode) => void;
+  /** ‹ › 날짜 이동 (-1 이전, +1 다음) · 오늘 (US-09) */
+  onMove: (step: number) => void;
+  onToday: () => void;
   /** 추가 메뉴에서 고른 항목 (일정 / Todo / D-Day) */
   onSelectAdd: (target: AddTarget) => void;
   onClickSettings?: () => void;
@@ -24,33 +27,36 @@ interface PcHeaderProps {
  * 서비스명 · 이전/날짜/다음 · 오늘 · 카테고리 필터 · 월/주/일 · 추가 · 설정
  *
  * 태블릿(768~1023px)은 줄여서 보여준다: 필터는 '전체', 추가는 아이콘만 (TAB-01).
- * 태블릿의 '오늘' 버튼은 D-037로 추가하기로 함 → 날짜 이동(US-09) 때 넣는다.
- * 날짜 이동(US-09)·필터(US-11)는 각 스토리에서 동작을 붙인다. 추가는 일정 입력 창을 연다 (US-05).
+ * 날짜 이동: ‹ ›는 보기 단위(월간 한 달, 주간 한 주, 일간 하루), '오늘'은 태블릿에도 둔다 (US-09, D-037).
+ * 필터(US-11)는 그 스토리에서 동작을 붙인다. 추가는 일정 입력 창을 연다 (US-05).
  */
 export default function PcHeader({
   title,
   viewMode,
   onChangeViewMode,
+  onMove,
+  onToday,
   onSelectAdd,
   onClickSettings,
   className = '',
 }: PcHeaderProps) {
   return (
     <header
+      aria-label="달력 도구"
       className={`h-[60px] shrink-0 items-center justify-between gap-3 bg-tp-primary px-3 text-tp-on-primary pc:pl-5 pc:pr-4 ${className}`}
     >
       <div className="flex min-w-0 items-center gap-2 pc:gap-2.5">
         <div className="mr-1.5 whitespace-nowrap text-[17px] font-bold pc:mr-[18px] pc:text-[19px]">J&apos;s Planner</div>
-        <ThemeButton iconOnly aria-label="이전">
+        <ThemeButton iconOnly aria-label="이전" onClick={() => onMove(-1)}>
           <Icon name="chevronLeft" />
         </ThemeButton>
         <h1 className="whitespace-nowrap text-center text-[17px] font-bold pc:min-w-[140px] pc:text-[19px]">
           {title}
         </h1>
-        <ThemeButton iconOnly aria-label="다음">
+        <ThemeButton iconOnly aria-label="다음" onClick={() => onMove(1)}>
           <Icon name="chevronRight" />
         </ThemeButton>
-        <ThemeButton className="hidden pc:inline-flex">오늘</ThemeButton>
+        <ThemeButton onClick={onToday}>오늘</ThemeButton>
       </div>
 
       <div className="flex items-center gap-2 pc:gap-3">

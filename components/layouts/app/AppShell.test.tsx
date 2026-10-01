@@ -124,7 +124,7 @@ describe('보기 전환 (PC-01, US-07)', () => {
     setViewportWidth(390);
     mockApi({ 'GET /schedules': () => json(200, SEED_SCHEDULES), 'GET /categories': () => json(200, CATEGORIES) });
     const store = makeStore();
-    store.dispatch(setViewMode('WEEK')); // 처음 화면이 주간 (/dev/weekly, 설정 '처음 화면' US-27)
+    store.dispatch(setViewMode('WEEK')); // 처음 화면이 주간 (설정 '처음 화면' US-27)
     renderWithStore(<AppShell />, { store });
     // 10:00 고정 시각 → 8(위 여백) + 10 × 38 − 600/2
     expect(screen.getByTestId('timetable-scroll').scrollTop).toBe(8 + 10 * 38 - 300);
@@ -137,5 +137,103 @@ describe('보기 전환 (PC-01, US-07)', () => {
     const weekly = screen.getByLabelText('주간 시간표');
     expect(within(weekly).getByText('0')).toBeInTheDocument(); // 모바일 눈금은 시만
     expect(screen.getByRole('button', { name: '화면 선택' })).toHaveTextContent('주간'); // 지금 보기 (D-022)
+  });
+});
+
+describe('날짜 이동 — PC·태블릿 헤더 ‹ › · 오늘 (US-09)', () => {
+  const header = () => screen.getByRole('banner', { name: '달력 도구' });
+  const title = () => within(header()).getByRole('heading').textContent;
+  const click = async (user: ReturnType<typeof renderWithStore>['user'], name: string) =>
+    user.click(within(header()).getByRole('button', { name }));
+
+  it('월간: 한 달씩, 오늘로 돌아오기', async () => {
+    const { user } = await setup(1440);
+    await click(user, '다음');
+    expect(title()).toBe('2026년 10월');
+    await click(user, '이전');
+    await click(user, '이전');
+    expect(title()).toBe('2026년 8월');
+    await click(user, '오늘');
+    expect(title()).toBe('2026년 9월');
+    expect(screen.getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');
+  });
+
+  it('주간은 한 주, 일간은 하루', async () => {
+    const { user } = await setup(1440);
+    const views = within(screen.getByRole('group', { name: '보기 전환' }));
+    await user.click(views.getByRole('button', { name: '주' }));
+    await click(user, '다음');
+    expect(title()).toBe('9월 27일 – 10월 3일');
+    await user.click(views.getByRole('button', { name: '일' }));
+    expect(title()).toBe('10월 2일 (금)');
+    await click(user, '이전');
+    expect(title()).toBe('10월 1일 (목)');
+  });
+
+  it('옮기면 사이드바 날짜(고른 날짜)도 같이 간다', async () => {
+    const { user } = await setup(1440);
+    await click(user, '다음');
+    expect(within(screen.getByRole('complementary', { name: '사이드바' })).getByRole('heading', { name: '10월 25일 (일)' })).toBeInTheDocument();
+  });
+
+  it("태블릿(820px)에도 '오늘' 버튼 (D-037)", async () => {
+    await setup(820);
+    expect(within(header()).getByRole('button', { name: '오늘' })).not.toHaveClass('hidden');
+  });
+});
+
+describe('날짜 이동 — 모바일 (US-09, D-022·D-025)', () => {
+  const swipe = (el: HTMLElement, dx: number) => {
+    fireEvent.touchStart(el, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(el, { changedTouches: [{ clientX: 200 + dx, clientY: 300 }] });
+  };
+  const mobileTitle = () => within(screen.getByRole('banner', { name: '모바일 머리' })).getByRole('heading').textContent;
+
+  it('화면 선택: 월간/주간/3일/일간/목록, 3일·목록은 아직 막힘 (US-29)', async () => {
+    const { user, store } = await setup(390);
+    await user.click(screen.getByRole('button', { name: '화면 선택' }));
+    const list = screen.getByRole('listbox', { name: '화면 선택' });
+    expect(within(list).getAllByRole('option').map((o) => o.textContent)).toEqual(['월간', '주간', '3일', '일간', '목록']);
+    expect(within(list).getByRole('option', { name: '3일' })).toHaveAttribute('aria-disabled', 'true');
+    expect(within(list).getByRole('option', { name: '월간' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(within(list).getByRole('option', { name: '주간' }));
+    expect(store.getState().calendar.viewMode).toBe('WEEK');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('달력을 왼쪽으로 밀면 다음 달, 오른쪽으로 밀면 이전 달', async () => {
+    await setup(390);
+    swipe(screen.getByRole('main'), -120);
+    expect(mobileTitle()).toBe('2026년 10월');
+    swipe(screen.getByRole('main'), 120);
+    swipe(screen.getByRole('main'), 120);
+    expect(mobileTitle()).toBe('2026년 8월');
+  });
+
+  it('주간은 한 주, 일간은 하루씩 밀린다', async () => {
+    const { store } = await setup(390);
+    act(() => { store.dispatch(setViewMode('WEEK')); });
+    swipe(screen.getByRole('main'), -120);
+    expect(mobileTitle()).toBe('9월 27일 – 10월 3일');
+    act(() => { store.dispatch(setViewMode('DAY')); });
+    swipe(screen.getByRole('main'), 120);
+    expect(mobileTitle()).toBe('10월 1일 (목)');
+  });
+
+  it("화면 선택 줄의 '오늘'로 돌아온다 (D-048: 하나만)", async () => {
+    const { user } = await setup(390);
+    swipe(screen.getByRole('main'), -120);
+    const todayButtons = screen.getAllByRole('button', { name: '오늘' }).filter((b) => b.closest('[aria-label="모바일 머리"]'));
+    expect(todayButtons).toHaveLength(1);
+    await user.click(todayButtons[0]);
+    expect(mobileTitle()).toBe('2026년 9월');
+  });
+
+  it('날짜 시트가 열려 있으면 넘길 때 닫는다', async () => {
+    const { user } = await setup(390);
+    await user.click(await screen.findByRole('button', { name: '9월 25일 (금), 일정 4개' }));
+    expect(screen.getByRole('region', { name: /날짜 시트/ })).toBeInTheDocument();
+    swipe(screen.getByRole('main'), -120);
+    expect(screen.queryByRole('region', { name: /날짜 시트/ })).not.toBeInTheDocument();
   });
 });

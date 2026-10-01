@@ -3,17 +3,19 @@
 import { useState } from 'react';
 
 import type { LocalDate, Schedule } from '@/types/api';
+import type { CalendarViewMode } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
-import ClientOnly from '@components/common/ClientOnly';
+import CalendarDaily from '@components/calendar/daily/CalendarDaily';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
-import CalendarDaily from '@components/calendar/daily/CalendarDaily';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
-import { formatDayTitle } from '@utils/date/dateUtils';
+import ClientOnly from '@components/common/ClientOnly';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
 import {
+  goToday,
+  moveView,
   openDayView,
   selectSelectedDate,
   selectViewDate,
@@ -23,7 +25,9 @@ import {
 import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
 import { refreshSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 
+import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
+import { useSwipe } from '@utils/hooks/useSwipe';
 
 import type { AddTarget } from './addMenuItems';
 import { formatViewTitle } from './appLayoutUtils';
@@ -83,6 +87,19 @@ function AppShellContent() {
     setScheduleFormTarget(null);
     if (changed) void dispatch(refreshSchedules());
   };
+  /** 날짜 이동 (US-09): ‹ ›·스와이프는 보기 단위만큼, '오늘'은 오늘로. 열린 날짜 시트는 닫는다 */
+  const move = (step: number) => {
+    setSheetDate(null);
+    dispatch(moveView(step));
+  };
+  const backToToday = () => {
+    setSheetDate(null);
+    dispatch(goToday(toLocalDate(new Date())));
+  };
+  const changeViewMode = (mode: CalendarViewMode) => dispatch(setViewMode(mode));
+  /** 모바일은 달력을 좌우로 밀어 넘긴다 (D-025). PC·태블릿은 헤더 ‹ › */
+  const swipe = useSwipe({ onPrev: () => move(-1), onNext: () => move(1) });
+
   const openDayPlan = (date: LocalDate) => {
     setSheetDate(null);
     dispatch(openDayView(date));
@@ -109,13 +126,26 @@ function AppShellContent() {
         className="hidden tablet:flex"
         title={formatViewTitle(viewMode, viewDate)}
         viewMode={viewMode}
-        onChangeViewMode={(mode) => dispatch(setViewMode(mode))}
+        onChangeViewMode={changeViewMode}
+        onMove={move}
+        onToday={backToToday}
         onSelectAdd={handleSelectAdd}
       />
-      <MobileHeader className="flex tablet:hidden" title={formatViewTitle(viewMode, viewDate)} viewMode={viewMode} />
+      <MobileHeader
+        className="flex tablet:hidden"
+        title={formatViewTitle(viewMode, viewDate)}
+        viewMode={viewMode}
+        onChangeViewMode={changeViewMode}
+        onToday={backToToday}
+      />
 
       <div className="relative flex min-h-0 flex-1">
-        <main className="flex min-w-0 flex-1 flex-col fold:w-[400px] fold:flex-none tablet:w-auto tablet:flex-1">{mainContent}</main>
+        <main
+          className="flex min-w-0 flex-1 flex-col fold:w-[400px] fold:flex-none tablet:w-auto tablet:flex-1"
+          {...(isTabletUp ? {} : swipe)}
+        >
+          {mainContent}
+        </main>
 
         {/* 폴드 펼침(600~767px): 날짜 시트 내용이 오른쪽 패널로 (FOLD-01) */}
         <aside

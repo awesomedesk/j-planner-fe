@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { addDays, addMonths, addWeeks, format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 import type { LocalDate } from '@/types/api';
@@ -17,6 +17,15 @@ export const weekStartsOn = (weekStart: WeekStartDay): 0 | 1 => (weekStart === '
 
 export const toLocalDate = (date: Date): LocalDate => format(date, 'yyyy-MM-dd');
 export const fromLocalDate = (value: LocalDate): Date => parseISO(value);
+
+/** 날짜 이동 단위 (월간 한 달, 주간 한 주, 일간 하루 — US-09) */
+export type DateStepUnit = 'month' | 'week' | 'day';
+
+const ADD: Record<DateStepUnit, (date: Date, amount: number) => Date> = { month: addMonths, week: addWeeks, day: addDays };
+
+/** 날짜를 단위만큼 옮긴다. 한 달씩 옮길 때 없는 날은 그달 마지막 날 (1/31 → 2/28) */
+export const shiftDate = (date: LocalDate, unit: DateStepUnit, step: number): LocalDate =>
+  toLocalDate(ADD[unit](fromLocalDate(date), step));
 
 /** `2026년 9월` (월간 헤더) */
 export const formatMonthTitle = (date: LocalDate) => format(fromLocalDate(date), 'yyyy년 M월');

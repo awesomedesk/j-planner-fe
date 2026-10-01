@@ -3,7 +3,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { LocalDate } from '@/types/api';
 import type { CalendarViewMode } from '@/types/calendar';
 
-import { toLocalDate } from '@utils/date/dateUtils';
+import { shiftDate, toLocalDate, type DateStepUnit } from '@utils/date/dateUtils';
 
 /**
  * 달력 보기 상태 (US-06~09)
@@ -20,7 +20,12 @@ interface CalendarState {
    * 시간표 화면끼리 바꿀 때는 그대로, 월간으로 가거나 월간에서 들어오면 null → 처음 위치 규칙 (D-046)
    */
   timetableTopMinutes: number | null;
+  /** '오늘'을 누를 때마다 1씩 늘어난다 → 시간표가 처음 위치 규칙으로 다시 자리 잡는다 */
+  timetableScrollReset: number;
 }
+
+/** 보기별 날짜 이동 단위 (US-09, D-025) */
+const STEP_UNIT: Record<CalendarViewMode, DateStepUnit> = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
 
 /** store를 만들 때의 오늘로 시작한다 (테스트에서 시각을 고정할 수 있게 함수로) */
 const initialState = (): CalendarState => {
@@ -30,6 +35,7 @@ const initialState = (): CalendarState => {
     viewDate: today,
     selectedDate: today,
     timetableTopMinutes: null,
+    timetableScrollReset: 0,
   };
 };
 
@@ -53,6 +59,23 @@ const calendarSlice = createSlice({
       state.viewDate = action.payload;
       state.viewMode = 'DAY';
     },
+    /**
+     * ‹ › · 스와이프: 보기 단위만큼 옮긴다 (월간 한 달, 주간 한 주, 일간 하루)
+     * 고른 날짜도 같이 옮겨서 사이드바가 따라가고, 다음 보기 전환이 옛 날짜로 돌아가지 않게 한다.
+     * 시간표에서 보던 시간은 그대로 (D-046 ②)
+     */
+    moveView(state, action: PayloadAction<number>) {
+      const unit = STEP_UNIT[state.viewMode];
+      state.viewDate = shiftDate(state.viewDate, unit, action.payload);
+      state.selectedDate = shiftDate(state.selectedDate, unit, action.payload);
+    },
+    /** '오늘': 오늘로 돌아오고, 시간표는 처음 위치 규칙으로 다시 (현재 시각 가운데) */
+    goToday(state, action: PayloadAction<LocalDate>) {
+      state.viewDate = action.payload;
+      state.selectedDate = action.payload;
+      state.timetableTopMinutes = null;
+      state.timetableScrollReset += 1;
+    },
     /** 시간표를 스크롤할 때 보던 시간을 기억 (D-046 ②) */
     setTimetableTopMinutes(state, action: PayloadAction<number>) {
       state.timetableTopMinutes = action.payload;
@@ -60,10 +83,11 @@ const calendarSlice = createSlice({
   },
 });
 
-export const { setViewMode, selectDate, openDayView, setTimetableTopMinutes } = calendarSlice.actions;
+export const { setViewMode, selectDate, openDayView, moveView, goToday, setTimetableTopMinutes } = calendarSlice.actions;
 
 export const selectViewMode = (state: { calendar: CalendarState }) => state.calendar.viewMode;
 export const selectViewDate = (state: { calendar: CalendarState }) => state.calendar.viewDate;
 export const selectSelectedDate = (state: { calendar: CalendarState }) => state.calendar.selectedDate;
 
 export default calendarSlice.reducer;
+export const selectTimetableScrollReset = (state: { calendar: CalendarState }) => state.calendar.timetableScrollReset;

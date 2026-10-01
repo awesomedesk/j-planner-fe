@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { makeStore } from '@store/store';
 
-import { openDayView, selectDate, setTimetableTopMinutes, setViewMode } from './calendarSlice';
+import { goToday, moveView, openDayView, selectDate, setTimetableTopMinutes, setViewMode } from './calendarSlice';
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -17,6 +17,7 @@ describe('달력 상태', () => {
       viewDate: '2026-09-25',
       selectedDate: '2026-09-25',
       timetableTopMinutes: null,
+      timetableScrollReset: 0,
     });
   });
 
@@ -71,5 +72,48 @@ describe('시간표 보던 시간 (D-046 ②)', () => {
     store.dispatch(setTimetableTopMinutes(480)); // 월간에서는 의미 없음
     store.dispatch(openDayView('2026-09-23'));
     expect(store.getState().calendar.timetableTopMinutes).toBeNull();
+  });
+});
+
+describe('날짜 이동 (US-09)', () => {
+  it('월간 ‹ ›: 한 달씩, 고른 날짜도 같이 (다음 보기 전환이 엉뚱한 달로 가지 않게)', () => {
+    const store = makeStore();
+    store.dispatch(moveView(1));
+    expect(store.getState().calendar).toMatchObject({ viewDate: '2026-10-25', selectedDate: '2026-10-25' });
+    store.dispatch(moveView(-1));
+    store.dispatch(moveView(-1));
+    expect(store.getState().calendar).toMatchObject({ viewDate: '2026-08-25', selectedDate: '2026-08-25' });
+  });
+
+  it('주간은 한 주, 일간은 하루', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('WEEK'));
+    store.dispatch(moveView(1));
+    expect(store.getState().calendar.viewDate).toBe('2026-10-02');
+    store.dispatch(setViewMode('DAY'));
+    store.dispatch(moveView(-1));
+    expect(store.getState().calendar).toMatchObject({ viewDate: '2026-10-01', selectedDate: '2026-10-01' });
+  });
+
+  it('‹ ›로 옮겨도 시간표에서 보던 시간은 그대로 (D-046 ②)', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('WEEK'));
+    store.dispatch(setTimetableTopMinutes(480));
+    store.dispatch(moveView(1));
+    expect(store.getState().calendar.timetableTopMinutes).toBe(480);
+  });
+
+  it("'오늘': 오늘로 돌아오고, 시간표는 처음 위치 규칙으로 다시 (현재 시각 가운데)", () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('WEEK'));
+    store.dispatch(moveView(3));
+    store.dispatch(setTimetableTopMinutes(480));
+    store.dispatch(goToday('2026-09-25'));
+    expect(store.getState().calendar).toMatchObject({
+      viewDate: '2026-09-25',
+      selectedDate: '2026-09-25',
+      timetableTopMinutes: null,
+      timetableScrollReset: 1,
+    });
   });
 });

@@ -20,9 +20,18 @@ export const VIEW_MODE_LABEL: Record<CalendarViewMode, string> = {
   DAY: '일',
 };
 
-/** 모바일 화면 선택 드롭다운 글자 (D-022). 3일·목록은 US-29 */
+/** 모바일 화면 선택 드롭다운 글자 (D-022) */
 export const MOBILE_VIEW_MODE_LABEL: Record<CalendarViewMode, string> = {
   MONTH: '월간',
   WEEK: '주간',
   DAY: '일간',
 };
+
+/** 모바일 화면 선택 드롭다운 선택지 (D-022, D-025). 3일·목록은 US-29에서 켠다 (mode 없음 = 아직 막힘) */
+export const MOBILE_VIEW_OPTIONS: readonly { label: string; mode: CalendarViewMode | null }[] = [
+  { label: '월간', mode: 'MONTH' },
+  { label: '주간', mode: 'WEEK' },
+  { label: '3일', mode: null },
+  { label: '일간', mode: 'DAY' },
+  { label: '목록', mode: null },
+];

@@ -83,6 +83,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
         <div
           role="tablist"
           aria-label="일간 보기"
+          data-swipe-ignore
           className="mb-2 flex shrink-0 gap-0.5 overflow-x-auto rounded-[10px] border border-tp-line bg-tp-panel p-[3px]"
         >
           {buildMobileDayTabs().map((tab) => (
