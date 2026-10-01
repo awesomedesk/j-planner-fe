@@ -177,9 +177,12 @@ function AppShellContent() {
       <div className="relative flex min-h-0 flex-1">
         <main
           className="flex min-w-0 flex-1 flex-col fold:w-[400px] fold:flex-none tablet:w-auto tablet:flex-1"
-          {...(isTabletUp ? {} : swipe)}
+          {...(isTabletUp ? {} : swipe.handlers)}
         >
-          {mainContent}
+          {/* 모바일 스와이프: 손가락을 따라 움직이는 층 (D-051) */}
+          <div className="flex min-h-0 flex-1 flex-col" style={swipe.style} onTransitionEnd={swipe.onTransitionEnd}>
+            {mainContent}
+          </div>
         </main>
 
         {/* 폴드 펼침(600~767px): 날짜 시트 내용이 오른쪽 패널로 (FOLD-01) */}
