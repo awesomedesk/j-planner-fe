@@ -11,7 +11,7 @@ import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dat
 import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
-import AllDayChip from '../common/AllDayChip';
+import AllDayRow from '../common/AllDayRow';
 import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
@@ -22,7 +22,6 @@ import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import { weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import {
   DEFAULT_TIMETABLE_HOURS,
-  allDaySchedulesOn,
   buildWeekDays,
   getHourLabels,
   getWeekRange,
@@ -78,6 +77,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
   const today = toLocalDate(now);
 
   const days = useMemo(() => buildWeekDays(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
+  const dates = useMemo(() => days.map((day) => day.date), [days]);
   const range = useMemo(() => getWeekRange(viewDate, DEFAULT_WEEK_START), [viewDate]);
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
@@ -154,28 +154,19 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
         })}
       </div>
 
-      {/* 종일 줄 (PC-02 ⑤) */}
-      <section aria-label="종일" className="grid border-b border-tp-line" style={{ ...headerStyle, minHeight: isMobile ? 24 : 32 }}>
-        <div className={`flex items-center justify-center text-tp-muted ${isMobile ? 'text-[9px]' : 'text-[11px]'}`}>종일</div>
-        {days.map((day) => (
-          <div
-            key={day.date}
-            role="group"
-            aria-label={`${formatDayTitle(day.date)} 종일`}
-            className={`flex min-w-0 flex-col gap-0.5 border-l border-tp-line ${isMobile ? 'p-0.5' : 'p-1'}`}
-          >
-            {allDaySchedulesOn(schedules, day.date).map((schedule) => (
-              <AllDayChip
-                key={schedule.id}
-                schedule={schedule}
-                category={categoriesById.get(schedule.categoryId)}
-                compact={isMobile}
-                onOpen={onOpenSchedule}
-              />
-            ))}
-          </div>
-        ))}
-      </section>
+      {/* 종일 줄 (PC-02 ⑤, D-052) */}
+      <AllDayRow
+        dates={dates}
+        schedules={schedules}
+        categoriesById={categoriesById}
+        compact={isMobile}
+        labelWidth={size.timeColumn}
+        labelClassName={`justify-center text-tp-muted ${isMobile ? 'text-[9px]' : 'text-[11px]'}`}
+        showDayLines
+        paddingRight={scrollbarWidth}
+        minHeight={isMobile ? 24 : 32}
+        onOpen={onOpenSchedule}
+      />
 
       {/* 시간표 */}
       <div

@@ -313,3 +313,17 @@ describe('임시 블록 끌기 · PC 끌어서 만들기 (D-053)', () => {
     expect(within(timetable()).queryByTestId('draft-block')).not.toBeInTheDocument();
   });
 });
+
+describe('종일 줄 3줄 + n (D-052 ③)', () => {
+  it("종일 일정이 3개를 넘으면 3개만 보이고 '+n' → 그날 종일 일정 전부", async () => {
+    const MANY = [1, 2, 3, 4].map((n) =>
+      schedule({ id: 70 + n, title: `종일 ${n}`, allDay: true, start: '2026-09-25T00:00:00', end: '2026-09-25T23:59:59' })
+    );
+    const { user } = await setup('pc', '2026-09-25', MANY);
+    const row = screen.getByRole('region', { name: '종일' });
+    await within(row).findAllByRole('button', { name: /^종일 \d/ });
+    expect(within(row).getAllByRole('button', { name: /^종일 \d/ })).toHaveLength(3);
+    await user.click(within(row).getByRole('button', { name: '9월 25일 (금) 종일 일정 1개 더 보기' }));
+    expect(within(screen.getByRole('dialog', { name: '9월 25일 (금) 종일' })).getAllByRole('button', { name: /^종일 \d/ })).toHaveLength(4);
+  });
+});

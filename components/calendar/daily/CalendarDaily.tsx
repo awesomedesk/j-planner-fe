@@ -12,7 +12,7 @@ import { formatDayTitle, fromLocalDate, toLocalDate } from '@utils/date/dateUtil
 import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
-import AllDayChip from '../common/AllDayChip';
+import AllDayRow from '../common/AllDayRow';
 import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
@@ -23,7 +23,6 @@ import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import type { CalendarDay } from '../utils/calendarUtils';
 import {
   DEFAULT_TIMETABLE_HOURS,
-  allDaySchedulesOn,
   getHourLabels,
   layoutDayBlocks,
   nowLineMinutes,
@@ -99,7 +98,6 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
 
   const nowMinutes = day.isToday ? nowLineMinutes(now, hours) : null;
   const gridColumns = { gridTemplateColumns: `${size.timeColumn}px minmax(0, 1fr)` };
-  const allDaySchedules = allDaySchedulesOn(schedules, viewDate);
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-3' : 'px-4 pt-4'}`} aria-label="일간 시간표">
@@ -129,19 +127,17 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
         <h2 className="mb-2 text-[15px] font-bold">시간표</h2>
       )}
 
-      {/* 맨 위 종일 줄 (US-08 AC) */}
-      <section
-        aria-label="종일"
-        className="grid border-b border-tp-line"
-        style={{ ...gridColumns, paddingRight: scrollbarWidth, minHeight: isMobile ? 26 : 32 }}
-      >
-        <div className="flex items-center justify-end pr-2 text-[11px] text-tp-muted">종일</div>
-        <div className="flex min-w-0 flex-col gap-0.5 py-1">
-          {allDaySchedules.map((schedule) => (
-            <AllDayChip key={schedule.id} schedule={schedule} category={categoriesById.get(schedule.categoryId)} onOpen={onOpenSchedule} />
-          ))}
-        </div>
-      </section>
+      {/* 맨 위 종일 줄 (US-08 AC, D-052: 3줄 + n) */}
+      <AllDayRow
+        dates={[viewDate]}
+        schedules={schedules}
+        categoriesById={categoriesById}
+        labelWidth={size.timeColumn}
+        labelClassName="justify-end pr-2 text-[11px] text-tp-muted"
+        paddingRight={scrollbarWidth}
+        minHeight={isMobile ? 26 : 32}
+        onOpen={onOpenSchedule}
+      />
 
       {/* 시간표 */}
       <div

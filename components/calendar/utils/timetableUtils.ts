@@ -2,7 +2,7 @@ import { addDays, format, startOfWeek } from 'date-fns';
 
 import type { LocalDate, Schedule } from '@/types/api';
 
-import { occursOn, type CalendarDay } from './calendarUtils';
+import { lastDateOf, occursOn, startDateOf, type CalendarDay } from './calendarUtils';
 import { fromLocalDate, shiftDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
 
 /**
@@ -59,6 +59,72 @@ export const allDaySchedulesOn = (schedules: Schedule[], date: LocalDate) =>
   schedules
     .filter((s) => s.allDay && occursOn(s, date))
     .sort((a, b) => a.start.localeCompare(b.start) || a.title.localeCompare(b.title, 'ko'));
+
+/** 종일 줄에 막대로 보이는 줄 수. 넘으면 '+n' (D-052) */
+export const ALL_DAY_MAX_LANES = 3;
+
+/** 종일 줄의 막대 하나 (보이는 날짜 칸 기준) */
+export interface AllDayBar {
+  schedule: Schedule;
+  /** 몇째 줄 (0부터) */
+  lane: number;
+  /** 시작 칸 (0부터) · 칸 수 */
+  startCol: number;
+  span: number;
+  /** 보이는 기간 앞·뒤로 이어지는가 (지난주부터 / 다음 주까지) */
+  continuesBefore: boolean;
+  continuesAfter: boolean;
+}
+
+/**
+ * 종일 줄 배치 (주간·일간, D-052)
+ * - 여러 날 종일 일정은 이어진 막대 하나. 보이는 기간 밖은 잘라서 앞·뒤 이어짐 표시
+ * - 먼저 시작하는 것, 같으면 긴 것이 위. 겹치지 않으면 같은 줄을 나눠 쓴다
+ * - maxLanes 줄까지만 막대, 넘는 것은 날마다 숨긴 개수(hidden) → '+n'
+ * @param dates 보이는 날짜들 (연속, 오래된 날부터)
+ */
+export const layoutAllDayRow = (schedules: Schedule[], dates: LocalDate[], maxLanes = ALL_DAY_MAX_LANES) => {
+  const first = dates[0];
+  const last = dates[dates.length - 1];
+  const items = schedules
+    .filter((s) => s.allDay && startDateOf(s) <= last && lastDateOf(s) >= first)
+    .map((schedule) => {
+      const from = startDateOf(schedule);
+      const to = lastDateOf(schedule);
+      const startCol = dates.findIndex((date) => date >= from);
+      const endCol = dates.length - 1 - [...dates].reverse().findIndex((date) => date <= to);
+      return { schedule, startCol, span: endCol - startCol + 1, continuesBefore: from < first, continuesAfter: to > last };
+    })
+    .sort(
+      (a, b) =>
+        a.startCol - b.startCol ||
+        b.span - a.span ||
+        a.schedule.start.localeCompare(b.schedule.start) ||
+        a.schedule.title.localeCompare(b.schedule.title, 'ko')
+    );
+
+  /** 줄마다 마지막으로 차 있는 칸 */
+  const laneEnds: number[] = [];
+  const placed = items.map((item) => {
+    let lane = laneEnds.findIndex((end) => end < item.startCol);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = item.startCol + item.span - 1;
+    return { ...item, lane };
+  });
+
+  const hidden = dates.map(() => 0);
+  placed
+    .filter((bar) => bar.lane >= maxLanes)
+    .forEach((bar) => {
+      for (let col = bar.startCol; col < bar.startCol + bar.span; col += 1) hidden[col] += 1;
+    });
+
+  return {
+    bars: placed.filter((bar) => bar.lane < maxLanes) as AllDayBar[],
+    hidden,
+    laneCount: Math.min(laneEnds.length, maxLanes),
+  };
+};
 
 export interface TimetableBlockLayout {
   schedule: Schedule;

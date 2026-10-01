@@ -67,13 +67,13 @@ export const getWeekdayLabels = (weekStart: WeekStartDay) => {
 
 // ---------------------------------------------------------------- 일정 배치
 
-const startDateOf = (schedule: Schedule) => schedule.start.slice(0, 10);
+export const startDateOf = (schedule: Schedule) => schedule.start.slice(0, 10);
 
 /**
  * 일정이 표시되는 마지막 날
  * 종료가 다음 날 00:00 정각이면 그날에는 보이지 않는다 (예: 22:00~24:00은 하루짜리)
  */
-const lastDateOf = (schedule: Schedule) => {
+export const lastDateOf = (schedule: Schedule) => {
   const endDate = schedule.end.slice(0, 10);
   const endsAtMidnight = !schedule.allDay && schedule.end.slice(11, 19) === '00:00:00' && endDate > startDateOf(schedule);
   return endsAtMidnight ? toLocalDate(addDays(fromLocalDate(endDate), -1)) : endDate;

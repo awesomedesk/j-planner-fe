@@ -74,37 +74,53 @@ describe('주간 시간표 (US-07, PC-02)', () => {
     expect(within(column('9월 26일 (토)')).queryByRole('button', { name: /가족 여행/ })).not.toBeInTheDocument();
   });
 
-  describe('여러 날 종일 일정', () => {
+  describe('종일 줄 (D-052)', () => {
     const TRIP = schedule({ id: 40, title: '출장', allDay: true, start: '2026-09-22T00:00:00', end: '2026-09-24T23:59:59' });
     const CONT = schedule({ id: 42, title: '지난주부터', allDay: true, start: '2026-09-18T00:00:00', end: '2026-09-21T23:59:59' });
-    const allDayCell = (label: string) => screen.getByRole('group', { name: `${label} 종일` });
+    const allDayRow = () => screen.getByRole('region', { name: '종일' });
+    // 종일 줄 칸: 1열 = '종일' 글자, 2열 = 20일(일) … 8열 = 26일(토)
 
-    it('종일 줄에 걸친 날마다 한 칸씩, 시간표 칸에는 없음', async () => {
+    it('여러 날 종일 일정은 이어진 막대 하나, 제목은 한 번 (22~24일 = 4~6열)', async () => {
       await setup('pc', undefined, [TRIP]);
-      for (const day of ['9월 22일 (화)', '9월 23일 (수)', '9월 24일 (목)']) {
-        expect(await within(allDayCell(day)).findByRole('button', { name: '출장' })).toBeInTheDocument();
-        expect(within(column(day)).queryByRole('button', { name: /출장/ })).not.toBeInTheDocument();
-      }
-      expect(within(allDayCell('9월 21일 (월)')).queryByRole('button', { name: '출장' })).not.toBeInTheDocument();
-      expect(within(allDayCell('9월 25일 (금)')).queryByRole('button', { name: '출장' })).not.toBeInTheDocument();
+      const bars = await within(allDayRow()).findAllByRole('button', { name: '출장' });
+      expect(bars).toHaveLength(1);
+      expect(bars[0].style.gridColumn).toBe('4 / span 3');
+      expect(within(column('9월 23일 (수)')).queryByRole('button', { name: /출장/ })).not.toBeInTheDocument();
     });
 
-    it('지난주부터 이어지면 이번 주 일·월에만', async () => {
+    it('지난주부터 이어지면 이번 주 일요일부터, 이어짐 표시', async () => {
       await setup('pc', undefined, [CONT]);
-      expect(await within(allDayCell('9월 20일 (일)')).findByRole('button', { name: '지난주부터' })).toBeInTheDocument();
-      expect(within(allDayCell('9월 21일 (월)')).getByRole('button', { name: '지난주부터' })).toBeInTheDocument();
-      expect(within(allDayCell('9월 22일 (화)')).queryByRole('button', { name: '지난주부터' })).not.toBeInTheDocument();
+      const bar = await within(allDayRow()).findByRole('button', { name: '지난주부터' });
+      expect(bar.style.gridColumn).toBe('2 / span 2');
+      expect(bar).toHaveAttribute('data-continues-before');
     });
 
-    it('어느 날 칸을 눌러도 같은 일정의 수정 창', async () => {
+    it('막대를 누르면 그 일정 수정 창', async () => {
       const { onOpenSchedule, user } = await setup('pc', undefined, [TRIP]);
-      await user.click(await within(allDayCell('9월 23일 (수)')).findByRole('button', { name: '출장' }));
+      await user.click(await within(allDayRow()).findByRole('button', { name: '출장' }));
       expect(onOpenSchedule).toHaveBeenCalledWith(expect.objectContaining({ id: 40 }));
     });
 
-    it('모바일 7칸 종일 줄도 같다', async () => {
+    it("모바일 7칸도 이어진 막대, 글자는 '…' 없이 칸 끝에서 자른다", async () => {
       await setup('mobile', undefined, [TRIP]);
-      expect(await within(allDayCell('9월 24일 (목)')).findByRole('button', { name: '출장' })).toBeInTheDocument();
+      const bar = await within(allDayRow()).findByRole('button', { name: '출장' });
+      expect(bar.style.gridColumn).toBe('4 / span 3');
+      expect(bar).not.toHaveClass('truncate');
+      expect(bar).toHaveClass('text-clip');
+    });
+
+    it("3줄까지만, 넘으면 그날 '+n' → 누르면 그날 종일 일정 전부", async () => {
+      const MANY = [1, 2, 3, 4, 5].map((n) =>
+        schedule({ id: 60 + n, title: `QA ${n}`, allDay: true, start: '2026-09-23T00:00:00', end: '2026-09-23T23:59:59' })
+      );
+      const { user, onOpenSchedule } = await setup('pc', undefined, MANY);
+      await within(allDayRow()).findAllByRole('button', { name: /^QA/ });
+      expect(within(allDayRow()).getAllByRole('button', { name: /^QA/ })).toHaveLength(3);
+      await user.click(within(allDayRow()).getByRole('button', { name: '9월 23일 (수) 종일 일정 2개 더 보기' }));
+      const list = screen.getByRole('dialog', { name: '9월 23일 (수) 종일' });
+      expect(within(list).getAllByRole('button', { name: /^QA/ }).map((b) => b.textContent)).toEqual(['QA 1', 'QA 2', 'QA 3', 'QA 4', 'QA 5']);
+      await user.click(within(list).getByRole('button', { name: 'QA 5' }));
+      expect(onOpenSchedule).toHaveBeenCalledWith(expect.objectContaining({ id: 65 }));
     });
   });
 

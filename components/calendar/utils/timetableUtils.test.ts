@@ -16,7 +16,9 @@ import {
   layoutDayBlocks,
   lineClampFor,
   nowLineMinutes,
+  ALL_DAY_MAX_LANES,
   QUICK_ADD_SNAP_MINUTES,
+  layoutAllDayRow,
   dragCreateRange,
   draftRange,
   moveDraftRange,
@@ -292,5 +294,55 @@ describe('임시 블록 글자 (D-017)', () => {
   it('(제목 없음) · 14:00-15:00, 제목을 쓰면 제목으로', () => {
     expect(draftBlockLabel('', '14:00', '15:00')).toBe('(제목 없음) · 14:00-15:00');
     expect(draftBlockLabel('  팀 회의 ', '14:00', '15:00')).toBe('팀 회의 · 14:00-15:00');
+  });
+});
+
+describe('종일 줄 배치 — 이어진 막대·3줄·+n (D-052)', () => {
+  const WEEK = ['2026-09-20', '2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26'];
+  const allDay = (id: number, from: string, to: string, title = `종일${id}`) =>
+    schedule({ id, title, allDay: true, start: `${from}T00:00:00`, end: `${to}T23:59:59` });
+  const brief = (bars: ReturnType<typeof layoutAllDayRow>['bars']) =>
+    bars.map(({ schedule: s, lane, startCol, span, continuesBefore, continuesAfter }) => ({ id: s.id, lane, startCol, span, continuesBefore, continuesAfter }));
+
+  it('여러 날 종일 일정은 이어진 막대 하나 (22~24일 → 3칸)', () => {
+    const { bars } = layoutAllDayRow([allDay(1, '2026-09-22', '2026-09-24')], WEEK);
+    expect(brief(bars)).toEqual([{ id: 1, lane: 0, startCol: 2, span: 3, continuesBefore: false, continuesAfter: false }]);
+  });
+
+  it('주를 넘으면: 지난주부터는 일요일부터, 다음 주로 이어지면 토요일까지 (이어짐 표시)', () => {
+    const { bars } = layoutAllDayRow([allDay(1, '2026-09-18', '2026-09-21'), allDay(2, '2026-09-25', '2026-09-28')], WEEK);
+    expect(brief(bars)).toEqual([
+      { id: 1, lane: 0, startCol: 0, span: 2, continuesBefore: true, continuesAfter: false },
+      { id: 2, lane: 0, startCol: 5, span: 2, continuesBefore: false, continuesAfter: true },
+    ]);
+  });
+
+  it('겹치면 아래 줄로, 안 겹치면 같은 줄을 나눠 쓴다. 먼저 시작·긴 것이 위', () => {
+    const { bars, laneCount } = layoutAllDayRow(
+      [allDay(1, '2026-09-23', '2026-09-23'), allDay(2, '2026-09-22', '2026-09-24'), allDay(3, '2026-09-25', '2026-09-25')],
+      WEEK
+    );
+    expect(brief(bars).map(({ id, lane }) => ({ id, lane }))).toEqual([
+      { id: 2, lane: 0 },
+      { id: 1, lane: 1 },
+      { id: 3, lane: 0 },
+    ]);
+    expect(laneCount).toBe(2);
+  });
+
+  it(`${3}줄까지만 막대, 넘는 것은 날마다 '+n' 개수`, () => {
+    expect(ALL_DAY_MAX_LANES).toBe(3);
+    const many = [1, 2, 3, 4, 5].map((id) => allDay(id, '2026-09-23', '2026-09-23'));
+    const { bars, hidden, laneCount } = layoutAllDayRow([...many, allDay(6, '2026-09-22', '2026-09-24')], WEEK);
+    expect(bars).toHaveLength(3);
+    expect(laneCount).toBe(3);
+    expect(hidden).toEqual([0, 0, 0, 3, 0, 0, 0]); // 23일: 6개 중 3개 숨김
+  });
+
+  it('시간 있는 일정·보이는 기간 밖 일정은 넣지 않는다, 일간은 하루짜리 칸', () => {
+    const timed = schedule({ id: 9, start: '2026-09-23T10:00:00', end: '2026-09-23T11:00:00' });
+    expect(layoutAllDayRow([timed, allDay(8, '2026-09-28', '2026-09-29')], WEEK).bars).toEqual([]);
+    const { bars } = layoutAllDayRow([allDay(1, '2026-09-22', '2026-09-26')], ['2026-09-25']);
+    expect(brief(bars)).toEqual([{ id: 1, lane: 0, startCol: 0, span: 1, continuesBefore: true, continuesAfter: true }]);
   });
 });

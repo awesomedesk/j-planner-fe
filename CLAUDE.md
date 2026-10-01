@@ -54,7 +54,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   - `hooks/useTimetableScroll` — D-046 initial position and keeping the viewed time between week↔day (minutes in the store).
   - `hooks/useQuickAddSlot` (`useTimetableQuickAdd`) — empty-slot click (30-min snap) / PC drag-create → `onAddAt(slot)`, draft handle·body drag
     → `onDraftChange(range)` (`hooks/useTimetableDrag`), mobile scroll so the sheet doesn't hide the draft (US-10, D-053). AppShell state: `layouts/app/useQuickAddState`.
-  - `common/` — `ScheduleBar` (month), `TimetableBlock`, `DraftBlock` (dashed quick-add block), `AllDayChip`, `NowLine`, `HourLabels`.
+  - `common/` — `ScheduleBar` (month), `TimetableBlock`, `DraftBlock` (dashed quick-add block), `AllDayRow` + `AllDayChip`
+    (week/day all-day row: spanning bars, 3 lanes + '+n', `layoutAllDayRow`, D-052), `DayListPopover`, `NowLine`, `HourLabels`.
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs (D-049).
