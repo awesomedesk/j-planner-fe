@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, type CSSProperties, type TouchEvent, type TransitionEvent } from 'react';
 
-import { useMediaQuery } from './useMediaQuery';
+import { useReducedMotion } from './useReducedMotion';
 
 /** 이만큼(px) 넘게 옆으로 밀어야 넘긴다 */
 export const SWIPE_MIN_DISTANCE = 50;
@@ -36,7 +36,7 @@ const isHorizontal = (dx: number, dy: number) => Math.abs(dx) >= Math.abs(dy) * 
  * - `data-swipe-ignore` 안(좌우로 스크롤하는 탭 줄 등)에서 시작한 밀기는 무시한다
  */
 export function useSwipe({ onPrev, onNext }: UseSwipeOptions) {
-  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const reduceMotion = useReducedMotion();
   const gesture = useRef<Gesture | null>(null);
   /** null = 움직이지 않음 (transform 없음) */
   const [offset, setOffset] = useState<number | null>(null);

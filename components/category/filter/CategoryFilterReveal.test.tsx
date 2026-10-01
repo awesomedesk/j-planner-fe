@@ -14,7 +14,7 @@ import type { FilterReveal } from './useFilterReveal';
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-const reveal = (animate = true): FilterReveal => ({ categoryId: 3, key: 1, animate });
+const reveal = (): FilterReveal => ({ categoryId: 3, key: 1 });
 
 const renderDropdown = (r: FilterReveal | null, onChange = vi.fn()) => {
   const onRevealDone = vi.fn();
@@ -95,18 +95,6 @@ describe('PC 필터 드롭다운이 저절로 펼쳐짐 (D-056)', () => {
     advance(3000);
     expect(panel()).toBeInTheDocument();
   });
-
-  it('동작 줄이기: 커짐·빛 고리 없이 펼치고 연한 바탕만, 2.5초 뒤 닫힘', () => {
-    renderDropdown(reveal(false));
-    expect(trigger()).not.toHaveAttribute('data-reveal-pulse');
-    expect(row('업무')).toHaveAttribute('data-marked');
-    advance(500);
-    expect(row('업무')).not.toHaveAttribute('data-glow');
-    advance(1300);
-    expect(panel()).toBeInTheDocument();
-    advance(700);
-    expect(panel()).not.toBeInTheDocument();
-  });
 });
 
 describe('모바일 필터 시트가 저절로 펼쳐짐 (D-056)', () => {
@@ -124,6 +112,18 @@ describe('모바일 필터 시트가 저절로 펼쳐짐 (D-056)', () => {
     advance(1800);
     expect(sheet()).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('시트 바깥을 누르면 1.8초를 기다리지 않고 바로 닫힌다 — 0.4초 안이어도, 필터는 그대로 (D-056 보완 2)', () => {
+    const { onChange } = renderSheet(reveal());
+    advance(100);
+    const below = vi.fn();
+    document.body.addEventListener('click', below);
+    fireEvent.click(screen.getByTestId('category-filter-backdrop'));
+    expect(sheet()).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(below).not.toHaveBeenCalled(); // 바깥 누름은 아래로 전달하지 않는다
+    document.body.removeEventListener('click', below);
   });
 
   it('시트를 만지면 열린 채로 두고, 적용하면 반영', () => {

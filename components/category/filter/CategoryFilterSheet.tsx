@@ -59,7 +59,16 @@ export default function CategoryFilterSheet({ categories, filter, onChange, onOp
 
       {isOpen && (
         <div className="fixed inset-0 z-50" data-swipe-ignore>
-          <div data-testid="category-filter-backdrop" className="absolute inset-0 bg-black/45" aria-hidden="true" onClick={close} />
+          {/* 바깥 누름: 바로 닫기만 하고 아래 화면으로 전달하지 않는다 (저절로 펼친 때도, D-056 보완) */}
+          <div
+            data-testid="category-filter-backdrop"
+            className="absolute inset-0 bg-black/45"
+            aria-hidden="true"
+            onClick={(event) => {
+              event.stopPropagation();
+              close();
+            }}
+          />
           <div
             role="dialog"
             aria-modal="true"

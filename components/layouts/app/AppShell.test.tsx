@@ -5,7 +5,7 @@ import { CATEGORIES } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
-import { setViewportWidth } from '@/test/viewport';
+import { resetViewport, setReducedMotion, setViewportWidth } from '@/test/viewport';
 import { setCategoryFilter, setViewMode } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
 import { makeStore } from '@store/store';
@@ -426,5 +426,41 @@ describe('필터에서 빠진 카테고리로 저장 (US-11, D-056)', () => {
     await user.click(within(dialog).getAllByRole('button', { name: '저장' })[0]);
     const panel = await screen.findByRole('dialog', { name: '카테고리 선택' });
     expect(within(panel).getByRole('checkbox', { name: '운동' }).closest('label')).toHaveAttribute('data-marked');
+  });
+});
+
+describe('필터에서 빠진 카테고리로 저장 — 동작 줄이기·모바일 (D-056 보완)', () => {
+  afterEach(() => resetViewport());
+
+  const saveHidden = async (width: number) => {
+    const view = await setup(width);
+    act(() => {
+      view.store.dispatch(setCategoryFilter([2]));
+      view.store.dispatch(setViewMode('DAY'));
+    });
+    const hourHeight = width >= 768 ? 48 : 46;
+    fireEvent.click(await screen.findByRole('group', { name: '9월 25일 (금) 시간표' }), { clientY: 9 * hourHeight + 5 });
+    await view.user.type(screen.getByRole('textbox', { name: '제목' }), '보고서');
+    await view.user.selectOptions(screen.getByRole('combobox', { name: '카테고리' }), '업무');
+    await view.user.click(screen.getByRole('button', { name: '저장' }));
+    return view;
+  };
+
+  it('동작 줄이기면 화면은 그대로 — 목록을 펼치지 않고 화면 읽기 안내만', async () => {
+    setReducedMotion(true);
+    await saveHidden(1440);
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent("'업무'는 필터에서 빠져 있어 달력에 보이지 않아요"));
+    expect(screen.queryByRole('dialog', { name: '카테고리 선택' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('paper-plane')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /카테고리 필터/ })[0]).not.toHaveAttribute('data-reveal-pulse');
+  });
+
+  it('390px: 아래 시트로 펼치고, 바깥을 누르면 바로 닫히며 아래 시간표는 눌리지 않는다', async () => {
+    const { user } = await saveHidden(390);
+    const sheet = await screen.findByRole('dialog', { name: '카테고리 필터' });
+    expect(within(sheet).getByRole('checkbox', { name: '업무' }).closest('label')).toHaveAttribute('data-marked');
+    await user.click(screen.getByTestId('category-filter-backdrop'));
+    expect(screen.queryByRole('dialog', { name: '카테고리 필터' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument();
   });
 });
