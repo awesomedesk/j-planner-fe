@@ -3,8 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
+
+import DiscardConfirm from './DiscardConfirm';
 
 interface DialogFrameProps {
   title: string;
@@ -24,14 +25,6 @@ interface DialogFrameProps {
 /** 창 안의 '취소'·'닫기' 버튼이 부르는 닫기 요청 (바뀐 것이 있으면 확인부터) */
 const DialogCloseContext = createContext<() => void>(() => undefined);
 export const useDialogRequestClose = () => useContext(DialogCloseContext);
-
-/** "작성을 취소할까요?" 확인 창 문구 */
-export const DISCARD_CONFIRM = {
-  title: '작성을 취소할까요?',
-  description: '입력하거나 바꾼 내용은 저장되지 않아요.',
-  confirm: '작성 취소',
-  cancel: '계속 작성',
-} as const;
 
 /**
  * DialogFrame - 입력·관리 창의 공통 틀 (D-017, D-037)
@@ -97,33 +90,5 @@ export default function DialogFrame({
         {isConfirmOpen && <DiscardConfirm onKeepEditing={() => setIsConfirmOpen(false)} onDiscard={onClose} />}
       </div>
     </DialogCloseContext.Provider>
-  );
-}
-
-function DiscardConfirm({ onKeepEditing, onDiscard }: { onKeepEditing: () => void; onDiscard: () => void }) {
-  const titleId = useId();
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-black/45" aria-hidden="true" onClick={onKeepEditing} />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative flex w-full max-w-[320px] flex-col gap-2 rounded-2xl bg-tp-bg p-5 text-tp-text shadow-2xl"
-      >
-        <h3 id={titleId} className="text-base font-bold">
-          {DISCARD_CONFIRM.title}
-        </h3>
-        <p className="text-sm text-tp-muted">{DISCARD_CONFIRM.description}</p>
-        <div className="mt-3 flex justify-end gap-2">
-          <ThemeButton size="md" onClick={onKeepEditing} autoFocus>
-            {DISCARD_CONFIRM.cancel}
-          </ThemeButton>
-          <ThemeButton size="md" variant="primary" onClick={onDiscard}>
-            {DISCARD_CONFIRM.confirm}
-          </ThemeButton>
-        </div>
-      </div>
-    </div>
   );
 }

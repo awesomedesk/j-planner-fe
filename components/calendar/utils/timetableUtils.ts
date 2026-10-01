@@ -175,3 +175,40 @@ export const blockDetailText = (schedule: Schedule) => {
     : `${monthDayTime(schedule.start)} – ${monthDayTime(schedule.end)}`;
   return ['일정', time, schedule.location?.name].filter(Boolean).join(' · ');
 };
+
+const MINUTES_PER_DAY = 24 * 60;
+const pad2 = (value: number) => String(value).padStart(2, '0');
+
+/**
+ * 빈 시간 누른 자리(px, 시간표 맨 위 기준) → 그 칸의 시작 시각 `HH:mm` (US-10)
+ * - 칸 간격(`slotMinutes`) 단위로 내림. 기본 1시간(D-024), 설정 연결은 US-26
+ * - 하루 끝을 넘지 않게 마지막 칸 시작으로 맞춘다
+ */
+export const slotStartTime = (offsetPx: number, hourHeight: number, slotMinutes = 60) => {
+  const raw = Math.floor(((offsetPx / hourHeight) * 60) / slotMinutes) * slotMinutes;
+  const minutes = Math.min(Math.max(raw, 0), MINUTES_PER_DAY - slotMinutes);
+  return `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
+};
+
+/** 빠른 추가 임시 블록 글자: `(제목 없음) · 14:00-15:00` (D-017, PC-03) */
+export const draftBlockLabel = (title: string, startTime: string, endTime: string) =>
+  `${title.trim() || '(제목 없음)'} · ${startTime}-${endTime}`;
+
+/** 빠른 추가 중인 임시 블록 (US-10). 날짜는 누른 날, 시간·제목은 입력 중인 값 */
+export interface TimetableDraft {
+  date: LocalDate;
+  startTime: string;
+  endTime: string;
+  title: string;
+}
+
+/** `HH:mm` → 0시부터 분 */
+export const clockToMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+
+/** 임시 블록 자리(분). 종료가 시작보다 이르거나 같으면 자정을 넘긴 것 → 하루 끝까지 */
+export const draftBlockMinutes = ({ startTime, endTime }: Pick<TimetableDraft, 'startTime' | 'endTime'>) => {
+  const top = clockToMinutes(startTime);
+  const rawEnd = clockToMinutes(endTime);
+  const end = rawEnd > top ? rawEnd : MINUTES_PER_DAY;
+  return { top, height: Math.max(end - top, MIN_BLOCK_MINUTES) };
+};

@@ -133,3 +133,24 @@ describe('일정 수정·삭제 (US-05)', () => {
     expect(api.calls('DELETE /schedules/:id')[0].path).toBe('/schedules/1');
   });
 });
+
+describe('빠른 추가에서 자세히 입력 (US-10)', () => {
+  it('넘겨받은 제목·시간·카테고리로 채워지고, 닫으면 확인부터 (D-037)', async () => {
+    const onClose = vi.fn();
+    const { user } = renderWithStore(
+      <ScheduleFormDialog
+        target={{ mode: 'create', baseDate: '2026-09-24', startTime: '14:00', draft: { title: '팀 미팅', endTime: '15:30', categoryId: 3 } }}
+        categories={CATEGORIES}
+        onClose={onClose}
+      />
+    );
+    expect(screen.getByRole('textbox', { name: '제목' })).toHaveValue('팀 미팅');
+    expect(screen.getByLabelText('시작 날짜')).toHaveValue('2026-09-24');
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('14:00');
+    expect(screen.getByLabelText('종료 시간')).toHaveValue('15:30');
+    expect(screen.getByRole('combobox', { name: '카테고리' })).toHaveDisplayValue('업무');
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('alertdialog', { name: '작성을 취소할까요?' })).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});

@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,7 +25,12 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-const setup = async (variant: 'pc' | 'mobile' = 'pc', viewDate?: string, schedules = SCHEDULES) => {
+const setup = async (
+  variant: 'pc' | 'mobile' = 'pc',
+  viewDate?: string,
+  schedules = SCHEDULES,
+  extra: Partial<ComponentProps<typeof CalendarWeekly>> = {}
+) => {
   const api = mockApi({
     'GET /schedules': () => json(200, schedules),
     'GET /categories': () => json(200, CATEGORIES),
@@ -34,7 +40,7 @@ const setup = async (variant: 'pc' | 'mobile' = 'pc', viewDate?: string, schedul
   if (viewDate) store.dispatch(selectDate(viewDate));
   store.dispatch(setViewMode('WEEK')); // 보기를 바꾸면 고른 날짜가 들어 있는 주
   const onOpenSchedule = vi.fn();
-  const view = renderWithStore(<CalendarWeekly variant={variant} onOpenSchedule={onOpenSchedule} />, { store });
+  const view = renderWithStore(<CalendarWeekly variant={variant} onOpenSchedule={onOpenSchedule} {...extra} />, { store });
   return { api, onOpenSchedule, ...view };
 };
 
@@ -278,5 +284,32 @@ describe('모바일 주간 7칸 시간표 (MO-05)', () => {
     await setup('mobile');
     const title = (await screen.findByRole('button', { name: new RegExp(LONG_TITLE) })).querySelector('[data-title]') as HTMLElement;
     expect(title.getAttribute('style')).toMatch(/-webkit-line-clamp: 5/);
+  });
+});
+
+describe('빈 시간 눌러 빠른 추가 (US-10, D-021)', () => {
+  // jsdom은 칸 위치가 모두 0이라 clientY가 곧 시간표 맨 위에서 잰 거리 (주간 PC 1시간 = 46px)
+  it('주간 칸의 빈 시간을 누르면 그날·그 칸 정각으로 빠른 추가를 연다', async () => {
+    const onAddAt = vi.fn();
+    await setup('pc', undefined, SCHEDULES, { onAddAt });
+    fireEvent.click(column('9월 24일 (목)'), { clientY: 14 * 46 + 30 });
+    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-24', startTime: '14:00' }));
+  });
+
+  it('일정 블록을 누르면 빠른 추가가 아니라 수정 (블록 클릭 유지)', async () => {
+    const onAddAt = vi.fn();
+    const { user, onOpenSchedule } = await setup('pc', undefined, SCHEDULES, { onAddAt });
+    const [block] = await within(column('9월 25일 (금)')).findAllByRole('button');
+    await user.click(block);
+    expect(onOpenSchedule).toHaveBeenCalled();
+    expect(onAddAt).not.toHaveBeenCalled();
+  });
+
+  it('임시 블록(점선)은 그날 칸에만, 그 시각 자리에 (D-017)', async () => {
+    await setup('pc', undefined, SCHEDULES, { draft: { date: '2026-09-24', startTime: '14:00', endTime: '15:00', title: '' } });
+    const draft = within(column('9월 24일 (목)')).getByTestId('draft-block');
+    expect(draft).toHaveTextContent('(제목 없음) · 14:00-15:00');
+    expect(draft).toHaveStyle({ top: `${14 * 46}px`, height: '46px' });
+    expect(within(column('9월 25일 (금)')).queryByTestId('draft-block')).not.toBeInTheDocument();
   });
 });

@@ -38,6 +38,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Buttons**: `components/button/ThemeButton.tsx` — primary / secondary / danger. No white buttons (D-022). Inputs stay white.
 - **Dialogs**: `components/dialog/DialogFrame.tsx` — centered at ≥600px, full screen below. Pass `isDirty`; outside click / Esc / close / back /
   cancel all go through one close request and show "작성을 취소할까요?" when dirty (D-037). Buttons inside use `useDialogRequestClose()`.
+  Non-frame panels (quick add) reuse `components/dialog/DiscardConfirm.tsx`. Popover placement / scroll-to-reveal: `utils/dom/placement.ts`.
 - **API**: `utils/api/client.ts` (`apiClient`, `ApiError`, pure REST + Problem Details, D-031), resource functions in `utils/api/resources/`,
   types in `types/api/index.ts` (never edit `schema.d.ts`). Show failures with `useErrorNotice()` (`utils/hooks`) → `noticeSlice` → `NoticeCenter`.
 - **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category` (`selectCategoriesById` for id lookups), `calendar` (viewMode · viewDate ·
@@ -51,11 +52,13 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Calendar** (`components/calendar/`): monthly (US-06), weekly (US-07), daily (US-08).
   - `hooks/useScheduleRange(range)` — fetch the visible range + error notice + `isLoaded` / `loadedSchedules`. Pass a memoized range.
   - `hooks/useTimetableScroll` — D-046 initial position and keeping the viewed time between week↔day (minutes in the store).
-  - `common/` — `ScheduleBar` (month), `TimetableBlock`, `AllDayChip`, `NowLine`, `HourLabels` (week/day/3-day).
+  - `hooks/useQuickAddSlot` — empty-slot click → `onAddAt({date, startTime, anchor})`, mobile scroll so the sheet doesn't hide the draft (US-10).
+  - `common/` — `ScheduleBar` (month), `TimetableBlock`, `DraftBlock` (dashed quick-add block), `AllDayChip`, `NowLine`, `HourLabels`.
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs (D-049).
-- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form). Feature hooks in `components/<feature>/hooks/`,
+- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
+  AppShell owns the quick-add state and passes `draft` to the timetable). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
 - **Dev pages**: `app/dev/*` — for checking features before the real entry points exist. Remove them when the feature is wired into real screens.
 

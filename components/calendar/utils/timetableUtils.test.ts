@@ -5,6 +5,7 @@ import { schedule } from '@/test/fixtures';
 import {
   DEFAULT_TIMETABLE_HOURS,
   blockDetailText,
+  draftBlockLabel,
   initialScrollTarget,
   MIN_BLOCK_MINUTES,
   allDaySchedulesOn,
@@ -15,6 +16,7 @@ import {
   layoutDayBlocks,
   lineClampFor,
   nowLineMinutes,
+  slotStartTime,
 } from './timetableUtils';
 
 const HOURS = DEFAULT_TIMETABLE_HOURS; // 항상 00:00 ~ 24:00 (D-046)
@@ -221,5 +223,25 @@ describe('블록 설명 줄 (PC-03)', () => {
   it('자정을 넘는 일정도 날짜를 붙인다', () => {
     const s = schedule({ id: 50, start: '2026-09-29T23:00:00', end: '2026-09-30T01:00:00', location: null });
     expect(blockDetailText(s)).toBe('일정 · 9/29 23:00 – 9/30 01:00');
+  });
+});
+
+describe('빈 시간 누르기 → 시작 시각 (US-10, D-024 칸 간격 1시간)', () => {
+  it('누른 칸의 정각부터: 14:40 자리 → 14:00', () => {
+    expect(slotStartTime(14.67 * 48, 48)).toBe('14:00');
+    expect(slotStartTime(0, 48)).toBe('00:00');
+  });
+  it('맨 아래(23시대)를 눌러도 23:00', () => {
+    expect(slotStartTime(24 * 48 + 5, 48)).toBe('23:00');
+  });
+  it('30분 간격이면 30분 단위로 (설정 연결은 US-26)', () => {
+    expect(slotStartTime(14.67 * 48, 48, 30)).toBe('14:30');
+  });
+});
+
+describe('임시 블록 글자 (D-017)', () => {
+  it('(제목 없음) · 14:00-15:00, 제목을 쓰면 제목으로', () => {
+    expect(draftBlockLabel('', '14:00', '15:00')).toBe('(제목 없음) · 14:00-15:00');
+    expect(draftBlockLabel('  팀 회의 ', '14:00', '15:00')).toBe('팀 회의 · 14:00-15:00');
   });
 });

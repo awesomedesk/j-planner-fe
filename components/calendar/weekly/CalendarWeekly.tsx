@@ -12,9 +12,11 @@ import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import AllDayChip from '../common/AllDayChip';
+import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
+import { useRevealDraft, useSlotClick, type TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import { weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
@@ -26,12 +28,19 @@ import {
   getWeekRange,
   layoutDayBlocks,
   nowLineMinutes,
+  type TimetableDraft,
 } from '../utils/timetableUtils';
 
 interface CalendarWeeklyProps {
   /** PC·태블릿(PC-02) / 모바일 7칸(MO-05) */
   variant: 'pc' | 'mobile';
   onOpenSchedule: (schedule: Schedule) => void;
+  /** 빈 시간을 누름 → 빠른 추가 (US-10) */
+  onAddAt?: (slot: TimetableSlot) => void;
+  /** 빠른 추가 중 임시 블록 (D-017) */
+  draft?: TimetableDraft | null;
+  /** 화면 아래를 가리는 높이 (모바일 빠른 추가 시트). 임시 블록이 그 위로 보이게 스크롤한다 (MO-12) */
+  coverBottom?: number;
 }
 
 /** 크기 (화면기획서 PC-02 · MO-05) */
@@ -49,9 +58,10 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
  * - 세로 위치는 D-046 규칙 (시간표끼리 바꾸면 보던 시간 유지, 월간에서 오면 처음 위치) — useTimetableScroll
  * - 겹치는 일정은 나란히, 시각 있는 여러 날 일정은 날마다 나눠서 (D-045)
  * - 날짜 머리글: 한 번 누르면 그날 선택, 두 번 누르면 일간 (월간과 같게, D-015·D-041)
- * - 빈 시간 눌러 빠른 추가(US-10)·Todo 블록(US-15)·D-Day(US-23)는 각 스토리에서 붙인다
+ * - 빈 시간을 누르면 빠른 추가 + 그날 칸에 점선 임시 블록 (US-10, D-017 · D-021)
+ * - Todo 블록(US-15)·D-Day(US-23)는 각 스토리에서 붙인다
  */
-export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeeklyProps) {
+export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft, coverBottom = 0 }: CalendarWeeklyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -89,6 +99,10 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
   const headerStyle = { ...gridColumns, paddingRight: scrollbarWidth };
 
   const handleSelect = (day: CalendarDay) => dispatch(selectDate(day.date));
+  const handleSlotClick = useSlotClick(size.hourHeight, onAddAt);
+  const draftRef = useRef<HTMLDivElement>(null);
+  const weekDraft = draft && days.some((day) => day.date === draft.date) ? draft : null;
+  useRevealDraft(scrollRef, draftRef, weekDraft, coverBottom);
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-2' : ''}`} aria-label="주간 시간표">
@@ -148,7 +162,13 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
       </section>
 
       {/* 시간표 */}
-      <div ref={scrollRef} data-testid="timetable-scroll" onScroll={handleScroll} className="min-h-0 flex-1 overflow-y-auto pt-2">
+      <div
+        ref={scrollRef}
+        data-testid="timetable-scroll"
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto pt-2"
+        style={weekDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
+      >
         <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
           <HourLabels
             labels={hourLabels}
@@ -159,7 +179,13 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
           />
           <div />
           {days.map((day) => (
-            <div key={day.date} role="group" aria-label={`${formatDayTitle(day.date)} 시간표`} className="relative border-l border-tp-line">
+            <div
+              key={day.date}
+              role="group"
+              aria-label={`${formatDayTitle(day.date)} 시간표`}
+              className="relative border-l border-tp-line"
+              onClick={handleSlotClick(day.date)}
+            >
               {layoutDayBlocks(schedules, day.date, hours).map((layout) => (
                 <TimetableBlock
                   key={layout.schedule.id}
@@ -171,6 +197,9 @@ export default function CalendarWeekly({ variant, onOpenSchedule }: CalendarWeek
                   showLink={!isMobile}
                 />
               ))}
+              {weekDraft?.date === day.date && (
+                <DraftBlock ref={draftRef} draft={weekDraft} hourHeight={size.hourHeight} fontSize={size.fontSize} />
+              )}
               {day.isToday && nowMinutes !== null && (
                 <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} showDot={!isMobile} />
               )}

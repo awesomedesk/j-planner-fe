@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatClock, formatDayTitle, formatMonthTitle, fromLocalDate, shiftDate, toLocalDate, weekStartsOn } from './dateUtils';
+import { formatClock, formatDayTitle, formatShortDay, formatMonthTitle, fromLocalDate, shiftDate, toLocalDate, weekStartsOn } from './dateUtils';
 
 describe('날짜 기본 도구', () => {
   it('LocalDate ↔ Date (시간대 변환 없이, D-040)', () => {
@@ -17,6 +17,7 @@ describe('날짜 기본 도구', () => {
     expect(formatMonthTitle('2026-09-25')).toBe('2026년 9월');
     expect(formatDayTitle('2026-09-25')).toBe('9월 25일 (금)');
     expect(formatClock(new Date(2026, 8, 25, 9, 5))).toBe('09:05');
+    expect(formatShortDay('2026-09-24')).toBe('9/24 (목)'); // 빠른 추가 (PC-03)
   });
 });
 

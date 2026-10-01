@@ -23,7 +23,6 @@ interface TimetableBlockProps {
 /** 설명 줄 높이 (11px × 1.25) */
 const DETAIL_LINE_HEIGHT = 14;
 
-
 /** 블록 사이 틈 (위아래·오른쪽 1px) */
 const GAP = 1;
 

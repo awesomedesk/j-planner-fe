@@ -5,11 +5,13 @@ import type { ReactNode } from 'react';
 
 import type { Category, Id, Schedule } from '@/types/api';
 import ThemeButton from '@components/button/ThemeButton';
-import { getCategoryListColor } from '@components/category/utils/categoryUtils';
 import DialogFrame, { useDialogRequestClose } from '@components/dialog/DialogFrame';
 
 import { useScheduleForm, type ScheduleFormTarget } from '../hooks/useScheduleForm';
 import { SCHEDULE_COLOR_OPTIONS, TITLE_MAX_LENGTH, URL_MAX_LENGTH } from '../utils/scheduleFormUtils';
+
+import CategorySelect from './CategorySelect';
+import { SCHEDULE_INPUT_CLASS } from './formStyles';
 
 export interface ScheduleFormDialogProps {
   /** 새 일정(고른 날짜, 시간표에서 누른 시각) 또는 수정할 일정 */
@@ -21,8 +23,7 @@ export interface ScheduleFormDialogProps {
   onDeleted?: (id: Id) => void;
 }
 
-const INPUT_CLASS =
-  'w-full rounded-lg border border-tp-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-tp-theme2 disabled:opacity-60';
+const INPUT_CLASS = SCHEDULE_INPUT_CLASS;
 
 /**
  * ScheduleFormDialog - 일정 추가·수정 창
@@ -37,10 +38,6 @@ export default function ScheduleFormDialog({ target, categories, onClose, onSave
   const { values, errors } = form;
   const formId = useId();
   const titleInputRef = useRef<HTMLInputElement>(null);
-
-  const defaultCategory = categories.find((c) => c.isDefault) ?? null;
-  const selectedCategoryId = values.categoryId ?? defaultCategory?.id ?? '';
-  const selectedCategory = categories.find((c) => c.id === selectedCategoryId) ?? null;
 
   useEffect(() => {
     titleInputRef.current?.focus();
@@ -145,42 +142,12 @@ export default function ScheduleFormDialog({ target, categories, onClose, onSave
         </div>
 
         <Field label="카테고리" htmlFor="schedule-category" error={errors.categoryId}>
-          <div className="relative">
-            {selectedCategory && (
-              <span
-                className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full"
-                style={{ backgroundColor: getCategoryListColor(selectedCategory) }}
-                aria-hidden="true"
-              />
-            )}
-            <select
-              id="schedule-category"
-              value={selectedCategoryId}
-              onChange={(e) => form.setField('categoryId', Number(e.target.value))}
-              className="w-full appearance-none rounded-lg border border-tp-secondary-line bg-tp-secondary py-2.5 pl-8 pr-9 text-sm font-medium text-tp-on-secondary outline-none focus:ring-2 focus:ring-tp-theme2"
-            >
-              {categories.length === 0 && <option value="">미지정</option>}
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-tp-on-secondary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </div>
+          <CategorySelect
+            id="schedule-category"
+            categories={categories}
+            value={values.categoryId}
+            onChange={(categoryId) => form.setField('categoryId', categoryId)}
+          />
         </Field>
 
         <fieldset className="flex flex-col gap-1.5">

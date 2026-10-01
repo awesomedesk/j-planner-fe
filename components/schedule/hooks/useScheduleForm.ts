@@ -20,7 +20,13 @@ import {
 } from '../utils/scheduleFormUtils';
 
 export type ScheduleFormTarget =
-  | { mode: 'create'; baseDate: LocalDate; startTime?: string }
+  | {
+      mode: 'create';
+      baseDate: LocalDate;
+      startTime?: string;
+      /** 빠른 추가 '자세히 입력'으로 넘어온 값 (US-10). 처음 값과 달라 닫을 때 확인을 묻는다 */
+      draft?: Partial<ScheduleFormValues>;
+    }
   | { mode: 'edit'; schedule: Schedule };
 
 export interface UseScheduleFormOptions {
@@ -44,7 +50,9 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
       ? scheduleToFormValues(target.schedule)
       : createEmptyFormValues(target.baseDate, target.startTime)
   );
-  const [values, setValues] = useState<ScheduleFormValues>(initialValues);
+  const [values, setValues] = useState<ScheduleFormValues>(() =>
+    target.mode === 'create' && target.draft ? { ...initialValues, ...target.draft } : initialValues
+  );
   const [errors, setErrors] = useState<ScheduleFormErrors>({});
   /** 칸에 속하지 않는 오류 (네트워크, 404 등) */
   const [formError, setFormError] = useState<string | null>(null);

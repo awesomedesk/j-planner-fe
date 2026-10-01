@@ -1,4 +1,5 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import type { ComponentProps } from 'react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES, schedule } from '@/test/fixtures';
@@ -35,7 +36,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const setup = async (variant: 'pc' | 'mobile' = 'pc', date = '2026-09-25', schedules = SCHEDULES) => {
+const setup = async (
+  variant: 'pc' | 'mobile' = 'pc',
+  date = '2026-09-25',
+  schedules = SCHEDULES,
+  extra: Partial<ComponentProps<typeof CalendarDaily>> = {}
+) => {
   const api = mockApi({
     'GET /schedules': () => json(200, schedules),
     'GET /categories': () => json(200, CATEGORIES),
@@ -44,7 +50,7 @@ const setup = async (variant: 'pc' | 'mobile' = 'pc', date = '2026-09-25', sched
   await store.dispatch(fetchCategories());
   store.dispatch(openDayView(date)); // 월간에서 두 번 눌러 들어온 것과 같음
   const onOpenSchedule = vi.fn();
-  const view = renderWithStore(<CalendarDaily variant={variant} onOpenSchedule={onOpenSchedule} />, { store });
+  const view = renderWithStore(<CalendarDaily variant={variant} onOpenSchedule={onOpenSchedule} {...extra} />, { store });
   return { api, onOpenSchedule, ...view };
 };
 
@@ -191,5 +197,43 @@ describe('모바일 일간 (MO-03)', () => {
   it('모바일 일간은 칸이 넓어 링크 아이콘을 보인다 (D-045는 7칸만 숨김)', async () => {
     await setup('mobile', '2026-09-21');
     expect(await screen.findByRole('link', { name: '팀 주간 회의 링크 열기' })).toBeInTheDocument();
+  });
+});
+
+describe('빈 시간 눌러 빠른 추가 (US-10, D-017)', () => {
+  // jsdom은 칸 위치가 모두 0이라 clientY가 곧 시간표 맨 위에서 잰 거리 (일간 PC 1시간 = 48px)
+  it('빈 시간을 누르면 그 칸 정각부터: 14:40 자리 → 14:00', async () => {
+    const onAddAt = vi.fn();
+    await setup('pc', '2026-09-25', SCHEDULES, { onAddAt });
+    fireEvent.click(timetable(), { clientY: 14 * 48 + 32 });
+    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-25', startTime: '14:00' }));
+  });
+
+  it('맨 아래 23시대를 누르면 23:00', async () => {
+    const onAddAt = vi.fn();
+    await setup('mobile', '2026-09-25', SCHEDULES, { onAddAt });
+    fireEvent.click(timetable(), { clientY: 23 * 46 + 40 });
+    expect(onAddAt).toHaveBeenCalledWith(expect.objectContaining({ startTime: '23:00' }));
+  });
+
+  it('일정 블록을 누르면 수정 창 (빠른 추가 아님)', async () => {
+    const onAddAt = vi.fn();
+    const { user, onOpenSchedule } = await setup('pc', '2026-09-25', SCHEDULES, { onAddAt });
+    await user.click(await within(timetable()).findByRole('button', { name: /겹치는 회의/ }));
+    expect(onOpenSchedule).toHaveBeenCalled();
+    expect(onAddAt).not.toHaveBeenCalled();
+  });
+
+  it('임시 블록: 제목을 쓰면 글자가 바뀐다 (D-017)', async () => {
+    const draft = { date: '2026-09-25', startTime: '14:00', endTime: '15:30', title: '팀 미팅' };
+    await setup('pc', '2026-09-25', SCHEDULES, { draft });
+    const block = within(timetable()).getByTestId('draft-block');
+    expect(block).toHaveTextContent('팀 미팅 · 14:00-15:30');
+    expect(block).toHaveStyle({ top: `${14 * 48}px`, height: `${1.5 * 48}px` });
+  });
+
+  it('23:00 시작이면 자정까지 (종료 00:00)', async () => {
+    await setup('pc', '2026-09-25', SCHEDULES, { draft: { date: '2026-09-25', startTime: '23:00', endTime: '00:00', title: '' } });
+    expect(within(timetable()).getByTestId('draft-block')).toHaveStyle({ top: `${23 * 48}px`, height: '48px' });
   });
 });

@@ -32,4 +32,7 @@ export const formatMonthTitle = (date: LocalDate) => format(fromLocalDate(date),
 /** `9월 25일 (금)` (일간 헤더, 사이드바·시트 머리) */
 export const formatDayTitle = (date: LocalDate) => format(fromLocalDate(date), 'M월 d일 (EEE)', { locale: ko });
 /** `14:30` (현재 시각 선) */
+/** `9/24 (목)` — 좁은 자리용 날짜 (빠른 추가 PC-03) */
+export const formatShortDay = (date: LocalDate) => format(fromLocalDate(date), 'M/d (EEE)', { locale: ko });
+
 export const formatClock = (date: Date) => format(date, 'HH:mm');

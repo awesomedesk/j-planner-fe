@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES } from '@/test/fixtures';
@@ -20,13 +20,14 @@ afterEach(() => vi.useRealTimers());
 
 const setup = async (width: number) => {
   setViewportWidth(width);
-  mockApi({
+  const api = mockApi({
     'GET /schedules': () => json(200, SEED_SCHEDULES),
     'GET /categories': () => json(200, CATEGORIES),
+    'POST /schedules': (req) => json(201, { id: 90, ...(req.body as object) }),
   });
   const store = makeStore();
   await store.dispatch(fetchCategories());
-  return renderWithStore(<AppShell />, { store });
+  return { api, ...renderWithStore(<AppShell />, { store }) };
 };
 
 // jsdom은 Tailwind 클래스를 적용하지 않으므로 (hidden tablet:flex) 폭별 차이는 JS로 갈리는 부분만 확인한다.
@@ -235,5 +236,71 @@ describe('날짜 이동 — 모바일 (US-09, D-022·D-025)', () => {
     expect(screen.getByRole('region', { name: /날짜 시트/ })).toBeInTheDocument();
     swipe(screen.getByRole('main'), -120);
     expect(screen.queryByRole('region', { name: /날짜 시트/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('빈 시간 눌러 빠른 추가 (US-10)', () => {
+  // jsdom은 칸 위치가 모두 0이라 clientY가 곧 시간표 맨 위에서 잰 거리
+  const openQuickAdd = async (width: number, mode: 'WEEK' | 'DAY', label: string, clientY: number) => {
+    const view = await setup(width);
+    act(() => {
+      view.store.dispatch(setViewMode(mode));
+    });
+    fireEvent.click(await screen.findByRole('group', { name: `${label} 시간표` }), { clientY });
+    return view;
+  };
+
+  it('PC 주간: 팝업 + 점선 임시 블록, 제목을 쓰면 블록 글자도 바뀐다 (D-017·D-021)', async () => {
+    const { user } = await openQuickAdd(1440, 'WEEK', '9월 24일 (목)', 14 * 46 + 10);
+    const popup = screen.getByRole('dialog', { name: '빠른 추가' });
+    expect(popup).toHaveAttribute('data-variant', 'popover');
+    const column = screen.getByRole('group', { name: '9월 24일 (목) 시간표' });
+    expect(within(column).getByTestId('draft-block')).toHaveTextContent('(제목 없음) · 14:00-15:00');
+    await user.type(within(popup).getByRole('textbox', { name: '제목' }), '팀 미팅');
+    expect(within(column).getByTestId('draft-block')).toHaveTextContent('팀 미팅 · 14:00-15:00');
+  });
+
+  it('저장하면 실제 일정으로: POST 후 다시 불러오고 팝업·임시 블록은 사라진다', async () => {
+    const { user, api } = await openQuickAdd(1440, 'WEEK', '9월 24일 (목)', 14 * 46 + 10);
+    const before = api.calls('GET /schedules').length;
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '팀 미팅{Enter}');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument());
+    expect(api.calls('POST /schedules')[0].body).toMatchObject({ title: '팀 미팅', start: '2026-09-24T14:00:00', end: '2026-09-24T15:00:00' });
+    await waitFor(() => expect(api.calls('GET /schedules').length).toBeGreaterThan(before));
+    expect(screen.queryByTestId('draft-block')).not.toBeInTheDocument();
+  });
+
+  it('취소하면 팝업과 임시 블록이 함께 사라진다', async () => {
+    const { user } = await openQuickAdd(1440, 'DAY', '9월 25일 (금)', 9 * 48 + 5);
+    expect(screen.getByTestId('draft-block')).toHaveTextContent('(제목 없음) · 09:00-10:00');
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('draft-block')).not.toBeInTheDocument();
+  });
+
+  it('자세히 입력 → 일정 추가 창에 제목·날짜·시간이 이어진다', async () => {
+    const { user } = await openQuickAdd(1440, 'DAY', '9월 25일 (금)', 9 * 48 + 5);
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '치과 예약');
+    await user.click(screen.getByRole('button', { name: '자세히 입력' }));
+    expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument();
+    const full = screen.getByRole('dialog', { name: '일정 추가' });
+    expect(within(full).getByRole('textbox', { name: '제목' })).toHaveValue('치과 예약');
+    expect(within(full).getByLabelText('시작 날짜')).toHaveValue('2026-09-25');
+    expect(within(full).getByLabelText('시작 시간')).toHaveValue('09:00');
+    expect(within(full).getByLabelText('종료 시간')).toHaveValue('10:00');
+  });
+
+  it('390px 일간: 아래 시트로 열린다 (MO-12, 취소 버튼 없음)', async () => {
+    await openQuickAdd(390, 'DAY', '9월 25일 (금)', 9 * 46 + 5);
+    const sheet = screen.getByRole('dialog', { name: '빠른 추가' });
+    expect(sheet).toHaveAttribute('data-variant', 'sheet');
+    expect(within(sheet).queryByRole('button', { name: '취소' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('draft-block')).toBeInTheDocument();
+  });
+
+  it('입력한 것이 없으면 바깥을 눌러 바로 닫는다', async () => {
+    const { user } = await openQuickAdd(1440, 'DAY', '9월 25일 (금)', 9 * 48 + 5);
+    await user.click(screen.getByTestId('quick-add-backdrop'));
+    expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument();
   });
 });

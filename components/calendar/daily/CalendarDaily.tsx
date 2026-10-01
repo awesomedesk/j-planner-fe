@@ -13,18 +13,33 @@ import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import AllDayChip from '../common/AllDayChip';
+import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
+import { useRevealDraft, useSlotClick, type TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import type { CalendarDay } from '../utils/calendarUtils';
-import { DEFAULT_TIMETABLE_HOURS, allDaySchedulesOn, getHourLabels, layoutDayBlocks, nowLineMinutes } from '../utils/timetableUtils';
+import {
+  DEFAULT_TIMETABLE_HOURS,
+  allDaySchedulesOn,
+  getHourLabels,
+  layoutDayBlocks,
+  nowLineMinutes,
+  type TimetableDraft,
+} from '../utils/timetableUtils';
 
 interface CalendarDailyProps {
   /** PC·태블릿(PC-03) / 모바일(MO-03) */
   variant: 'pc' | 'mobile';
   onOpenSchedule: (schedule: Schedule) => void;
+  /** 빈 시간을 누름 → 빠른 추가 (US-10) */
+  onAddAt?: (slot: TimetableSlot) => void;
+  /** 빠른 추가 중 임시 블록 (D-017) */
+  draft?: TimetableDraft | null;
+  /** 화면 아래를 가리는 높이 (모바일 빠른 추가 시트). 임시 블록이 그 위로 보이게 스크롤한다 (MO-12) */
+  coverBottom?: number;
 }
 
 /** 크기 (화면기획서 PC-03 · MO-03) */
@@ -39,9 +54,10 @@ const SIZE = {
  * - PC 블록은 제목 + `일정 · 10:00-11:00 · 장소`, 시간표 폭 전체 (D-048). 모바일은 제목만
  * - 모바일 탭: 시간표 + 사이드바 항목(설정 순서, 끈 것 숨김), 좁으면 좌우 스크롤 (D-049)
  * - 세로 위치는 주간과 같은 규칙: 시간표끼리 바꾸면 보던 시간 유지, 월간에서 오면 처음 위치 (useTimetableScroll)
- * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23), 빠른 추가(US-10), 모바일 '오늘'(US-09)은 각 스토리에서
+ * - 빈 시간을 누르면 빠른 추가 + 점선 임시 블록 (US-10, D-017)
+ * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23)는 각 스토리에서
  */
-export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDailyProps) {
+export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft, coverBottom = 0 }: CalendarDailyProps) {
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
@@ -72,6 +88,10 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
     now,
   });
   const scrollbarWidth = useScrollbarWidth(scrollRef);
+  const handleSlotClick = useSlotClick(size.hourHeight, onAddAt);
+  const draftRef = useRef<HTMLDivElement>(null);
+  const dayDraft = draft?.date === viewDate ? draft : null;
+  useRevealDraft(scrollRef, draftRef, dayDraft, coverBottom);
 
   const nowMinutes = day.isToday ? nowLineMinutes(now, hours) : null;
   const gridColumns = { gridTemplateColumns: `${size.timeColumn}px minmax(0, 1fr)` };
@@ -120,7 +140,13 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
       </section>
 
       {/* 시간표 */}
-      <div ref={scrollRef} data-testid="timetable-scroll" onScroll={handleScroll} className="min-h-0 flex-1 overflow-y-auto pt-2">
+      <div
+        ref={scrollRef}
+        data-testid="timetable-scroll"
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto pt-2"
+        style={dayDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
+      >
         <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
           <HourLabels
             labels={hourLabels}
@@ -129,7 +155,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
             className={`pr-2 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}
           />
           <div />
-          <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative">
+          <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative" onClick={handleSlotClick(viewDate)}>
             <div className="relative h-full">
               {layoutDayBlocks(schedules, viewDate, hours).map((layout) => (
                 <TimetableBlock
@@ -143,6 +169,7 @@ export default function CalendarDaily({ variant, onOpenSchedule }: CalendarDaily
                 />
               ))}
             </div>
+            {dayDraft && <DraftBlock ref={draftRef} draft={dayDraft} hourHeight={size.hourHeight} fontSize={size.fontSize} />}
             {nowMinutes !== null && <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} />}
           </div>
         </div>

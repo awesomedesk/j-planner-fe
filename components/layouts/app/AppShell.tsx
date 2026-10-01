@@ -11,8 +11,12 @@ import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
 import ClientOnly from '@components/common/ClientOnly';
+import type { TimetableSlot } from '@components/calendar/hooks/useQuickAddSlot';
+import type { TimetableDraft } from '@components/calendar/utils/timetableUtils';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
+import QuickAddSchedule, { QUICK_ADD_SHEET_HEIGHT, type QuickAddPreview } from '@components/schedule/quick/QuickAddSchedule';
+import type { ScheduleFormValues } from '@components/schedule/utils/scheduleFormUtils';
 import {
   goToday,
   moveView,
@@ -77,6 +81,10 @@ function AppShellContent() {
   const [sheetDate, setSheetDate] = useState<LocalDate | null>(null);
   /** 열려 있는 일정 입력 창 (US-05) */
   const [scheduleFormTarget, setScheduleFormTarget] = useState<ScheduleFormTarget | null>(null);
+  /** 빈 시간을 눌러 연 빠른 추가 (US-10)와 입력 중인 임시 블록 값 */
+  const [quickAdd, setQuickAdd] = useState<TimetableSlot | null>(null);
+  const [quickAddPreview, setQuickAddPreview] = useState<QuickAddPreview | null>(null);
+  const draft: TimetableDraft | null = quickAdd && quickAddPreview ? { date: quickAdd.date, ...quickAddPreview } : null;
 
   /** 추가 메뉴에서 고른 항목 열기. 기준 날짜 = 고른 날짜 (D-015) */
   const handleSelectAdd = (target: AddTarget) => {
@@ -87,22 +95,49 @@ function AppShellContent() {
     setScheduleFormTarget(null);
     if (changed) void dispatch(refreshSchedules());
   };
+  const closeQuickAdd = () => {
+    setQuickAdd(null);
+    setQuickAddPreview(null);
+  };
+  const saveQuickAdd = () => {
+    closeQuickAdd();
+    void dispatch(refreshSchedules());
+  };
+  /** '자세히 입력' → 쓴 값을 그대로 일정 추가 창으로 */
+  const openQuickAddDetail = (values: ScheduleFormValues) => {
+    if (!quickAdd) return;
+    closeQuickAdd();
+    setScheduleFormTarget({ mode: 'create', baseDate: quickAdd.date, startTime: values.startTime, draft: values });
+  };
   /** 날짜 이동 (US-09): ‹ ›·스와이프는 보기 단위만큼, '오늘'은 오늘로. 열린 날짜 시트는 닫는다 */
   const move = (step: number) => {
     setSheetDate(null);
+    closeQuickAdd();
     dispatch(moveView(step));
   };
   const backToToday = () => {
     setSheetDate(null);
+    closeQuickAdd();
     dispatch(goToday(toLocalDate(new Date())));
   };
-  const changeViewMode = (mode: CalendarViewMode) => dispatch(setViewMode(mode));
+  const changeViewMode = (mode: CalendarViewMode) => {
+    closeQuickAdd();
+    dispatch(setViewMode(mode));
+  };
   /** 모바일은 달력을 좌우로 밀어 넘긴다 (D-025). PC·태블릿은 헤더 ‹ › */
   const swipe = useSwipe({ onPrev: () => move(-1), onNext: () => move(1) });
 
   const openDayPlan = (date: LocalDate) => {
     setSheetDate(null);
     dispatch(openDayView(date));
+  };
+
+  /** 시간표(주간·일간) 공통: 블록 → 수정, 빈 시간 → 빠른 추가 (US-10) */
+  const timetableProps = {
+    onOpenSchedule: openSchedule,
+    onAddAt: setQuickAdd,
+    draft,
+    coverBottom: isTabletUp ? 0 : QUICK_ADD_SHEET_HEIGHT,
   };
 
   const mainContent =
@@ -115,9 +150,9 @@ function AppShellContent() {
         }}
       />
     ) : viewMode === 'WEEK' ? (
-      <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} onOpenSchedule={openSchedule} />
+      <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} />
     ) : (
-      <CalendarDaily variant={isTabletUp ? 'pc' : 'mobile'} onOpenSchedule={openSchedule} />
+      <CalendarDaily variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} />
     );
 
   return (
@@ -188,6 +223,21 @@ function AppShellContent() {
 
       {/* 모바일·폴드: 오른쪽 아래 + 버튼 → 추가 선택 (MO-07) */}
       <MobileAddMenu className="tablet:hidden" onSelect={handleSelectAdd} />
+
+      {quickAdd && (
+        <QuickAddSchedule
+          key={`${quickAdd.date} ${quickAdd.startTime}`}
+          variant={isTabletUp ? 'popover' : 'sheet'}
+          date={quickAdd.date}
+          startTime={quickAdd.startTime}
+          anchor={quickAdd.anchor}
+          categories={categories}
+          onClose={closeQuickAdd}
+          onSaved={saveQuickAdd}
+          onOpenDetail={openQuickAddDetail}
+          onPreviewChange={setQuickAddPreview}
+        />
+      )}
 
       {scheduleFormTarget && (
         <ScheduleFormDialog
