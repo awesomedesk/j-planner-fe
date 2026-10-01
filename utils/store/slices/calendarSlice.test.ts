@@ -2,7 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { makeStore } from '@store/store';
 
-import { goToday, moveView, openDayView, selectDate, setTimetableTopMinutes, setViewMode } from './calendarSlice';
+import {
+  goToday,
+  moveView,
+  openDayView,
+  selectCategoryFilter,
+  selectDate,
+  setCategoryFilter,
+  setTimetableTopMinutes,
+  setViewMode,
+} from './calendarSlice';
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -18,6 +27,7 @@ describe('달력 상태', () => {
       selectedDate: '2026-09-25',
       timetableTopMinutes: null,
       timetableScrollReset: 0,
+      categoryFilter: null, // 처음엔 전체 (US-11)
     });
   });
 
@@ -115,5 +125,17 @@ describe('날짜 이동 (US-09)', () => {
       timetableTopMinutes: null,
       timetableScrollReset: 1,
     });
+  });
+});
+
+describe('카테고리 필터 (US-11)', () => {
+  it('보기를 바꾸거나 날짜를 옮겨도 그대로 (월·주·일 같은 자리, D-015)', () => {
+    const store = makeStore();
+    store.dispatch(setCategoryFilter([2, 3]));
+    store.dispatch(setViewMode('WEEK'));
+    store.dispatch(moveView(1));
+    expect(selectCategoryFilter(store.getState())).toEqual([2, 3]);
+    store.dispatch(setCategoryFilter(null));
+    expect(selectCategoryFilter(store.getState())).toBeNull();
   });
 });

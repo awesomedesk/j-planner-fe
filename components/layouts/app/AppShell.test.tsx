@@ -304,3 +304,36 @@ describe('빈 시간 눌러 빠른 추가 (US-10)', () => {
     expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument();
   });
 });
+
+describe('카테고리 필터 (US-11)', () => {
+  it('PC: 고르면 그 카테고리 일정만 다시 받는다 (월·주·일 같은 자리)', async () => {
+    const { user, api, store } = await setup(1440);
+    await user.click(screen.getByRole('button', { name: /카테고리 필터/ }));
+    await user.click(screen.getByRole('button', { name: '모두 해제' }));
+    await user.click(screen.getByRole('checkbox', { name: '업무' }));
+    await waitFor(() => expect(api.calls('GET /schedules').at(-1)?.query.getAll('categoryId')).toEqual(['3']));
+    // 주간으로 바꿔도 필터는 그대로
+    act(() => {
+      store.dispatch(setViewMode('WEEK'));
+    });
+    await waitFor(() => expect(api.calls('GET /schedules').at(-1)?.query.get('from')).toBe('2026-09-20'));
+    expect(api.calls('GET /schedules').at(-1)?.query.getAll('categoryId')).toEqual(['3']);
+    expect(screen.getAllByRole('button', { name: /카테고리 필터/ })[0]).toHaveTextContent('카테고리: 1개');
+  });
+
+  it("PC: 드롭다운 맨 아래 '카테고리 관리' → 관리 창 (D-016)", async () => {
+    const { user } = await setup(1440);
+    await user.click(screen.getByRole('button', { name: /카테고리 필터/ }));
+    await user.click(screen.getByRole('button', { name: '카테고리 관리' }));
+    expect(screen.getByRole('dialog', { name: '카테고리 관리' })).toBeInTheDocument();
+  });
+
+  it('390px: 아래 시트에서 고르고 적용 (MO-06)', async () => {
+    const { user, api } = await setup(390);
+    await user.click(screen.getByRole('button', { name: /카테고리 필터/ }));
+    const sheet = screen.getByRole('dialog', { name: '카테고리 필터' });
+    await user.click(within(sheet).getByRole('checkbox', { name: '운동' }));
+    await user.click(within(sheet).getByRole('button', { name: '적용 (3개)' }));
+    await waitFor(() => expect(api.calls('GET /schedules').at(-1)?.query.getAll('categoryId')).toEqual(['1', '2', '3']));
+  });
+});

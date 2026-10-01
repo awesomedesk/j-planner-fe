@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { LocalDate } from '@/types/api';
-import type { CalendarViewMode } from '@/types/calendar';
+import type { CalendarViewMode, CategoryFilter } from '@/types/calendar';
 
 import { shiftDate, toLocalDate, type DateStepUnit } from '@utils/date/dateUtils';
 
@@ -22,6 +22,8 @@ interface CalendarState {
   timetableTopMinutes: number | null;
   /** '오늘'을 누를 때마다 1씩 늘어난다 → 시간표가 처음 위치 규칙으로 다시 자리 잡는다 */
   timetableScrollReset: number;
+  /** 카테고리 필터 (US-11). 월·주·일 공통, 보기를 바꿔도 그대로. 새로 고치면 전체로 */
+  categoryFilter: CategoryFilter;
 }
 
 /** 보기별 날짜 이동 단위 (US-09, D-025) */
@@ -36,6 +38,7 @@ const initialState = (): CalendarState => {
     selectedDate: today,
     timetableTopMinutes: null,
     timetableScrollReset: 0,
+    categoryFilter: null,
   };
 };
 
@@ -80,14 +83,18 @@ const calendarSlice = createSlice({
     setTimetableTopMinutes(state, action: PayloadAction<number>) {
       state.timetableTopMinutes = action.payload;
     },
+    setCategoryFilter(state, action: PayloadAction<CategoryFilter>) {
+      state.categoryFilter = action.payload;
+    },
   },
 });
 
-export const { setViewMode, selectDate, openDayView, moveView, goToday, setTimetableTopMinutes } = calendarSlice.actions;
+export const { setViewMode, selectDate, openDayView, moveView, goToday, setTimetableTopMinutes, setCategoryFilter } = calendarSlice.actions;
 
 export const selectViewMode = (state: { calendar: CalendarState }) => state.calendar.viewMode;
 export const selectViewDate = (state: { calendar: CalendarState }) => state.calendar.viewDate;
 export const selectSelectedDate = (state: { calendar: CalendarState }) => state.calendar.selectedDate;
 
+export const selectCategoryFilter = (state: { calendar: CalendarState }) => state.calendar.categoryFilter;
 export default calendarSlice.reducer;
 export const selectTimetableScrollReset = (state: { calendar: CalendarState }) => state.calendar.timetableScrollReset;

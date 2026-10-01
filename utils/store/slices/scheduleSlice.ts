@@ -1,16 +1,18 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import type { LocalDate, Schedule } from '@/types/api';
+import type { Id, LocalDate, Schedule } from '@/types/api';
 
 import { scheduleApi, toErrorMessage } from '@utils/api';
 
 /**
  * 달력에 보이는 기간의 일정 (US-06)
- * 보이는 기간이 바뀌거나 일정을 추가·수정·삭제하면 다시 받는다 (08-api-design 11절)
+ * 보이는 기간·카테고리 필터가 바뀌거나 일정을 추가·수정·삭제하면 다시 받는다 (08-api-design 11절)
  */
-interface ScheduleRange {
+export interface ScheduleRange {
   from: LocalDate;
   to: LocalDate;
+  /** 카테고리 필터 (US-11). 없으면 전체, 빈 목록이면 요청 없이 빈 결과 */
+  categoryId?: Id[];
 }
 
 interface ScheduleState {
@@ -19,14 +21,19 @@ interface ScheduleState {
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
-const isCurrentRange = (state: ScheduleState, range: ScheduleRange) =>
-  state.range?.from === range.from && state.range?.to === range.to;
+/** 같은 조회인가 (기간 + 카테고리 필터) */
+const queryKey = ({ from, to, categoryId }: ScheduleRange) => `${from}~${to}|${categoryId?.join(',') ?? '*'}`;
+export const isSameScheduleQuery = (a: ScheduleRange | null, b: ScheduleRange) => a !== null && queryKey(a) === queryKey(b);
+
+const isCurrentRange = (state: ScheduleState, range: ScheduleRange) => isSameScheduleQuery(state.range, range);
 
 const initialState: ScheduleState = { items: [], range: null, status: 'idle' };
 
 export const fetchSchedules = createAsyncThunk<Schedule[], ScheduleRange, { rejectValue: string }>(
   'schedule/fetchSchedules',
   async (range, { rejectWithValue }) => {
+    // 카테고리를 하나도 안 골랐으면 받을 것이 없다
+    if (range.categoryId?.length === 0) return [];
     try {
       return await scheduleApi.getList(range);
     } catch (error) {

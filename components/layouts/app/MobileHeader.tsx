@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
@@ -15,6 +15,8 @@ interface MobileHeaderProps {
   onChangeViewMode: (viewMode: CalendarViewMode) => void;
   /** 화면 선택 줄의 '오늘' (US-09, D-048: 하나만) */
   onToday: () => void;
+  /** 카테고리 필터 버튼 + 아래 시트 (US-11, MO-06) */
+  categoryFilter: ReactNode;
   onClickMenu?: () => void;
   onClickSettings?: () => void;
   className?: string;
@@ -24,13 +26,14 @@ interface MobileHeaderProps {
  * MobileHeader - 모바일 헤더 (768px 미만, MO-01·FOLD-01)
  * 위 줄: 메뉴 · 제목(날짜) · 설정
  * 아래 줄(화면 선택 줄): 화면 선택 드롭다운 · 오늘 | 카테고리 필터
- * 날짜를 옮기는 것은 달력을 좌우로 밀어서 한다 (D-025). 메뉴(US-28)·필터(US-11)·설정(US-26)은 각 스토리에서.
+ * 날짜를 옮기는 것은 달력을 좌우로 밀어서 한다 (D-025). 필터는 아래 시트(US-11). 메뉴(US-28)·설정(US-26)은 각 스토리에서.
  */
 export default function MobileHeader({
   title,
   viewMode,
   onChangeViewMode,
   onToday,
+  categoryFilter,
   onClickMenu,
   onClickSettings,
   className = '',
@@ -52,11 +55,7 @@ export default function MobileHeader({
           <ViewModeSelect viewMode={viewMode} onChange={onChangeViewMode} />
           <ThemeButton onClick={onToday}>오늘</ThemeButton>
         </div>
-        <ThemeButton aria-haspopup="listbox" aria-label="카테고리 필터" className="text-xs">
-          <Icon name="filter" size={14} />
-          <span>전체</span>
-          <Icon name="chevronDown" size={14} />
-        </ThemeButton>
+        {categoryFilter}
       </div>
     </header>
   );

@@ -10,6 +10,9 @@ import CalendarDaily from '@components/calendar/daily/CalendarDaily';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
+import CategoryManagerDialog from '@components/category/CategoryManagerDialog';
+import CategoryFilterDropdown from '@components/category/filter/CategoryFilterDropdown';
+import CategoryFilterSheet from '@components/category/filter/CategoryFilterSheet';
 import ClientOnly from '@components/common/ClientOnly';
 import type { TimetableSlot } from '@components/calendar/hooks/useQuickAddSlot';
 import type { TimetableDraft } from '@components/calendar/utils/timetableUtils';
@@ -21,9 +24,11 @@ import {
   goToday,
   moveView,
   openDayView,
+  selectCategoryFilter,
   selectSelectedDate,
   selectViewDate,
   selectViewMode,
+  setCategoryFilter,
   setViewMode,
 } from '@store/slices/calendarSlice';
 import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
@@ -73,6 +78,7 @@ function AppShellContent() {
   const schedules = useAppSelector(selectSchedules);
   const categories = useAppSelector(selectCategories);
   const categoriesById = useAppSelector(selectCategoriesById);
+  const categoryFilter = useAppSelector(selectCategoryFilter);
 
   /** 사용자가 직접 열고 닫기 전에는 폭에 따라 정한다 (PC 열림, 태블릿 닫힘) */
   const [sidebarOpenOverride, setSidebarOpenOverride] = useState<boolean | null>(null);
@@ -81,6 +87,8 @@ function AppShellContent() {
   const [sheetDate, setSheetDate] = useState<LocalDate | null>(null);
   /** 열려 있는 일정 입력 창 (US-05) */
   const [scheduleFormTarget, setScheduleFormTarget] = useState<ScheduleFormTarget | null>(null);
+  /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   /** 빈 시간을 눌러 연 빠른 추가 (US-10)와 입력 중인 임시 블록 값 */
   const [quickAdd, setQuickAdd] = useState<TimetableSlot | null>(null);
   const [quickAddPreview, setQuickAddPreview] = useState<QuickAddPreview | null>(null);
@@ -132,6 +140,19 @@ function AppShellContent() {
     dispatch(openDayView(date));
   };
 
+  /** 관리 창에서 지운 카테고리의 일정은 미지정으로 옮겨지므로 다시 받는다 (D-014) */
+  const closeCategoryManager = () => {
+    setIsCategoryManagerOpen(false);
+    void dispatch(refreshSchedules());
+  };
+  /** 카테고리 필터 (US-11): PC·태블릿은 드롭다운, 모바일은 아래 시트 */
+  const categoryFilterProps = {
+    categories,
+    filter: categoryFilter,
+    onChange: (filter: typeof categoryFilter) => dispatch(setCategoryFilter(filter)),
+    onOpenManager: () => setIsCategoryManagerOpen(true),
+  };
+
   /** 시간표(주간·일간) 공통: 블록 → 수정, 빈 시간 → 빠른 추가 (US-10) */
   const timetableProps = {
     onOpenSchedule: openSchedule,
@@ -165,6 +186,7 @@ function AppShellContent() {
         onMove={move}
         onToday={backToToday}
         onSelectAdd={handleSelectAdd}
+        categoryFilter={isTabletUp && <CategoryFilterDropdown {...categoryFilterProps} />}
       />
       <MobileHeader
         className="flex tablet:hidden"
@@ -172,6 +194,7 @@ function AppShellContent() {
         viewMode={viewMode}
         onChangeViewMode={changeViewMode}
         onToday={backToToday}
+        categoryFilter={!isTabletUp && <CategoryFilterSheet {...categoryFilterProps} />}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -226,6 +249,8 @@ function AppShellContent() {
 
       {/* 모바일·폴드: 오른쪽 아래 + 버튼 → 추가 선택 (MO-07) */}
       <MobileAddMenu className="tablet:hidden" onSelect={handleSelectAdd} />
+
+      {isCategoryManagerOpen && <CategoryManagerDialog onClose={closeCategoryManager} />}
 
       {quickAdd && (
         <QuickAddSchedule

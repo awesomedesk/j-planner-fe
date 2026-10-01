@@ -2,6 +2,8 @@
 
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
+import type { ReactNode } from 'react';
+
 import type { CalendarViewMode } from '@/types/calendar';
 
 import type { AddTarget } from './addMenuItems';
@@ -18,6 +20,8 @@ interface PcHeaderProps {
   onToday: () => void;
   /** 추가 메뉴에서 고른 항목 (일정 / Todo / D-Day) */
   onSelectAdd: (target: AddTarget) => void;
+  /** 카테고리 필터 드롭다운 (US-11) */
+  categoryFilter: ReactNode;
   onClickSettings?: () => void;
   className?: string;
 }
@@ -28,7 +32,7 @@ interface PcHeaderProps {
  *
  * 태블릿(768~1023px)은 줄여서 보여준다: 필터는 '전체', 추가는 아이콘만 (TAB-01).
  * 날짜 이동: ‹ ›는 보기 단위(월간 한 달, 주간 한 주, 일간 하루), '오늘'은 태블릿에도 둔다 (US-09, D-037).
- * 필터(US-11)는 그 스토리에서 동작을 붙인다. 추가는 일정 입력 창을 연다 (US-05).
+ * 카테고리 필터는 드롭다운(US-11, D-015). 추가는 일정 입력 창을 연다 (US-05).
  */
 export default function PcHeader({
   title,
@@ -37,6 +41,7 @@ export default function PcHeader({
   onMove,
   onToday,
   onSelectAdd,
+  categoryFilter,
   onClickSettings,
   className = '',
 }: PcHeaderProps) {
@@ -60,12 +65,7 @@ export default function PcHeader({
       </div>
 
       <div className="flex items-center gap-2 pc:gap-3">
-        <ThemeButton aria-haspopup="listbox" aria-label="카테고리 필터">
-          <Icon name="filter" size={14} />
-          <span className="hidden pc:inline">카테고리: 전체</span>
-          <span className="pc:hidden">전체</span>
-          <Icon name="chevronDown" size={14} />
-        </ThemeButton>
+        {categoryFilter}
 
         <div role="group" aria-label="보기 전환" className="inline-flex gap-0.5 rounded-[10px] border border-tp-line bg-tp-panel p-[3px]">
           {(Object.keys(VIEW_MODE_LABEL) as CalendarViewMode[]).map((mode) => {

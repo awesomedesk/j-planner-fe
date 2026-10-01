@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import type { LocalDate } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { fetchSchedules, selectScheduleRange, selectScheduleStatus, selectSchedules } from '@store/slices/scheduleSlice';
+import { selectCategoryFilter } from '@store/slices/calendarSlice';
+import {
+  fetchSchedules,
+  isSameScheduleQuery,
+  selectScheduleRange,
+  selectScheduleStatus,
+  selectSchedules,
+} from '@store/slices/scheduleSlice';
 import { showNotice } from '@store/slices/noticeSlice';
 
 interface DateRange {
@@ -14,7 +21,7 @@ interface DateRange {
 
 /**
  * 보이는 기간의 일정 받기 — 월간·주간·일간 공통 (08-api-design 11절)
- * - 기간이 바뀌면 다시 받고, 실패하면 짧은 안내 (US-03)
+ * - 기간이나 카테고리 필터(US-11)가 바뀌면 다시 받고, 실패하면 짧은 안내 (US-03)
  * - schedules: 화면에 그릴 일정 (받는 동안은 앞 기간 것이 남아 있을 수 있음)
  * - isLoaded: 이 기간을 다 받았는지 (실패도 끝난 것으로 본다)
  * - loadedSchedules: 이 기간을 제대로 받았을 때의 일정 (처음 위치 계산 등, 실패·받는 중이면 빈 목록)
@@ -26,14 +33,16 @@ export function useScheduleRange(range: DateRange) {
   const schedules = useAppSelector(selectSchedules);
   const status = useAppSelector(selectScheduleStatus);
   const loadedRange = useAppSelector(selectScheduleRange);
+  const categoryFilter = useAppSelector(selectCategoryFilter);
+  const query = useMemo(() => (categoryFilter ? { ...range, categoryId: categoryFilter } : range), [range, categoryFilter]);
 
   useEffect(() => {
-    dispatch(fetchSchedules(range))
+    dispatch(fetchSchedules(query))
       .unwrap()
       .catch((message: string) => dispatch(showNotice(message, 'error')));
-  }, [dispatch, range]);
+  }, [dispatch, query]);
 
-  const isCurrent = loadedRange?.from === range.from && loadedRange?.to === range.to;
+  const isCurrent = isSameScheduleQuery(loadedRange, query);
   const isLoaded = isCurrent && (status === 'succeeded' || status === 'failed');
   const loadedSchedules = isCurrent && status === 'succeeded' ? schedules : EMPTY;
 

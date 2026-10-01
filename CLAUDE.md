@@ -57,6 +57,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs (D-049).
+- **Category filter** (US-11): `calendar.categoryFilter` in the store (`null` = 전체, `[]` = nothing). `useScheduleRange` adds it as
+  `categoryId` (server-side filter); `[]` skips the request. UI: `components/category/filter/` (PC dropdown applies at once, mobile sheet on '적용').
 - **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
   AppShell owns the quick-add state and passes `draft` to the timetable). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
