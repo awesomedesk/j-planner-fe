@@ -61,6 +61,10 @@ export const sortMemosByRecentUpdate = (memos: Memo[]): Memo[] =>
 export const pickEarliestCreatedMemos = (memos: Memo[], count = SIDEBAR_MEMO_COUNT): Memo[] =>
   [...memos].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id).slice(0, count);
 
+/** 메모 창에서 지운 뒤 열 메모: 남은 목록의 맨 위, 없으면 새 메모(null) */
+export const pickMemoAfterDelete = (memos: Memo[], deletedId: Memo['id']): Memo | null =>
+  memos.find((item) => item.id !== deletedId) ?? null;
+
 // ---------------------------------------------------------------- 표시
 
 const splitLines = (content: string | null) => (content ?? '').split('\n');

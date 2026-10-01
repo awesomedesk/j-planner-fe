@@ -12,7 +12,7 @@ import { useMemoForm, type MemoForm } from './hooks/useMemoForm';
 import { useMemos } from './hooks/useMemos';
 import MemoDeleteButtons from './MemoDeleteButtons';
 import MemoFields from './MemoFields';
-import { getMemoHeading, getMemoPreview } from './utils/memoUtils';
+import { getMemoHeading, getMemoPreview, pickMemoAfterDelete } from './utils/memoUtils';
 
 /** 'list' = 맨 위(최근 수정) 메모를 보며 열기 ('n개'), 'new' = 새 메모로 열기 (+) (D-055) */
 export type MemoDialogStart = 'list' | 'new';
@@ -34,21 +34,41 @@ export default function MemoDialog({ startWith, onClose, onChanged }: MemoDialog
   const { memos, isLoaded, upsertMemo, removeMemo } = useMemos();
   /** 바꾼 것이 있는 채 고른 메모 — 확인 뒤 연다 (undefined = 확인 중 아님, null = 새 메모) */
   const [pendingSelection, setPendingSelection] = useState<Memo | null | undefined>(undefined);
+  /** 지운 뒤 열 메모 (undefined = 없음, null = 새 메모) */
+  const [nextAfterDelete, setNextAfterDelete] = useState<Memo | null | undefined>(undefined);
   const hasOpenedFirst = useRef(false);
 
-  const handleSaved = (saved: Memo) => {
-    upsertMemo(saved);
-    onChanged?.();
-  };
+  const form = useMemoForm({
+    initialMemo: null,
+    onSaved: (saved: Memo) => {
+      upsertMemo(saved);
+      onChanged?.();
+    },
+    onDeleted: (id: Id) => {
+      removeMemo(id);
+      setNextAfterDelete(pickMemoAfterDelete(memos, id));
+      onChanged?.();
+    },
+  });
 
-  const handleDeleted = (id: Id) => {
-    const remaining = memos.filter((item) => item.id !== id);
-    removeMemo(id);
-    form.load(remaining[0] ?? null);
-    onChanged?.();
-  };
+  // 지운 뒤 남은 맨 위 메모(없으면 새 메모)를 연다
+  useEffect(() => {
+    if (nextAfterDelete === undefined) return;
+    form.load(nextAfterDelete);
+    setNextAfterDelete(undefined);
+  }, [form, nextAfterDelete]);
 
-  const form = useMemoForm({ initialMemo: null, onSaved: handleSaved, onDeleted: handleDeleted });
+  // 다른 메모로 바꿀지 묻는 중에는 Esc가 그 확인만 닫는다 (창 닫기 확인이 겹치지 않게)
+  useEffect(() => {
+    if (pendingSelection === undefined) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setPendingSelection(undefined);
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [pendingSelection]);
 
   // 'n개'로 열었으면 목록을 받은 뒤 맨 위 메모를 연다 (확인 부탁)
   useEffect(() => {

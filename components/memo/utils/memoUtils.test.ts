@@ -5,12 +5,14 @@ import { BOOKS, LAST_YEAR, MEMOS, TRAVEL, UNTITLED, memo } from '@/test/memoFixt
 import {
   MEMO_TITLE_MAX_LENGTH,
   formatMemoDate,
+  getMemoBody,
   getMemoHeading,
   getMemoPreview,
   isMemoEmpty,
   isMemoFormChanged,
   memoToFormValues,
   pickEarliestCreatedMemos,
+  pickMemoAfterDelete,
   sortMemosByRecentUpdate,
   toMemoCreateRequest,
   toMemoUpdateRequest,
@@ -58,6 +60,12 @@ describe('메모 목록 순서', () => {
     expect(sortMemosByRecentUpdate([LAST_YEAR, TRAVEL, BOOKS, same, UNTITLED]).map((m) => m.id)).toEqual([1, 9, 2, 3, 4]);
   });
 
+  it('메모 창에서 지운 뒤에는 남은 맨 위 메모, 없으면 새 메모', () => {
+    expect(pickMemoAfterDelete(MEMOS, 1)).toBe(TRAVEL);
+    expect(pickMemoAfterDelete(MEMOS, 2)).toBe(BOOKS);
+    expect(pickMemoAfterDelete([BOOKS], 1)).toBeNull();
+  });
+
   it('사이드바는 만든 날 기준 가장 먼저 만든 3개 — 고쳐도 자리 그대로 (D-055)', () => {
     expect(pickEarliestCreatedMemos(MEMOS).map((m) => m.id)).toEqual([4, 3, 2]);
     const edited = { ...LAST_YEAR, updatedAt: '2026-10-01T09:00:00' };
@@ -87,8 +95,7 @@ describe('메모 표시', () => {
 });
 
 describe('사이드바 펼친 내용 (D-055)', () => {
-  it('제목이 있으면 내용 전체, 제목 없으면 첫 줄(제목 자리) 다음부터', async () => {
-    const { getMemoBody } = await import('./memoUtils');
+  it('제목이 있으면 내용 전체, 제목 없으면 첫 줄(제목 자리) 다음부터', () => {
     expect(getMemoBody(BOOKS)).toBe('- 데미안\n- 코스모스');
     expect(getMemoBody(UNTITLED)).toBe('주간 회고 템플릿');
     expect(getMemoBody(LAST_YEAR)).toBe('');

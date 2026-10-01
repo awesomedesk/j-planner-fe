@@ -122,6 +122,25 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(titleInput()).toHaveValue('여행 준비물');
   });
 
+  it('다른 메모로 바꿀지 묻는 중 Esc는 그 확인만 닫는다 (D-037)', async () => {
+    const { onClose, user } = open('list');
+    await waitFor(() => expect(titleInput()).toHaveValue('읽을 책 목록'));
+    await user.type(titleInput(), '!');
+    await user.click(within(memoList()).getByText('여행 준비물'));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(titleInput()).toHaveValue('읽을 책 목록!');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('지운 뒤에는 남은 맨 위 메모를 연다', async () => {
+    const { user } = open('list');
+    await waitFor(() => expect(titleInput()).toHaveValue('읽을 책 목록'));
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제 확인' }));
+    await waitFor(() => expect(titleInput()).toHaveValue('여행 준비물'));
+  });
+
   it('바꾼 채 닫으면 "작성을 취소할까요?" (D-037)', async () => {
     const { onClose, user } = open('list');
     await waitFor(() => expect(titleInput()).toHaveValue('읽을 책 목록'));
