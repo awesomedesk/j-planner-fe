@@ -278,6 +278,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
+                /** @description YYYY-MM-DD. 형식이 틀리면 400 */
                 date: string;
             };
             cookie?: never;
@@ -1383,6 +1384,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description YYYY-MM-DD. 형식이 틀리면 400 */
                 date: string;
             };
             cookie?: never;
@@ -1398,6 +1400,7 @@ export interface operations {
                     "application/json": components["schemas"]["Diary"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -1406,6 +1409,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description YYYY-MM-DD. 형식이 틀리면 400 */
                 date: string;
             };
             cookie?: never;
@@ -1443,6 +1447,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description YYYY-MM-DD. 형식이 틀리면 400 */
                 date: string;
             };
             cookie?: never;
@@ -1456,6 +1461,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };
