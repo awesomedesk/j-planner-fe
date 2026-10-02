@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import type { LocalDate, Schedule } from '@/types/api';
+import type { LocalDate, Schedule, Todo } from '@/types/api';
 import type { CalendarViewMode } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
@@ -17,6 +17,7 @@ import ClientOnly from '@components/common/ClientOnly';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import { dayTabBehavior } from '@components/sidebar/sidebarItems';
 import TodoFormDialog from '@components/todo/form/TodoFormDialog';
+import { TodoActionsContext } from '@components/todo/TodoActionsContext';
 import type { TodoFormTarget } from '@components/todo/hooks/useTodoForm';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
 import DiscardConfirm from '@components/dialog/DiscardConfirm';
@@ -36,6 +37,7 @@ import {
 } from '@store/slices/calendarSlice';
 import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
 import { refreshSchedules, selectSchedules } from '@store/slices/scheduleSlice';
+import { refreshDayTodos } from '@store/slices/todoSlice';
 
 import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
@@ -114,6 +116,12 @@ function AppShellContent() {
     if (changed) void dispatch(refreshSchedules());
   };
   const closeQuickAdd = quickAdd.close;
+  /** Todo 저장·삭제 뒤: 창을 닫고 박스를 다시 받는다 (US-13) */
+  const closeTodoForm = () => {
+    setTodoFormTarget(null);
+    void dispatch(refreshDayTodos());
+  };
+  const todoActions = useMemo(() => ({ openTodo: (todo: Todo) => setTodoFormTarget({ mode: 'edit', todo }) }), []);
   const saveQuickAdd = (schedule: Schedule) => {
     hiddenSave.notify(schedule);
     closeQuickAdd();
@@ -201,6 +209,7 @@ function AppShellContent() {
     );
 
   return (
+    <TodoActionsContext.Provider value={todoActions}>
     <div className="flex h-dvh flex-col overflow-hidden bg-tp-bg text-tp-text">
       <PcHeader
         className="hidden tablet:flex"
@@ -319,8 +328,11 @@ function AppShellContent() {
           target={todoFormTarget}
           categories={categories}
           onClose={() => setTodoFormTarget(null)}
-          onSaved={() => setTodoFormTarget(null)}
-          onDeleted={() => setTodoFormTarget(null)}
+          onSaved={(todo) => {
+            hiddenSave.notify(todo);
+            closeTodoForm();
+          }}
+          onDeleted={closeTodoForm}
         />
       )}
 
@@ -338,5 +350,6 @@ function AppShellContent() {
         />
       )}
     </div>
+    </TodoActionsContext.Provider>
   );
 }

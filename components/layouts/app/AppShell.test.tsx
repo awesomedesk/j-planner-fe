@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CATEGORIES } from '@/test/fixtures';
+import { CATEGORIES, todo } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
@@ -25,6 +25,7 @@ const setup = async (width: number) => {
     'GET /schedules': () => json(200, SEED_SCHEDULES),
     'GET /categories': () => json(200, CATEGORIES),
     'POST /schedules': (req) => json(201, { id: 90, ...(req.body as object) }),
+    'GET /todos': () => json(200, [todo({ id: 1, title: '장보기' })]),
     'POST /todos': (req) => json(201, { id: 91, completed: false, completedAt: null, sortOrder: 1, overdue: false, ...(req.body as object) }),
     'PATCH /schedules/:id': (req) => json(200, { ...SEED_SCHEDULES.find((x) => `/schedules/${x.id}` === req.path), ...(req.body as object) }),
   });
@@ -553,5 +554,53 @@ describe('추가 → Todo (US-12)', () => {
     await user.click(screen.getAllByRole('button', { name: '추가' }).at(-1)!);
     await user.click(screen.getByRole('menuitem', { name: 'Todo 추가' }));
     expect(screen.getByRole('dialog', { name: 'Todo 추가' })).toBeInTheDocument();
+  });
+});
+
+describe('Todo 박스 연결 (US-13)', () => {
+  it('PC 사이드바 Todo 섹션: 고른 날짜의 Todo, 항목을 누르면 Todo 수정 창 (US-12 수정·삭제)', async () => {
+    const { user, api } = await setup(1440);
+    // jsdom은 폴드 오른쪽 패널도 그리므로 PC 사이드바 안에서 찾는다
+    const section = within(screen.getByRole('complementary', { name: '사이드바' })).getByRole('region', { name: 'Todo' });
+    expect(await within(section).findByRole('button', { name: '장보기 수정' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '9월 23일 (수)' }));
+    await waitFor(() => expect(api.calls('GET /todos').at(-1)?.query.get('date')).toBe('2026-09-23'));
+    await user.click(await within(section).findByRole('button', { name: '장보기 수정' }));
+    expect(screen.getByRole('dialog', { name: 'Todo 수정' })).toBeInTheDocument();
+  });
+
+  it('Todo를 추가하면 박스를 다시 받는다', async () => {
+    const { user, api } = await setup(1440);
+    await within(screen.getByRole('complementary', { name: '사이드바' })).findByRole('button', { name: '장보기 수정' });
+    const before = api.calls('GET /todos').length;
+    await user.click(screen.getAllByRole('button', { name: '추가' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Todo' }));
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '산책');
+    await user.click(screen.getAllByRole('button', { name: '저장' })[0]);
+    await waitFor(() => expect(api.calls('GET /todos').length).toBeGreaterThan(before));
+  });
+
+  it('필터에서 빠진 카테고리로 Todo를 저장하면 종이비행기 (D-056, US-12 Q6)', async () => {
+    const { user, store } = await setup(1440);
+    act(() => {
+      store.dispatch(setCategoryFilter([2]));
+    });
+    await user.click(screen.getAllByRole('button', { name: '추가' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Todo' }));
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '보고');
+    await user.selectOptions(screen.getByRole('combobox', { name: '카테고리' }), '업무');
+    await user.click(screen.getAllByRole('button', { name: '저장' })[0]);
+    expect(await screen.findByRole('dialog', { name: '카테고리 선택' })).toBeInTheDocument();
+  });
+
+  it('390px 일간 Todo 탭: 탭이 열리고 그날 Todo 박스, 머리 줄 < > (D-049)', async () => {
+    const { user, store } = await setup(390);
+    act(() => {
+      store.dispatch(setViewMode('DAY'));
+    });
+    await user.click(within(screen.getByRole('tablist', { name: '일간 보기' })).getByRole('tab', { name: 'Todo' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Todo' });
+    expect(await within(panel).findByRole('list', { name: '9월 25일 (금) Todo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다음 날' })).toBeInTheDocument();
   });
 });

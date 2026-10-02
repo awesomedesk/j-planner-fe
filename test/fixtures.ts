@@ -1,4 +1,4 @@
-import type { Category, Schedule } from '@/types/api';
+import type { Category, Schedule, Todo } from '@/types/api';
 
 /** BE 로컬 테스트 데이터(local-reset.sql)와 같은 모양 */
 export const CATEGORIES: Category[] = [
@@ -16,5 +16,20 @@ export const schedule = (overrides: Partial<Schedule> & Pick<Schedule, 'id' | 's
   description: null,
   location: null,
   url: null,
+  ...overrides,
+});
+
+export const todo = (overrides: Partial<Todo> & Pick<Todo, 'id'>): Todo => ({
+  title: 'Todo',
+  type: 'DAY',
+  startDate: '2026-09-25',
+  endDate: '2026-09-25',
+  time: null,
+  categoryId: 1,
+  color: null,
+  completed: false,
+  completedAt: null,
+  sortOrder: overrides.id,
+  overdue: false,
   ...overrides,
 });

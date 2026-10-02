@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { Category, Id, Schedule } from '@/types/api';
+import type { Category, Id } from '@/types/api';
 import type { CategoryFilter } from '@/types/calendar';
 import type { FilterReveal } from '@components/category/filter/useFilterReveal';
 
@@ -34,7 +34,8 @@ export function useHiddenSaveNotice(categoryFilter: CategoryFilter, categories: 
 
   const startReveal = (categoryId: Id) => setReveal({ categoryId, key: Date.now() });
 
-  const notify = (schedule: Schedule) => {
+  /** 저장한 일정·Todo (카테고리만 본다) */
+  const notify = (schedule: { categoryId?: Id | null }) => {
     if (categoryFilter === null) return;
     const categoryId = schedule.categoryId ?? categories.find((c) => c.isDefault)?.id;
     if (categoryId === undefined || categoryFilter.includes(categoryId)) return;
