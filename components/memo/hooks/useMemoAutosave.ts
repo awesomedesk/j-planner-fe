@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Id, Memo } from '@/types/api';
 
+import { useAppDispatch } from '@/app/hooks';
+import { showNotice } from '@store/slices/noticeSlice';
+
 import { memoApi } from '@utils/api';
 
 import {
@@ -24,6 +27,7 @@ interface UseMemoAutosaveOptions {
 
 /** 실패 안내 (D-058) */
 export const AUTOSAVE_FAILED_MESSAGE = '저장 못 했어요';
+export const AUTODELETE_FAILED_MESSAGE = '지우지 못했어요';
 
 /**
  * 사이드바에서 펼친 메모를 그 자리에서 고치는 상태 — 이 자리만 자동 저장 (D-057, D-030의 예외)
@@ -37,6 +41,7 @@ export const AUTOSAVE_FAILED_MESSAGE = '저장 못 했어요';
  * - 비운 채 사이드바가 사라지면(언마운트) 접은 것과 같이 삭제, 고친 채 사라지면 저장 (D-058)
  */
 export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOptions) => {
+  const dispatch = useAppDispatch();
   const [values, setValues] = useState<MemoFormValues>(() => memoToFormValues(memo));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   /** 화면 값과 같지만 타이머·줄 선 요청·정리 함수에서 최신 값을 읽으려고 둔다 */
@@ -44,11 +49,22 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
   /** 서버에 저장된 값 (줄 선 요청만 고친다) */
   const savedRef = useRef<Memo>(memo);
   const isDeletedRef = useRef(false);
+  /** 사이드바가 사라진 뒤(언마운트)에는 칸 안 안내를 볼 수 없으므로 화면 아래 안내로 알린다 (D-058) */
+  const isUnmountedRef = useRef(false);
   /** 저장·삭제 요청 줄. 앞 요청이 끝난 뒤 이어 붙인다 */
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const timerRef = useRef<number | null>(null);
   const callbacksRef = useRef({ onSaved, onDeleted });
   callbacksRef.current = { onSaved, onDeleted };
+
+  /** 실패 안내: 펼친 채면 칸 안 한 줄, 사라진 뒤면 화면 아래 안내 */
+  const reportFailure = useCallback(
+    (message: string) => {
+      if (isUnmountedRef.current) dispatch(showNotice(message, 'error'));
+      else setErrorMessage(message);
+    },
+    [dispatch]
+  );
 
   const clearTimer = () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -78,10 +94,10 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
       callbacksRef.current.onSaved(saved);
       return true;
     } catch {
-      setErrorMessage(AUTOSAVE_FAILED_MESSAGE);
+      reportFailure(AUTOSAVE_FAILED_MESSAGE);
       return false;
     }
-  }, []);
+  }, [reportFailure]);
 
   /** 줄 안에서만 부른다. 모두 비었으면 삭제, 아니면 저장 */
   const finishInQueue = useCallback(async (): Promise<boolean> => {
@@ -94,10 +110,10 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
       callbacksRef.current.onDeleted(id);
       return true;
     } catch {
-      setErrorMessage('지우지 못했어요');
+      reportFailure(AUTODELETE_FAILED_MESSAGE);
       return false;
     }
-  }, [saveInQueue]);
+  }, [reportFailure, saveInQueue]);
 
   const saveNow = useCallback(() => {
     clearTimer();
@@ -121,7 +137,13 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
   );
 
   // 사이드바가 사라지면 접은 것과 같이 (D-058). 이미 접었으면 보낼 것이 없어 요청이 없다
-  useEffect(() => () => void finish(), [finish]);
+  useEffect(() => {
+    isUnmountedRef.current = false;
+    return () => {
+      isUnmountedRef.current = true;
+      void finish();
+    };
+  }, [finish]);
 
   return { values, errorMessage, setField, saveNow, finish };
 };
