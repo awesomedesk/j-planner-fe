@@ -327,3 +327,19 @@ describe('종일 줄 3줄 + n (D-052 ③)', () => {
     expect(within(screen.getByRole('dialog', { name: '9월 25일 (금) 종일' })).getAllByRole('button', { name: /^종일 \d/ })).toHaveLength(4);
   });
 });
+
+describe('모바일 일간 탭 내용 (US-25 연결 지점, D-049)', () => {
+  it('내용을 꽂은 탭만 눌리고, 고르면 시간표 대신 그 내용', async () => {
+    const { user, store } = await setup('mobile', '2026-09-25', SCHEDULES, { tabContent: { MEMO: <p>메모 목록</p> } });
+    const tabs = screen.getByRole('tablist', { name: '일간 보기' });
+    expect(within(tabs).getByRole('tab', { name: 'D-Day' })).toBeDisabled();
+    await user.click(within(tabs).getByRole('tab', { name: '메모' }));
+    expect(within(tabs).getByRole('tab', { name: '메모' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: '메모' })).toHaveTextContent('메모 목록');
+    expect(screen.queryByRole('group', { name: /시간표$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '종일' })).not.toBeInTheDocument();
+    expect(store.getState().calendar.mobileDayTab).toBe('MEMO');
+    await user.click(within(tabs).getByRole('tab', { name: '시간표' }));
+    expect(screen.getByRole('group', { name: /시간표$/ })).toBeInTheDocument();
+  });
+});

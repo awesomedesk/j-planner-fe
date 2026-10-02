@@ -7,6 +7,8 @@ import {
   moveView,
   openDayView,
   selectCategoryFilter,
+  selectMobileDayTab,
+  setMobileDayTab,
   selectDate,
   setCategoryFilter,
   setTimetableTopMinutes,
@@ -28,6 +30,7 @@ describe('달력 상태', () => {
       timetableTopMinutes: null,
       timetableScrollReset: 0,
       categoryFilter: null, // 처음엔 전체 (US-11)
+      mobileDayTab: 'TIMETABLE', // 모바일 일간 탭 (D-049)
     });
   });
 
@@ -137,5 +140,25 @@ describe('카테고리 필터 (US-11)', () => {
     expect(selectCategoryFilter(store.getState())).toEqual([2, 3]);
     store.dispatch(setCategoryFilter(null));
     expect(selectCategoryFilter(store.getState())).toBeNull();
+  });
+});
+
+describe('모바일 일간 탭 (D-049, US-25 연결 지점)', () => {
+  it('고른 탭은 날짜를 옮겨도 그대로', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('DAY'));
+    store.dispatch(setMobileDayTab('MEMO'));
+    store.dispatch(moveView(1));
+    expect(selectMobileDayTab(store.getState())).toBe('MEMO');
+  });
+  it('일간을 떠나거나 날짜를 두 번 눌러 일간에 들어오면 시간표로', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('DAY'));
+    store.dispatch(setMobileDayTab('MEMO'));
+    store.dispatch(setViewMode('WEEK'));
+    expect(selectMobileDayTab(store.getState())).toBe('TIMETABLE');
+    store.dispatch(setMobileDayTab('MEMO'));
+    store.dispatch(openDayView('2026-09-26'));
+    expect(selectMobileDayTab(store.getState())).toBe('TIMETABLE');
   });
 });

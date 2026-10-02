@@ -8,14 +8,17 @@ import { ADD_MENU_ITEMS, type AddTarget } from './addMenuItems';
 
 interface MobileAddMenuProps {
   onSelect: (target: AddTarget) => void;
+  /** 있으면 + 가 메뉴 없이 바로 이 동작 (예: 메모 탭의 새 메모, D-055) */
+  directAdd?: { label: string; onAdd: () => void } | null;
   className?: string;
 }
 
 /**
  * MobileAddMenu - 모바일 오른쪽 아래 + 버튼 → 추가 선택 (MO-07, D-021)
  * + 버튼이 ×로 바뀌고 일정 / Todo / D-Day 선택지가 위로 펼쳐진다. 바깥을 누르면 닫힌다.
+ * 탭에 따라 + 가 바로 한 가지 동작을 할 수 있다 (directAdd, D-055 메모 탭)
  */
-export default function MobileAddMenu({ onSelect, className = '' }: MobileAddMenuProps) {
+export default function MobileAddMenu({ onSelect, directAdd, className = '' }: MobileAddMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -58,10 +61,10 @@ export default function MobileAddMenu({ onSelect, className = '' }: MobileAddMen
         )}
         <button
           type="button"
-          aria-label={isOpen ? '추가 닫기' : '추가'}
-          aria-haspopup="menu"
-          aria-expanded={isOpen}
-          onClick={() => setIsOpen((prev) => !prev)}
+          aria-label={directAdd ? directAdd.label : isOpen ? '추가 닫기' : '추가'}
+          aria-haspopup={directAdd ? undefined : 'menu'}
+          aria-expanded={directAdd ? undefined : isOpen}
+          onClick={() => (directAdd ? directAdd.onAdd() : setIsOpen((prev) => !prev))}
           className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-tp-primary text-tp-on-primary shadow-[0_6px_16px_rgba(0,0,0,0.25)]"
         >
           <Icon name={isOpen ? 'close' : 'plus'} size={24} strokeWidth={2.4} />

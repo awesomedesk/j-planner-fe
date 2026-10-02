@@ -15,6 +15,8 @@ interface MobileHeaderProps {
   onChangeViewMode: (viewMode: CalendarViewMode) => void;
   /** 화면 선택 줄의 '오늘' (US-09, D-048: 하나만) */
   onToday: () => void;
+  /** 머리 줄 날짜 양옆 < > (일간 Todo·일기 탭, D-049). 없으면 날짜만 */
+  onMoveDay?: (step: number) => void;
   /** 카테고리 필터 버튼 + 아래 시트 (US-11, MO-06) */
   categoryFilter: ReactNode;
   onClickMenu?: () => void;
@@ -33,6 +35,7 @@ export default function MobileHeader({
   viewMode,
   onChangeViewMode,
   onToday,
+  onMoveDay,
   categoryFilter,
   onClickMenu,
   onClickSettings,
@@ -44,7 +47,19 @@ export default function MobileHeader({
         <button type="button" aria-label="메뉴" onClick={onClickMenu} className="inline-flex h-11 w-11 items-center justify-center">
           <Icon name="menu" size={20} />
         </button>
-        <h1 className="text-[17px] font-bold">{title}</h1>
+        <div className="flex items-center gap-1">
+          {onMoveDay && (
+            <button type="button" aria-label="이전 날" onClick={() => onMoveDay(-1)} className="inline-flex h-11 w-9 items-center justify-center">
+              <Icon name="chevronLeft" size={20} />
+            </button>
+          )}
+          <h1 className="text-[17px] font-bold">{title}</h1>
+          {onMoveDay && (
+            <button type="button" aria-label="다음 날" onClick={() => onMoveDay(1)} className="inline-flex h-11 w-9 items-center justify-center">
+              <Icon name="chevronRight" size={20} />
+            </button>
+          )}
+        </div>
         <button type="button" aria-label="설정" onClick={onClickSettings} className="inline-flex h-11 w-11 items-center justify-center">
           <Icon name="gear" size={20} />
         </button>

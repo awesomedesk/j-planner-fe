@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type ReactNode } from 'react';
 
 import type { Schedule } from '@/types/api';
-import { useAppSelector } from '@/app/hooks';
+import type { MobileDayTabKey, SidebarItemType } from '@/types/calendar';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
-import { selectViewDate } from '@store/slices/calendarSlice';
+import { selectMobileDayTab, selectViewDate, setMobileDayTab } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
 
 import { formatDayTitle, fromLocalDate, toLocalDate } from '@utils/date/dateUtils';
@@ -40,6 +41,11 @@ interface CalendarDailyProps {
   draft?: TimetableDraft | null;
   /** 임시 블록 손잡이·몸통을 끌어 시간을 바꿀 때 (D-053) */
   onDraftChange?: (range: MinuteRange) => void;
+  /**
+   * 모바일 일간 탭 내용 (US-25 연결 지점, D-049). 꽂은 탭만 눌리고, 고르면 시간표 대신 그 내용을 그린다.
+   * 내용은 AppShell의 dayTabSlots 한 곳에서 꽂는다
+   */
+  tabContent?: Partial<Record<SidebarItemType, ReactNode>>;
   /** 화면 아래를 가리는 높이 (모바일 빠른 추가 시트). 임시 블록이 그 위로 보이게 스크롤한다 (MO-12) */
   coverBottom?: number;
 }
@@ -59,7 +65,8 @@ const SIZE = {
  * - 빈 시간을 누르면 빠른 추가 + 점선 임시 블록 (US-10, D-017)
  * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23)는 각 스토리에서
  */
-export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft, onDraftChange, coverBottom = 0 }: CalendarDailyProps) {
+export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft, onDraftChange, coverBottom = 0, tabContent }: CalendarDailyProps) {
+  const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
@@ -96,6 +103,13 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
   const visibleDraft = draft?.date === viewDate ? draft : null;
   useRevealDraft(scrollRef, draftRef, visibleDraft, coverBottom);
 
+  const selectedTab = useAppSelector(selectMobileDayTab);
+  const enabledTabs = useMemo(() => new Set(Object.keys(tabContent ?? {}) as SidebarItemType[]), [tabContent]);
+  const tabs = buildMobileDayTabs(undefined, enabledTabs);
+  // 고른 탭에 내용이 없으면(PC·내용을 뺀 경우) 시간표
+  const activeTab: MobileDayTabKey = isMobile && selectedTab !== 'TIMETABLE' && tabContent?.[selectedTab] ? selectedTab : 'TIMETABLE';
+  const activeTabLabel = tabs.find((tab) => tab.key === activeTab)?.label ?? '';
+
   const nowMinutes = day.isToday ? nowLineMinutes(now, hours) : null;
   const gridColumns = { gridTemplateColumns: `${size.timeColumn}px minmax(0, 1fr)` };
 
@@ -108,15 +122,16 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
           data-swipe-ignore
           className="mb-2 flex shrink-0 gap-0.5 overflow-x-auto rounded-[10px] border border-tp-line bg-tp-panel p-[3px]"
         >
-          {buildMobileDayTabs().map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               role="tab"
-              aria-selected={tab.key === 'TIMETABLE'}
+              aria-selected={tab.key === activeTab}
               disabled={!tab.enabled}
+              onClick={() => dispatch(setMobileDayTab(tab.key))}
               className={`min-w-[64px] flex-1 shrink-0 whitespace-nowrap rounded-[7px] px-2.5 py-[7px] text-[13px] disabled:opacity-40 ${
-                tab.key === 'TIMETABLE' ? 'bg-tp-primary font-semibold text-tp-on-primary' : 'font-medium text-tp-text'
+                tab.key === activeTab ? 'bg-tp-primary font-semibold text-tp-on-primary' : 'font-medium text-tp-text'
               }`}
             >
               {tab.label}
@@ -127,58 +142,67 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
         <h2 className="mb-2 text-[15px] font-bold">시간표</h2>
       )}
 
-      {/* 맨 위 종일 줄 (US-08 AC, D-052: 3줄 + n) */}
-      <AllDayRow
-        dates={[viewDate]}
-        schedules={schedules}
-        categoriesById={categoriesById}
-        labelWidth={size.timeColumn}
-        labelClassName="justify-end pr-2 text-[11px] text-tp-muted"
-        paddingRight={scrollbarWidth}
-        minHeight={isMobile ? 26 : 32}
-        onOpen={onOpenSchedule}
-      />
+      {activeTab !== 'TIMETABLE' && (
+        <div role="tabpanel" aria-label={activeTabLabel} className="flex min-h-0 flex-1 flex-col">
+          {tabContent?.[activeTab]}
+        </div>
+      )}
 
-      {/* 시간표 */}
-      <div
-        ref={scrollRef}
-        data-testid="timetable-scroll"
-        onScroll={handleScroll}
-        className="min-h-0 flex-1 overflow-y-auto pt-2"
-        style={visibleDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
-      >
-        <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
-          <HourLabels
-            labels={hourLabels}
-            hourHeight={size.hourHeight}
-            width={size.timeColumn - 4}
-            className={`pr-2 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}
-          />
-          <div />
-          <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative" {...quickAdd.columnProps(viewDate)}>
-            <div className="relative h-full">
-              {layoutDayBlocks(schedules, viewDate, hours).map((layout) => (
-                <TimetableBlock
-                  key={layout.schedule.id}
-                  layout={layout}
-                  category={categoriesById.get(layout.schedule.categoryId) ?? null}
+      {/* 시간표 탭: 다른 탭을 보는 동안에도 숨겨 두기만 한다 (돌아왔을 때 보던 시간 그대로) */}
+      <div hidden={activeTab !== 'TIMETABLE'} className={`min-h-0 flex-1 flex-col ${activeTab === 'TIMETABLE' ? 'flex' : 'hidden'}`}>
+        {/* 맨 위 종일 줄 (US-08 AC, D-052: 3줄 + n) */}
+        <AllDayRow
+          dates={[viewDate]}
+          schedules={schedules}
+          categoriesById={categoriesById}
+          labelWidth={size.timeColumn}
+          labelClassName="justify-end pr-2 text-[11px] text-tp-muted"
+          paddingRight={scrollbarWidth}
+          minHeight={isMobile ? 26 : 32}
+          onOpen={onOpenSchedule}
+        />
+
+        {/* 시간표 */}
+        <div
+          ref={scrollRef}
+          data-testid="timetable-scroll"
+          onScroll={handleScroll}
+          className="min-h-0 flex-1 overflow-y-auto pt-2"
+          style={visibleDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
+        >
+          <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
+            <HourLabels
+              labels={hourLabels}
+              hourHeight={size.hourHeight}
+              width={size.timeColumn - 4}
+              className={`pr-2 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}
+            />
+            <div />
+            <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative" {...quickAdd.columnProps(viewDate)}>
+              <div className="relative h-full">
+                {layoutDayBlocks(schedules, viewDate, hours).map((layout) => (
+                  <TimetableBlock
+                    key={layout.schedule.id}
+                    layout={layout}
+                    category={categoriesById.get(layout.schedule.categoryId) ?? null}
+                    hourHeight={size.hourHeight}
+                    fontSize={size.fontSize}
+                    onOpen={onOpenSchedule}
+                    showDetail={!isMobile}
+                  />
+                ))}
+              </div>
+              {dayDraft && (
+                <DraftBlock
+                  ref={draftRef}
+                  draft={dayDraft.draft}
                   hourHeight={size.hourHeight}
                   fontSize={size.fontSize}
-                  onOpen={onOpenSchedule}
-                  showDetail={!isMobile}
+                  onGripDown={dayDraft.isAdjustable ? quickAdd.startDrag : undefined}
                 />
-              ))}
+              )}
+              {nowMinutes !== null && <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} />}
             </div>
-            {dayDraft && (
-              <DraftBlock
-                ref={draftRef}
-                draft={dayDraft.draft}
-                hourHeight={size.hourHeight}
-                fontSize={size.fontSize}
-                onGripDown={dayDraft.isAdjustable ? quickAdd.startDrag : undefined}
-              />
-            )}
-            {nowMinutes !== null && <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} />}
           </div>
         </div>
       </div>

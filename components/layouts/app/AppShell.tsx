@@ -15,6 +15,7 @@ import CategoryFilterDropdown from '@components/category/filter/CategoryFilterDr
 import CategoryFilterSheet from '@components/category/filter/CategoryFilterSheet';
 import ClientOnly from '@components/common/ClientOnly';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
+import { dayTabBehavior } from '@components/sidebar/sidebarItems';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
 import DiscardConfirm from '@components/dialog/DiscardConfirm';
 import QuickAddSchedule, { QUICK_ADD_SHEET_HEIGHT } from '@components/schedule/quick/QuickAddSchedule';
@@ -24,6 +25,7 @@ import {
   moveView,
   openDayView,
   selectCategoryFilter,
+  selectMobileDayTab,
   selectSelectedDate,
   selectViewDate,
   selectViewMode,
@@ -47,6 +49,7 @@ import SidebarSections from './SidebarSections';
 import PaperPlane from './PaperPlane';
 import { useHiddenSaveNotice } from './useHiddenSaveNotice';
 import { useQuickAddState } from './useQuickAddState';
+import { getDayTabSlots } from './dayTabSlots';
 
 /**
  * AppShell - 앱 화면 틀 + 달력 (US-01, US-06, D-018)
@@ -136,6 +139,18 @@ function AppShellContent() {
   /** 모바일은 달력을 좌우로 밀어 넘긴다 (D-025). PC·태블릿은 헤더 ‹ › */
   const swipe = useSwipe({ onPrev: () => move(-1), onNext: () => move(1) });
 
+  /** 모바일 일간 탭 (D-049, US-25 연결 지점): 탭 내용은 dayTabSlots, 탭별 동작은 dayTabBehavior */
+  const mobileDayTab = useAppSelector(selectMobileDayTab);
+  const dayTabSlots = getDayTabSlots();
+  const activeDayTab = !isTabletUp && viewMode === 'DAY' && mobileDayTab !== 'TIMETABLE' && dayTabSlots[mobileDayTab] ? mobileDayTab : 'TIMETABLE';
+  const tabBehavior = dayTabBehavior(activeDayTab);
+  const activeSlot = activeDayTab === 'TIMETABLE' ? undefined : dayTabSlots[activeDayTab];
+  /** + 를 누를 때마다 1씩 → 탭 내용이 새로 만들기를 연다 (directAddLabel이 있는 탭) */
+  const [tabAddRequest, setTabAddRequest] = useState(0);
+  const tabContent = Object.fromEntries(
+    Object.entries(dayTabSlots).map(([key, slot]) => [key, slot.render({ date: viewDate, addRequestKey: tabAddRequest })])
+  );
+
   const openDayPlan = (date: LocalDate) => {
     setSheetDate(null);
     dispatch(openDayView(date));
@@ -177,7 +192,7 @@ function AppShellContent() {
     ) : viewMode === 'WEEK' ? (
       <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} />
     ) : (
-      <CalendarDaily variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} />
+      <CalendarDaily variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} tabContent={tabContent} />
     );
 
   return (
@@ -198,13 +213,14 @@ function AppShellContent() {
         viewMode={viewMode}
         onChangeViewMode={changeViewMode}
         onToday={backToToday}
-        categoryFilter={!isTabletUp && <CategoryFilterSheet {...categoryFilterProps} />}
+        onMoveDay={tabBehavior.dateNav === 'arrows' ? move : undefined}
+        categoryFilter={!isTabletUp && tabBehavior.categoryFilter && <CategoryFilterSheet {...categoryFilterProps} />}
       />
 
       <div className="relative flex min-h-0 flex-1">
         <main
           className="flex min-w-0 flex-1 flex-col fold:w-[400px] fold:flex-none tablet:w-auto tablet:flex-1"
-          {...(isTabletUp ? {} : swipe.handlers)}
+          {...(isTabletUp || !tabBehavior.swipe ? {} : swipe.handlers)}
         >
           {/* 모바일 스와이프: 손가락을 따라 움직이는 층 (D-051) */}
           <div className="flex min-h-0 flex-1 flex-col" style={swipe.style} onTransitionEnd={swipe.onTransitionEnd}>
@@ -252,7 +268,11 @@ function AppShellContent() {
       )}
 
       {/* 모바일·폴드: 오른쪽 아래 + 버튼 → 추가 선택 (MO-07) */}
-      <MobileAddMenu className="tablet:hidden" onSelect={handleSelectAdd} />
+      <MobileAddMenu
+        className="tablet:hidden"
+        onSelect={handleSelectAdd}
+        directAdd={activeSlot?.directAddLabel ? { label: activeSlot.directAddLabel, onAdd: () => setTabAddRequest((n) => n + 1) } : null}
+      />
 
       {hiddenSave.flight && (
         <PaperPlane

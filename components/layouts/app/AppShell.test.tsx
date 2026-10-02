@@ -11,6 +11,7 @@ import { fetchCategories } from '@store/slices/categorySlice';
 import { makeStore } from '@store/store';
 
 import AppShell from './AppShell';
+import { setDayTabSlotsForTest } from './dayTabSlots';
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
@@ -462,5 +463,58 @@ describe('필터에서 빠진 카테고리로 저장 — 동작 줄이기·모�
     await user.click(screen.getByTestId('category-filter-backdrop'));
     expect(screen.queryByRole('dialog', { name: '카테고리 필터' })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: '빠른 추가' })).not.toBeInTheDocument();
+  });
+});
+
+describe('모바일 일간 탭 연결 (US-25 연결 지점, D-049)', () => {
+  // 메모는 시험 브랜치에서 붙인다. 여기서는 연결 지점을 가짜 탭 내용으로 확인한다
+  const TEST_SLOTS = {
+    MEMO: { render: ({ addRequestKey }: { addRequestKey: number }) => <p>메모 탭 (새 메모 요청 {addRequestKey})</p>, directAddLabel: '새 항목 쓰기' },
+    DIARY: { render: () => <p>일기 탭</p> },
+  };
+  const openDayOn = async (tab: 'MEMO' | 'DIARY') => {
+    const view = await setup(390);
+    act(() => {
+      view.store.dispatch(setViewMode('DAY'));
+    });
+    await view.user.click(within(screen.getByRole('tablist', { name: '일간 보기' })).getByRole('tab', { name: tab === 'MEMO' ? '메모' : '일기' }));
+    return view;
+  };
+  beforeEach(() => setDayTabSlotsForTest(TEST_SLOTS));
+  afterEach(() => setDayTabSlotsForTest(null));
+
+  it('메모 탭: 스와이프·카테고리 필터·< > 없음 (D-049)', async () => {
+    const { store } = await openDayOn('MEMO');
+    expect(screen.getByText(/메모 탭/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /카테고리 필터/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '이전 날' })).not.toBeInTheDocument();
+    const before = store.getState().calendar.viewDate;
+    fireEvent.touchStart(screen.getByRole('main'), { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(screen.getByRole('main'), { changedTouches: [{ clientX: 60, clientY: 300 }] });
+    expect(store.getState().calendar.viewDate).toBe(before);
+  });
+
+  it('메모 탭의 + 는 메뉴 없이 바로 새 메모 요청 (D-055)', async () => {
+    const { user } = await openDayOn('MEMO');
+    await user.click(screen.getByRole('button', { name: '새 항목 쓰기' }));
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByText('메모 탭 (새 메모 요청 1)')).toBeInTheDocument();
+  });
+
+  it('일기 탭: 머리 줄 < > 로 하루씩, 필터 없음 (D-049)', async () => {
+    const { user, store } = await openDayOn('DIARY');
+    expect(screen.queryByRole('button', { name: /카테고리 필터/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다음 날' }));
+    expect(store.getState().calendar.viewDate).toBe('2026-09-26');
+    await user.click(screen.getByRole('button', { name: '이전 날' }));
+    expect(store.getState().calendar.viewDate).toBe('2026-09-25');
+  });
+
+  it('시간표 탭으로 돌아오면 + 는 다시 추가 메뉴', async () => {
+    const { user } = await openDayOn('MEMO');
+    await user.click(within(screen.getByRole('tablist', { name: '일간 보기' })).getByRole('tab', { name: '시간표' }));
+    expect(screen.queryByRole('button', { name: '새 항목 쓰기' })).not.toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: '추가' }).at(-1)!); // jsdom은 PC 헤더 '추가'도 그림 → 마지막이 모바일 +
+    expect(screen.getByRole('menu', { name: '추가할 항목' })).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { LocalDate } from '@/types/api';
-import type { CalendarViewMode, CategoryFilter } from '@/types/calendar';
+import type { CalendarViewMode, CategoryFilter, MobileDayTabKey } from '@/types/calendar';
 
 import { shiftDate, toLocalDate, type DateStepUnit } from '@utils/date/dateUtils';
 
@@ -24,6 +24,8 @@ interface CalendarState {
   timetableScrollReset: number;
   /** 카테고리 필터 (US-11). 월·주·일 공통, 보기를 바꿔도 그대로. 새로 고치면 전체로 */
   categoryFilter: CategoryFilter;
+  /** 모바일 일간에서 고른 탭 (D-049). 일간을 떠나거나 날짜를 두 번 눌러 들어오면 시간표로 */
+  mobileDayTab: MobileDayTabKey;
 }
 
 /** 보기별 날짜 이동 단위 (US-09, D-025) */
@@ -39,6 +41,7 @@ const initialState = (): CalendarState => {
     timetableTopMinutes: null,
     timetableScrollReset: 0,
     categoryFilter: null,
+    mobileDayTab: 'TIMETABLE',
   };
 };
 
@@ -49,6 +52,7 @@ const calendarSlice = createSlice({
     /** 보기 전환: 고른 날짜가 들어 있는 달·주·날을 본다 (US-07) */
     setViewMode(state, action: PayloadAction<CalendarViewMode>) {
       if (state.viewMode === 'MONTH' || action.payload === 'MONTH') state.timetableTopMinutes = null;
+      if (action.payload !== 'DAY') state.mobileDayTab = 'TIMETABLE';
       state.viewMode = action.payload;
       state.viewDate = state.selectedDate;
     },
@@ -58,6 +62,7 @@ const calendarSlice = createSlice({
     /** 날짜를 두 번 눌렀을 때: 그날 일간으로 (D-015) */
     openDayView(state, action: PayloadAction<LocalDate>) {
       if (state.viewMode === 'MONTH') state.timetableTopMinutes = null;
+      state.mobileDayTab = 'TIMETABLE';
       state.selectedDate = action.payload;
       state.viewDate = action.payload;
       state.viewMode = 'DAY';
@@ -86,15 +91,19 @@ const calendarSlice = createSlice({
     setCategoryFilter(state, action: PayloadAction<CategoryFilter>) {
       state.categoryFilter = action.payload;
     },
+    setMobileDayTab(state, action: PayloadAction<MobileDayTabKey>) {
+      state.mobileDayTab = action.payload;
+    },
   },
 });
 
-export const { setViewMode, selectDate, openDayView, moveView, goToday, setTimetableTopMinutes, setCategoryFilter } = calendarSlice.actions;
+export const { setViewMode, selectDate, openDayView, moveView, goToday, setTimetableTopMinutes, setCategoryFilter, setMobileDayTab } = calendarSlice.actions;
 
 export const selectViewMode = (state: { calendar: CalendarState }) => state.calendar.viewMode;
 export const selectViewDate = (state: { calendar: CalendarState }) => state.calendar.viewDate;
 export const selectSelectedDate = (state: { calendar: CalendarState }) => state.calendar.selectedDate;
 
 export const selectCategoryFilter = (state: { calendar: CalendarState }) => state.calendar.categoryFilter;
+export const selectMobileDayTab = (state: { calendar: CalendarState }) => state.calendar.mobileDayTab;
 export default calendarSlice.reducer;
 export const selectTimetableScrollReset = (state: { calendar: CalendarState }) => state.calendar.timetableScrollReset;
