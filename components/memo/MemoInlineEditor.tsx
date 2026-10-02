@@ -1,6 +1,6 @@
 "use client";
 
-import type { FocusEvent } from 'react';
+import { forwardRef, useImperativeHandle, type FocusEvent } from 'react';
 
 import type { Id, Memo } from '@/types/api';
 
@@ -14,14 +14,24 @@ interface MemoInlineEditorProps {
   onDeleted: (id: Id) => void;
 }
 
+export interface MemoInlineEditorHandle {
+  /** 남은 변경 저장(모두 비었으면 삭제). 성공하면 true → 접어도 된다 (D-058) */
+  finish: () => Promise<boolean>;
+}
+
 const INLINE_INPUT_CLASS = 'w-full rounded-md border border-tp-line bg-white px-2 py-1.5 text-[13px] text-ink outline-none focus:ring-2 focus:ring-tp-theme2';
 
 /**
- * MemoInlineEditor - 사이드바에서 펼친 메모의 제목·내용 칸 (D-057)
- * 자동 저장은 useMemoAutosave. 칸 밖을 누르면 바로 저장한다.
+ * MemoInlineEditor - 사이드바에서 펼친 메모의 제목·내용 칸 (D-057, D-058)
+ * 자동 저장은 useMemoAutosave. 칸 밖을 누르면 바로 저장하고, 실패하면 '저장 못 했어요'.
  */
-export default function MemoInlineEditor({ memo, onSaved, onDeleted }: MemoInlineEditorProps) {
-  const { values, setField, saveNow } = useMemoAutosave({ memo, onSaved, onDeleted });
+const MemoInlineEditor = forwardRef<MemoInlineEditorHandle, MemoInlineEditorProps>(function MemoInlineEditor(
+  { memo, onSaved, onDeleted },
+  ref
+) {
+  const { values, errorMessage, setField, saveNow, finish } = useMemoAutosave({ memo, onSaved, onDeleted });
+
+  useImperativeHandle(ref, () => ({ finish }), [finish]);
 
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
@@ -48,6 +58,13 @@ export default function MemoInlineEditor({ memo, onSaved, onDeleted }: MemoInlin
         rows={4}
         className={`${INLINE_INPUT_CLASS} resize-y leading-relaxed`}
       />
+      {errorMessage && (
+        <p role="alert" className="text-xs text-danger">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
-}
+});
+
+export default MemoInlineEditor;

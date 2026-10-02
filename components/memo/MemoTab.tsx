@@ -57,7 +57,12 @@ export default function MemoTab({ newMemoRequestKey }: MemoTabProps) {
     <div className="flex flex-col gap-2.5 p-3">
       <ul aria-label="메모 목록" className="flex flex-col gap-2.5">
         {memos.map((memo) => (
-          <SwipeDeleteItem key={memo.id} onDelete={() => void handleSwipeDelete(memo.id)} isDeleting={deletingId === memo.id}>
+          <SwipeDeleteItem
+            key={memo.id}
+            onDelete={() => void handleSwipeDelete(memo.id)}
+            deleteLabel={`${getMemoHeading(memo)} 삭제`}
+            isDeleting={deletingId === memo.id}
+          >
             {({ isRevealed, close }) => (
               <MemoCard memo={memo} now={now} onOpen={() => (isRevealed ? close() : setEditing({ memo }))} />
             )}

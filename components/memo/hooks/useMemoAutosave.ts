@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Id, Memo } from '@/types/api';
 
 import { memoApi } from '@utils/api';
-import { useErrorNotice } from '@utils/hooks/useErrorNotice';
 
 import {
   MEMO_AUTOSAVE_DELAY_MS,
@@ -17,25 +16,36 @@ import {
 } from '../utils/memoUtils';
 
 interface UseMemoAutosaveOptions {
+  /** 펼칠 때의 메모. 펼칠 때마다 새로 시작하므로(접으면 이 훅을 쓰는 부품이 사라짐) 최신 메모로 시작한다 */
   memo: Memo;
   onSaved: (memo: Memo) => void;
   onDeleted: (id: Id) => void;
 }
 
+/** 실패 안내 (D-058) */
+export const AUTOSAVE_FAILED_MESSAGE = '저장 못 했어요';
+
 /**
  * 사이드바에서 펼친 메모를 그 자리에서 고치는 상태 — 이 자리만 자동 저장 (D-057, D-030의 예외)
  *
- * - 입력이 1초 멈추면 바뀐 칸만 PATCH. `saveNow()`(다른 곳을 누를 때)는 바로 저장
+ * - 입력이 1초 멈추면 바뀐 칸만 PATCH. `saveNow()`(칸 밖을 누를 때)는 바로 저장
  * - 제목·내용이 모두 빈 동안에는 저장하지 않는다
- * - 접으면(이 훅을 쓰는 부품이 사라지면) 남은 변경을 저장하고, 모두 비어 있으면 그 메모를 삭제 (확인 없음)
+ * - `finish()`(접기·메모 창 열기): 남은 변경을 저장하고, 모두 비었으면 그 메모를 삭제 (확인 없음).
+ *   성공하면 true → 부르는 쪽이 접는다. 실패하면 false → 펼친 채 '저장 못 했어요' (D-058)
+ * - 저장·삭제는 한 줄로 차례대로 보낸다: 앞 요청이 끝나야 다음 요청을 보내고,
+ *   보낼 값은 보낼 때 다시 계산한다 → 늦게 온 옛 응답이 기준을 덮거나, 삭제 뒤에 저장이 가는 일이 없다 (D-058)
+ * - 비운 채 사이드바가 사라지면(언마운트) 접은 것과 같이 삭제, 고친 채 사라지면 저장 (D-058)
  */
 export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOptions) => {
-  const notifyError = useErrorNotice();
   const [values, setValues] = useState<MemoFormValues>(() => memoToFormValues(memo));
-  /** 화면 값과 같지만 타이머·정리 함수에서 최신 값을 읽으려고 둔다 */
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  /** 화면 값과 같지만 타이머·줄 선 요청·정리 함수에서 최신 값을 읽으려고 둔다 */
   const valuesRef = useRef(values);
-  /** 서버에 저장됐다고 보는 값 (보내는 중인 값 포함 → 같은 변경을 두 번 보내지 않음) */
+  /** 서버에 저장된 값 (줄 선 요청만 고친다) */
   const savedRef = useRef<Memo>(memo);
+  const isDeletedRef = useRef(false);
+  /** 저장·삭제 요청 줄. 앞 요청이 끝난 뒤 이어 붙인다 */
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const timerRef = useRef<number | null>(null);
   const callbacksRef = useRef({ onSaved, onDeleted });
   callbacksRef.current = { onSaved, onDeleted };
@@ -45,23 +55,59 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
     timerRef.current = null;
   };
 
-  const saveNow = useCallback(async () => {
-    clearTimer();
+  const enqueue = useCallback(<T>(task: () => Promise<T>): Promise<T> => {
+    const run = queueRef.current.then(task, task);
+    queueRef.current = run.catch(() => undefined);
+    return run;
+  }, []);
+
+  /** 줄 안에서만 부른다. 보낼 것이 없거나 성공하면 true */
+  const saveInQueue = useCallback(async (): Promise<boolean> => {
     const current = valuesRef.current;
-    if (isMemoEmpty(current)) return;
-    const before = savedRef.current;
-    const patch = toMemoUpdateRequest(before, current);
-    if (Object.keys(patch).length === 0) return;
-    savedRef.current = { ...before, ...patch };
-    try {
-      const saved = await memoApi.update(before.id, patch);
-      savedRef.current = saved;
-      callbacksRef.current.onSaved(saved);
-    } catch (error) {
-      savedRef.current = before;
-      notifyError(error);
+    if (isDeletedRef.current || isMemoEmpty(current)) return true;
+    const patch = toMemoUpdateRequest(savedRef.current, current);
+    if (Object.keys(patch).length === 0) {
+      setErrorMessage(null);
+      return true;
     }
-  }, [notifyError]);
+    try {
+      const saved = await memoApi.update(savedRef.current.id, patch);
+      if (isDeletedRef.current) return true;
+      savedRef.current = saved;
+      setErrorMessage(null);
+      callbacksRef.current.onSaved(saved);
+      return true;
+    } catch {
+      setErrorMessage(AUTOSAVE_FAILED_MESSAGE);
+      return false;
+    }
+  }, []);
+
+  /** 줄 안에서만 부른다. 모두 비었으면 삭제, 아니면 저장 */
+  const finishInQueue = useCallback(async (): Promise<boolean> => {
+    if (isDeletedRef.current) return true;
+    if (!isMemoEmpty(valuesRef.current)) return saveInQueue();
+    const { id } = savedRef.current;
+    try {
+      await memoApi.remove(id);
+      isDeletedRef.current = true;
+      callbacksRef.current.onDeleted(id);
+      return true;
+    } catch {
+      setErrorMessage('지우지 못했어요');
+      return false;
+    }
+  }, [saveInQueue]);
+
+  const saveNow = useCallback(() => {
+    clearTimer();
+    return enqueue(saveInQueue);
+  }, [enqueue, saveInQueue]);
+
+  const finish = useCallback(() => {
+    clearTimer();
+    return enqueue(finishInQueue);
+  }, [enqueue, finishInQueue]);
 
   const setField = useCallback(
     (field: MemoFormField, value: string) => {
@@ -74,24 +120,8 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
     [saveNow]
   );
 
-  // 접을 때: 모두 비었으면 삭제, 아니면 남은 변경 저장
-  useEffect(() => {
-    const finish = async () => {
-      clearTimer();
-      if (!isMemoEmpty(valuesRef.current)) {
-        await saveNow();
-        return;
-      }
-      const { id } = savedRef.current;
-      try {
-        await memoApi.remove(id);
-        callbacksRef.current.onDeleted(id);
-      } catch (error) {
-        notifyError(error);
-      }
-    };
-    return () => void finish();
-  }, [notifyError, saveNow]);
+  // 사이드바가 사라지면 접은 것과 같이 (D-058). 이미 접었으면 보낼 것이 없어 요청이 없다
+  useEffect(() => () => void finish(), [finish]);
 
-  return { values, setField, saveNow };
+  return { values, errorMessage, setField, saveNow, finish };
 };

@@ -11,7 +11,7 @@ export const memoApi = {
   /** 추가. 제목·내용이 모두 비면 400 VALIDATION_FAILED (D-032) */
   create: (body: MemoRequest) => apiClient.post<Memo>('/memos', body),
 
-  /** 수정 (JSON Merge Patch). 저장 버튼으로만, 자동 저장 없음 (D-030) */
+  /** 수정 (JSON Merge Patch). 메모 창·모바일은 저장 버튼으로만 (D-030), 사이드바 자리만 자동 저장 (D-057) */
   update: (id: Id, body: MemoRequest) => apiClient.patch<Memo>(`/memos/${id}`, body),
 
   remove: (id: Id) => apiClient.delete(`/memos/${id}`),

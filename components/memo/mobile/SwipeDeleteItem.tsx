@@ -11,6 +11,8 @@ const HORIZONTAL_RATIO = 1.5;
 
 interface SwipeDeleteItemProps {
   onDelete: () => void;
+  /** 삭제 버튼 이름 (예: '읽을 책 목록 삭제') */
+  deleteLabel: string;
   isDeleting?: boolean;
   /** 카드 (밀린 상태에서 누르면 원래 자리로) */
   children: (props: { isRevealed: boolean; close: () => void }) => ReactNode;
@@ -20,7 +22,7 @@ interface SwipeDeleteItemProps {
  * SwipeDeleteItem - 왼쪽으로 밀면 오른쪽에 '삭제' 버튼이 드러나는 목록 줄 (MO-14, D-030 · D-055)
  * 오른쪽으로 밀면 다시 들어간다. 날짜 넘기기 스와이프와 겹치지 않게 data-swipe-ignore.
  */
-export default function SwipeDeleteItem({ onDelete, isDeleting = false, children }: SwipeDeleteItemProps) {
+export default function SwipeDeleteItem({ onDelete, deleteLabel, isDeleting = false, children }: SwipeDeleteItemProps) {
   const start = useRef<{ x: number; y: number } | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -52,6 +54,7 @@ export default function SwipeDeleteItem({ onDelete, isDeleting = false, children
         <button
           type="button"
           onClick={onDelete}
+          aria-label={deleteLabel}
           disabled={isDeleting}
           className="absolute inset-y-0 right-0 flex items-center justify-center bg-danger text-sm font-semibold text-white disabled:opacity-60"
           style={{ width: DELETE_BUTTON_WIDTH }}
