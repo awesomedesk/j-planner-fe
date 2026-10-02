@@ -25,6 +25,7 @@ const setup = async (width: number) => {
     'GET /schedules': () => json(200, SEED_SCHEDULES),
     'GET /categories': () => json(200, CATEGORIES),
     'POST /schedules': (req) => json(201, { id: 90, ...(req.body as object) }),
+    'POST /todos': (req) => json(201, { id: 91, completed: false, completedAt: null, sortOrder: 1, overdue: false, ...(req.body as object) }),
     'PATCH /schedules/:id': (req) => json(200, { ...SEED_SCHEDULES.find((x) => `/schedules/${x.id}` === req.path), ...(req.body as object) }),
   });
   const store = makeStore();
@@ -530,5 +531,27 @@ describe('모바일 일간 탭 연결 (US-25 연결 지점, D-049)', () => {
     expect(screen.queryByRole('button', { name: '새 항목 쓰기' })).not.toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: '추가' }).at(-1)!); // jsdom은 PC 헤더 '추가'도 그림 → 마지막이 모바일 +
     expect(screen.getByRole('menu', { name: '추가할 항목' })).toBeInTheDocument();
+  });
+});
+
+describe('추가 → Todo (US-12)', () => {
+  it('PC: 추가 > Todo → 고른 날짜로 Todo 추가 창, 저장하면 닫힌다', async () => {
+    const { user, api } = await setup(1440);
+    await user.click(screen.getByRole('button', { name: '9월 23일 (수)' }));
+    await user.click(screen.getAllByRole('button', { name: '추가' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Todo' }));
+    const dialog = screen.getByRole('dialog', { name: 'Todo 추가' });
+    expect(within(dialog).getByLabelText('날짜')).toHaveValue('2026-09-23');
+    await user.type(within(dialog).getByRole('textbox', { name: '제목' }), '장보기');
+    await user.click(within(dialog).getAllByRole('button', { name: '저장' })[0]);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Todo 추가' })).not.toBeInTheDocument());
+    expect(api.calls('POST /todos')[0].body).toMatchObject({ title: '장보기', type: 'DAY', startDate: '2026-09-23' });
+  });
+
+  it('모바일: + > Todo', async () => {
+    const { user } = await setup(390);
+    await user.click(screen.getAllByRole('button', { name: '추가' }).at(-1)!);
+    await user.click(screen.getByRole('menuitem', { name: 'Todo 추가' }));
+    expect(screen.getByRole('dialog', { name: 'Todo 추가' })).toBeInTheDocument();
   });
 });

@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useId, useRef } from 'react';
-import type { ReactNode } from 'react';
 
 import type { Category, Id, Schedule } from '@/types/api';
 import ThemeButton from '@components/button/ThemeButton';
 import DialogFrame, { useDialogRequestClose } from '@components/dialog/DialogFrame';
+import CategorySelect from '@components/form/CategorySelect';
+import { ColorPicker, Field, FieldError, LaterFeature } from '@components/form/FormParts';
+import { INPUT_CLASS } from '@components/form/formStyles';
 
 import { useScheduleForm, type ScheduleFormTarget } from '../hooks/useScheduleForm';
 import { SCHEDULE_COLOR_OPTIONS, TITLE_MAX_LENGTH, URL_MAX_LENGTH } from '../utils/scheduleFormUtils';
 
-import CategorySelect from './CategorySelect';
-import { SCHEDULE_INPUT_CLASS } from './formStyles';
 
 export interface ScheduleFormDialogProps {
   /** 새 일정(고른 날짜, 시간표에서 누른 시각) 또는 수정할 일정 */
@@ -22,8 +22,6 @@ export interface ScheduleFormDialogProps {
   onSaved?: (schedule: Schedule) => void;
   onDeleted?: (id: Id) => void;
 }
-
-const INPUT_CLASS = SCHEDULE_INPUT_CLASS;
 
 /**
  * ScheduleFormDialog - 일정 추가·수정 창
@@ -150,22 +148,7 @@ export default function ScheduleFormDialog({ target, categories, onClose, onSave
           />
         </Field>
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-[13px] font-semibold">일정 색</legend>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <ColorSwatch label="색 선택 안 함 (테마 기본색)" color={null} selected={values.color === null} onSelect={() => form.setField('color', null)} />
-            {SCHEDULE_COLOR_OPTIONS.map((color) => (
-              <ColorSwatch
-                key={color}
-                label={`색 ${color}`}
-                color={color}
-                selected={values.color?.toUpperCase() === color}
-                onSelect={() => form.setField('color', color)}
-              />
-            ))}
-          </div>
-          <FieldError message={errors.color} />
-        </fieldset>
+        <ColorPicker legend="일정 색" options={SCHEDULE_COLOR_OPTIONS} value={values.color} onChange={(color) => form.setField('color', color)} error={errors.color} />
 
         <Field label="장소" htmlFor="schedule-location" error={errors.locationName}>
           <input
@@ -256,70 +239,5 @@ function ScheduleFormFooter({ formId, form }: { formId: string; form: ScheduleFo
         </ThemeButton>
       </div>
     </>
-  );
-}
-
-interface FieldProps {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  children: ReactNode;
-}
-
-function Field({ label, htmlFor, error, children }: FieldProps) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-[13px] font-semibold">
-        {label}
-      </label>
-      {children}
-      <FieldError id={`${htmlFor}-error`} message={error} />
-    </div>
-  );
-}
-
-function FieldError({ id, message }: { id?: string; message?: string }) {
-  if (!message) return null;
-  return (
-    <p id={id} className="text-xs text-danger">
-      {message}
-    </p>
-  );
-}
-
-interface ColorSwatchProps {
-  label: string;
-  /** null = 선택 안 함 (테마 Theme2) */
-  color: string | null;
-  selected: boolean;
-  onSelect: () => void;
-}
-
-function ColorSwatch({ label, color, selected, onSelect }: ColorSwatchProps) {
-  const ringColor = color ?? 'var(--tp-theme1)';
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={selected}
-      onClick={onSelect}
-      className={`h-6 w-6 rounded-full ${color ? '' : 'border border-dashed border-tp-muted bg-white'}`}
-      style={{
-        backgroundColor: color ?? undefined,
-        boxShadow: selected ? `0 0 0 2px #FFFFFF, 0 0 0 4px ${ringColor}` : undefined,
-      }}
-    />
-  );
-}
-
-function LaterFeature({ label }: { label: string }) {
-  return (
-    <div
-      className="flex items-center justify-between rounded-lg border border-dashed border-tp-line px-3 py-2.5 text-[13px] text-tp-muted"
-      aria-disabled="true"
-    >
-      <span>{label}</span>
-      <span className="rounded-full border border-tp-line bg-tp-panel px-2 py-0.5 text-[11px]">첫 배포 이후</span>
-    </div>
   );
 }

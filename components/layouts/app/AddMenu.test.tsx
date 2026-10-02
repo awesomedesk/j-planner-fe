@@ -16,12 +16,12 @@ describe('PC·태블릿 헤더 추가 (PC-01 ④, TAB-01)', () => {
     expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['일정', 'Todo', 'D-Day']);
   });
 
-  it('Todo·D-Day는 아직 흐리게 막아 둔다 (D-040)', async () => {
+  it('Todo는 열림(US-12), D-Day는 아직 흐리게 막아 둔다 (D-040)', async () => {
     const user = userEvent.setup();
     render(<PcAddMenu onSelect={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: '추가' }));
     expect(screen.getByRole('menuitem', { name: '일정' })).toBeEnabled();
-    expect(screen.getByRole('menuitem', { name: 'Todo' })).toBeDisabled();
+    expect(screen.getByRole('menuitem', { name: 'Todo' })).toBeEnabled();
     expect(screen.getByRole('menuitem', { name: 'D-Day' })).toBeDisabled();
   });
 
@@ -54,7 +54,7 @@ describe('모바일 + 버튼 (MO-07, D-021)', () => {
     render(<MobileAddMenu onSelect={onSelect} />);
     await user.click(screen.getByRole('button', { name: '추가' }));
     expect(screen.getByRole('button', { name: '추가 닫기' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Todo 추가' })).toBeDisabled();
+    expect(screen.getByRole('menuitem', { name: 'Todo 추가' })).toBeEnabled();
     expect(screen.getByRole('menuitem', { name: 'D-Day 추가' })).toBeDisabled();
     await user.click(screen.getByRole('menuitem', { name: '일정 추가' }));
     expect(onSelect).toHaveBeenCalledWith('SCHEDULE');

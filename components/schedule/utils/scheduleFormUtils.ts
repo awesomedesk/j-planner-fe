@@ -9,6 +9,8 @@ import type {
 } from '@/types/api';
 import { ITEM_COLOR_OPTIONS } from '@components/theme/itemColorOptions';
 
+import { nextTopOfHour } from '@utils/date/dateUtils';
+
 /**
  * 일정 입력 창(OV-01, MO-08)의 폼 값 ⇄ API 변환·검사
  *
@@ -78,14 +80,7 @@ const fromMinutes = (minutes: number) => {
 
 // ---------------------------------------------------------------- 초기값
 
-/**
- * '지금 이후 가장 가까운 정각' (D-037). 정각이면 그 시각. 14:17 → 15:00
- * @returns 시(0~24). 24면 다음 날 00:00
- */
-export const nextTopOfHour = (now: Date) => {
-  const isExactHour = now.getMinutes() === 0 && now.getSeconds() === 0 && now.getMilliseconds() === 0;
-  return isExactHour ? now.getHours() : now.getHours() + 1;
-};
+export { nextTopOfHour };
 
 /**
  * 새 일정의 초기값 (D-037)

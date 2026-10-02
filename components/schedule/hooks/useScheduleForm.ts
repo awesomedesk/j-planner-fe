@@ -4,6 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { Id, LocalDate, Schedule } from '@/types/api';
 
+import { toFormErrors } from '@components/form/serverErrors';
+
 import { isApiError, scheduleApi } from '@utils/api';
 import {
   API_FIELD_TO_FORM_FIELD,
@@ -83,23 +85,9 @@ export const useScheduleForm = ({ target, onSaved, onDeleted }: UseScheduleFormO
   }, []);
 
   const applyServerError = useCallback((error: unknown) => {
-    if (!isApiError(error)) {
-      setFormError('저장하지 못했어요. 잠시 후 다시 시도하세요.');
-      return;
-    }
-    if (error.code === 'VALIDATION_FAILED' && error.errors.length > 0) {
-      const next: ScheduleFormErrors = {};
-      const unknownMessages: string[] = [];
-      error.errors.forEach(({ field, message }) => {
-        const formField = API_FIELD_TO_FORM_FIELD[field] ?? API_FIELD_TO_FORM_FIELD[field.split('.')[0]];
-        if (formField) next[formField] = message;
-        else unknownMessages.push(message);
-      });
-      setErrors(next);
-      setFormError(unknownMessages.length > 0 ? unknownMessages.join('\n') : null);
-      return;
-    }
-    setFormError(error.message);
+    const next = toFormErrors(error, API_FIELD_TO_FORM_FIELD);
+    setErrors(next.errors);
+    setFormError(next.formError);
   }, []);
 
   const handleSubmit = useCallback(async () => {

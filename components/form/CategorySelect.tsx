@@ -16,7 +16,7 @@ interface CategorySelectProps {
 
 /**
  * CategorySelect - 색 점이 붙은 카테고리 고르기
- * 일정 입력 창(OV-01)과 빠른 추가(US-10)가 같이 쓴다.
+ * 일정·Todo 입력 창(OV-01·02)과 빠른 추가(US-10)가 같이 쓴다.
  */
 export default function CategorySelect({ id, ariaLabel, categories, value, onChange, className = '' }: CategorySelectProps) {
   const defaultCategory = categories.find((c) => c.isDefault) ?? null;

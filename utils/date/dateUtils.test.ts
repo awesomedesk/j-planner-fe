@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatClock, formatDayTitle, formatShortDay, formatMonthTitle, fromLocalDate, shiftDate, toLocalDate, weekStartsOn } from './dateUtils';
+import { formatClock, formatDayTitle, formatShortDay, monthRangeOf, weekRangeOf, formatMonthTitle, fromLocalDate, shiftDate, toLocalDate, weekStartsOn } from './dateUtils';
 
 describe('날짜 기본 도구', () => {
   it('LocalDate ↔ Date (시간대 변환 없이, D-040)', () => {
@@ -32,5 +32,16 @@ describe('날짜 옮기기 (US-09)', () => {
     expect(shiftDate('2026-09-25', 'month', 1)).toBe('2026-10-25');
     expect(shiftDate('2027-01-31', 'month', 1)).toBe('2027-02-28');
     expect(shiftDate('2026-01-15', 'month', -1)).toBe('2025-12-15');
+  });
+});
+
+describe('주·달 범위 (Todo 주간·월간 목표, 08-api-design 5절)', () => {
+  it('그 날이 들어 있는 주: 주 시작 요일 기준 7일 (D-041)', () => {
+    expect(weekRangeOf('2026-09-24', 'SUN')).toEqual({ from: '2026-09-20', to: '2026-09-26' });
+    expect(weekRangeOf('2026-09-20', 'MON')).toEqual({ from: '2026-09-14', to: '2026-09-20' });
+  });
+  it('그 날이 들어 있는 달: 1일 ~ 말일 (윤년 2월 포함)', () => {
+    expect(monthRangeOf('2026-09-24')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    expect(monthRangeOf('2028-02-10')).toEqual({ from: '2028-02-01', to: '2028-02-29' });
   });
 });

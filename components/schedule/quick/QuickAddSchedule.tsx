@@ -6,13 +6,13 @@ import type { CSSProperties, MouseEvent } from 'react';
 import type { Category, LocalDate, Schedule } from '@/types/api';
 import ThemeButton from '@components/button/ThemeButton';
 import DiscardConfirm from '@components/dialog/DiscardConfirm';
+import CategorySelect from '@components/form/CategorySelect';
+import { INPUT_CLASS } from '@components/form/formStyles';
 import Icon from '@components/icons/LineIcon';
 
 import { formatShortDay } from '@utils/date/dateUtils';
 import { placePopover, type Rect } from '@utils/dom/placement';
 
-import CategorySelect from '../form/CategorySelect';
-import { SCHEDULE_INPUT_CLASS } from '../form/formStyles';
 import { useScheduleForm } from '../hooks/useScheduleForm';
 import { TITLE_MAX_LENGTH, type ScheduleFormValues } from '../utils/scheduleFormUtils';
 
@@ -51,7 +51,7 @@ export const QUICK_ADD_POPOVER_WIDTH = 340;
 export const QUICK_ADD_SHEET_HEIGHT = 300;
 const POPOVER_HEIGHT_ESTIMATE = 300;
 /** 좁은 자리라 시계 아이콘은 숨긴다 (눌러서 바로 입력) */
-const TIME_INPUT_CLASS = `${SCHEDULE_INPUT_CLASS} min-w-0 flex-1 px-2 [&::-webkit-calendar-picker-indicator]:hidden`;
+const TIME_INPUT_CLASS = `${INPUT_CLASS} min-w-0 flex-1 px-2 [&::-webkit-calendar-picker-indicator]:hidden`;
 
 const usePopoverStyle = (variant: QuickAddScheduleProps['variant'], anchor: Rect | undefined) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -202,7 +202,7 @@ export default function QuickAddSchedule({
               maxLength={TITLE_MAX_LENGTH}
               onChange={(e) => form.setField('title', e.target.value)}
               aria-invalid={Boolean(errors.title)}
-              className={SCHEDULE_INPUT_CLASS}
+              className={INPUT_CLASS}
             />
             <FieldError message={errors.title} />
           </div>

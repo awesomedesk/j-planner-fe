@@ -67,7 +67,9 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   `categoryId` (server-side filter); `[]` skips the request. UI: `components/category/filter/` (PC dropdown applies at once, mobile sheet on '적용').
   Saving into a filtered-out category (D-056): `layouts/app/useHiddenSaveNotice` → `PaperPlane` (save button `[data-save-button]` →
   `[data-category-filter-button]`) → `reveal` prop → `useFilterReveal` (auto open, marked row, 0.4s guard, auto close).
-- **Features**: `components/category/` (US-04), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
+- **Shared form parts**: `components/form/` — `CategorySelect`, `FormParts` (`Field`, `FieldError`, `ColorPicker`, `LaterFeature`),
+  `formStyles` (`INPUT_CLASS`), `serverErrors` (`toFormErrors`: VALIDATION_FAILED → per-field errors). Used by schedule and todo forms.
+- **Features**: `components/category/` (US-04), `components/todo/` (US-12 form: `TodoFormDialog`, `useTodoForm`, `todoFormUtils`), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
   AppShell owns the quick-add state and passes `draft` to the timetable). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
 - **Dev pages**: `app/dev/*` — for checking features before the real entry points exist. Remove them when the feature is wired into real screens.

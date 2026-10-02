@@ -16,6 +16,8 @@ import CategoryFilterSheet from '@components/category/filter/CategoryFilterSheet
 import ClientOnly from '@components/common/ClientOnly';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import { dayTabBehavior } from '@components/sidebar/sidebarItems';
+import TodoFormDialog from '@components/todo/form/TodoFormDialog';
+import type { TodoFormTarget } from '@components/todo/hooks/useTodoForm';
 import type { ScheduleFormTarget } from '@components/schedule/hooks/useScheduleForm';
 import DiscardConfirm from '@components/dialog/DiscardConfirm';
 import QuickAddSchedule, { QUICK_ADD_SHEET_HEIGHT } from '@components/schedule/quick/QuickAddSchedule';
@@ -92,6 +94,8 @@ function AppShellContent() {
   const [sheetDate, setSheetDate] = useState<LocalDate | null>(null);
   /** 열려 있는 일정 입력 창 (US-05) */
   const [scheduleFormTarget, setScheduleFormTarget] = useState<ScheduleFormTarget | null>(null);
+  /** 열려 있는 Todo 입력 창 (US-12). 수정은 Todo 박스(US-13)에서 연다 */
+  const [todoFormTarget, setTodoFormTarget] = useState<TodoFormTarget | null>(null);
   /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
@@ -102,6 +106,7 @@ function AppShellContent() {
   /** 추가 메뉴에서 고른 항목 열기. 기준 날짜 = 고른 날짜 (D-015) */
   const handleSelectAdd = (target: AddTarget) => {
     if (target === 'SCHEDULE') setScheduleFormTarget({ mode: 'create', baseDate: selectedDate });
+    if (target === 'TODO') setTodoFormTarget({ mode: 'create', baseDate: selectedDate });
   };
   const openSchedule = (schedule: Schedule) => setScheduleFormTarget({ mode: 'edit', schedule });
   const closeScheduleForm = (changed: boolean) => {
@@ -308,6 +313,16 @@ function AppShellContent() {
       )}
       {/* 입력 중에 다른 빈 시간을 눌렀을 때 (D-053 Q7) */}
       {quickAdd.pendingSlot && <DiscardConfirm onKeepEditing={quickAdd.keepEditing} onDiscard={quickAdd.discardAndMove} />}
+
+      {todoFormTarget && (
+        <TodoFormDialog
+          target={todoFormTarget}
+          categories={categories}
+          onClose={() => setTodoFormTarget(null)}
+          onSaved={() => setTodoFormTarget(null)}
+          onDeleted={() => setTodoFormTarget(null)}
+        />
+      )}
 
       {scheduleFormTarget && (
         <ScheduleFormDialog
