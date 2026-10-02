@@ -5,7 +5,8 @@ import type { FocusEvent } from 'react';
 import type { Id, Memo } from '@/types/api';
 
 import { useMemoAutosave } from './hooks/useMemoAutosave';
-import { MEMO_TITLE_MAX_LENGTH, shouldShowTitleCounter } from './utils/memoUtils';
+import MemoTitleCounter from './MemoTitleCounter';
+import { MEMO_TITLE_MAX_LENGTH } from './utils/memoUtils';
 
 interface MemoInlineEditorProps {
   memo: Memo;
@@ -38,11 +39,7 @@ export default function MemoInlineEditor({ memo, onSaved, onDeleted }: MemoInlin
         onChange={(event) => setField('title', event.target.value)}
         className={`${INLINE_INPUT_CLASS} font-semibold`}
       />
-      {shouldShowTitleCounter(values.title) && (
-        <span className="self-end text-[11px] text-tp-muted">
-          {values.title.length}/{MEMO_TITLE_MAX_LENGTH}
-        </span>
-      )}
+      <MemoTitleCounter title={values.title} className="self-end text-[11px]" />
       <textarea
         aria-label="메모 내용"
         placeholder="내용"

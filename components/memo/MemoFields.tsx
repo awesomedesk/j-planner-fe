@@ -5,7 +5,8 @@ import type { ReactNode } from 'react';
 import { useNow } from '@utils/hooks/useNow';
 
 import type { MemoForm } from './hooks/useMemoForm';
-import { MEMO_TITLE_MAX_LENGTH, formatMemoDate, shouldShowTitleCounter } from './utils/memoUtils';
+import MemoTitleCounter from './MemoTitleCounter';
+import { MEMO_TITLE_MAX_LENGTH, formatMemoDate } from './utils/memoUtils';
 
 const MEMO_INPUT_CLASS =
   'w-full rounded-lg border border-tp-line bg-white px-3 py-2.5 text-ink outline-none focus:ring-2 focus:ring-tp-theme2 aria-[invalid=true]:border-danger';
@@ -49,11 +50,7 @@ export default function MemoFields({ formId, form, footerAction }: MemoFieldsPro
         />
         <div id={`${formId}-title-help`} className="flex justify-between gap-2 text-xs">
           <span className="text-danger">{errors.title}</span>
-          {shouldShowTitleCounter(values.title) && (
-            <span className="shrink-0 text-tp-muted">
-              {values.title.length}/{MEMO_TITLE_MAX_LENGTH}
-            </span>
-          )}
+          <MemoTitleCounter title={values.title} />
         </div>
       </div>
 
