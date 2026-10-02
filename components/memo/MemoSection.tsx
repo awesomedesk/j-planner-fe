@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 
 import type { Id } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
@@ -18,7 +18,12 @@ import { getMemoHeading, pickEarliestCreatedMemos } from './utils/memoUtils';
  * - 누르면 그 자리에서 펼쳐 바로 고친다 — 이 자리만 자동 저장, 모두 비운 채 접으면 삭제 (D-057)
  * - 접기·다른 메모 펼치기·메모 창 열기 전에 펼친 메모를 저장한다. 저장에 실패하면 펼친 채 둔다 (D-058)
  */
-export default function MemoSection() {
+interface MemoSectionProps {
+  /** 사이드바가 주는 섹션 머리. header(actions) = 기본 머리 + 오른쪽 actions. 없으면 버튼 줄만 그린다 (테스트·단독 확인용) */
+  header?: (actions?: ReactNode) => ReactNode;
+}
+
+export default function MemoSection({ header }: MemoSectionProps) {
   const { memos, isLoaded, reload, upsertMemo, removeMemo } = useMemos();
   const [dialogStart, setDialogStart] = useState<MemoDialogStart | null>(null);
   const [expandedId, setExpandedId] = useState<Id | null>(null);
@@ -45,28 +50,33 @@ export default function MemoSection() {
 
   const sidebarMemos = pickEarliestCreatedMemos(memos);
 
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-end gap-1">
-        {isLoaded && (
-          <button
-            type="button"
-            aria-label={`메모 ${memos.length}개 모두 보기`}
-            onClick={() => void openDialog('list')}
-            className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-tp-muted hover:underline"
-          >
-            {memos.length}개
-          </button>
-        )}
+  /** 섹션 머리 오른쪽 위: 'n개' → 메모 창, + → 메모 창에서 새 메모 (D-055) */
+  const headerActions = (
+    <>
+      {isLoaded && (
         <button
           type="button"
-          aria-label="새 메모"
-          onClick={() => void openDialog('new')}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-tp-text hover:bg-tp-secondary"
+          aria-label={`메모 ${memos.length}개 모두 보기`}
+          onClick={() => void openDialog('list')}
+          className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-tp-muted hover:underline"
         >
-          <Icon name="plus" size={15} />
+          {memos.length}개
         </button>
-      </div>
+      )}
+      <button
+        type="button"
+        aria-label="새 메모"
+        onClick={() => void openDialog('new')}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-tp-text hover:bg-tp-secondary"
+      >
+        <Icon name="plus" size={15} />
+      </button>
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-2">
+      {header ? header(headerActions) : <div className="flex items-center justify-end gap-1">{headerActions}</div>}
 
       <ul aria-label="사이드바 메모" className="flex flex-col gap-1.5">
         {sidebarMemos.map((memo) => {

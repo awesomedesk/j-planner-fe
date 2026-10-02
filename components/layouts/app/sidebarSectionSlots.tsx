@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { SidebarItemType } from '@/types/calendar';
+import MemoSection from '@components/memo/MemoSection';
 
 /**
  * 사이드바 섹션 내용 (PC 사이드바 · 폴드 오른쪽 패널 공통, D-013)
@@ -10,4 +11,6 @@ import type { SidebarItemType } from '@/types/calendar';
 export type SidebarSectionSlot = (props: { header: (actions?: ReactNode) => ReactNode }) => ReactNode;
 
 /** 기능을 만들 때 여기에 한 줄씩 꽂는다 (Todo M2, D-Day·일기·메모 M3) */
-export const SIDEBAR_SECTION_SLOTS: Partial<Record<SidebarItemType, SidebarSectionSlot>> = {};
+export const SIDEBAR_SECTION_SLOTS: Partial<Record<SidebarItemType, SidebarSectionSlot>> = {
+  MEMO: ({ header }) => <MemoSection header={header} />,
+};
