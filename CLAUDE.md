@@ -58,7 +58,11 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
     (week/day all-day row: spanning bars, 3 lanes + '+n', `layoutAllDayRow`, D-052), `DayListPopover`, `NowLine`, `HourLabels`.
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
-- **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs (D-049).
+- **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).
+- **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
+  `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)
+  and `components/layouts/app/sidebarSectionSlots.tsx` (sidebar/fold panel section; draw the head with `header(actions)`).
+  Selected tab: store `calendar.mobileDayTab`.
 - **Category filter** (US-11): `calendar.categoryFilter` in the store (`null` = 전체, `[]` = nothing). `useScheduleRange` adds it as
   `categoryId` (server-side filter); `[]` skips the request. UI: `components/category/filter/` (PC dropdown applies at once, mobile sheet on '적용').
   Saving into a filtered-out category (D-056): `layouts/app/useHiddenSaveNotice` → `PaperPlane` (save button `[data-save-button]` →
