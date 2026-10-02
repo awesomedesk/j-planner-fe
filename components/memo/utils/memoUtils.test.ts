@@ -20,7 +20,7 @@ import {
 } from './memoUtils';
 
 describe('메모 규칙 (US-25)', () => {
-  it('제목은 255자까지 (08-api-design 8절)', () => {
+  it('제목은 255자까지 (US-25, 08-api-design 8절)', () => {
     expect(MEMO_TITLE_MAX_LENGTH).toBe(255);
   });
 
@@ -42,14 +42,14 @@ describe('메모 규칙 (US-25)', () => {
     expect(toMemoCreateRequest({ title: '제목', content: ' \n ' })).toEqual({ title: '제목', content: null });
   });
 
-  it('수정은 바뀐 칸만 보낸다 (Merge Patch)', () => {
+  it('수정은 바뀐 칸만 보낸다 (US-25, Merge Patch)', () => {
     expect(toMemoUpdateRequest(BOOKS, { title: '읽을 책', content: BOOKS.content ?? '' })).toEqual({ title: '읽을 책' });
     expect(toMemoUpdateRequest(BOOKS, { title: '읽을 책 목록', content: '- 데미안' })).toEqual({ content: '- 데미안' });
     expect(toMemoUpdateRequest(BOOKS, { title: ' 읽을 책 목록 ', content: BOOKS.content ?? '' })).toEqual({});
     expect(toMemoUpdateRequest(LAST_YEAR, { title: '', content: '새 내용' })).toEqual({ title: null, content: '새 내용' });
   });
 
-  it('메모를 입력 값으로 (null → 빈 칸)', () => {
+  it('메모를 입력 값으로 null → 빈 칸 (US-25)', () => {
     expect(memoToFormValues(UNTITLED)).toEqual({ title: '', content: '플래너 위젯 아이디어\n주간 회고 템플릿' });
     expect(memoToFormValues(null)).toEqual({ title: '', content: '' });
   });
@@ -66,7 +66,7 @@ describe('메모 목록 순서', () => {
     expect(sortMemosByRecentUpdate([LAST_YEAR, TRAVEL, BOOKS, same, UNTITLED]).map((m) => m.id)).toEqual([1, 9, 2, 3, 4]);
   });
 
-  it('메모 창에서 지운 뒤에는 남은 맨 위 메모, 없으면 새 메모', () => {
+  it('메모 창에서 지운 뒤에는 남은 맨 위 메모, 없으면 새 메모 (D-057)', () => {
     expect(pickMemoAfterDelete(MEMOS, 1)).toBe(TRAVEL);
     expect(pickMemoAfterDelete(MEMOS, 2)).toBe(BOOKS);
     expect(pickMemoAfterDelete([BOOKS], 1)).toBeNull();
@@ -87,7 +87,7 @@ describe('메모 표시', () => {
     expect(getMemoHeading(memo({ id: 5, title: null, content: '\n  첫 줄  \n둘째 줄' }))).toBe('첫 줄');
   });
 
-  it('미리보기: 내용을 한 줄로. 첫 줄을 제목으로 썼으면 그 다음부터', () => {
+  it('미리보기: 내용을 한 줄로. 첫 줄을 제목으로 썼으면 그 다음부터 (D-055)', () => {
     expect(getMemoPreview(BOOKS)).toBe('- 데미안 - 코스모스');
     expect(getMemoPreview(UNTITLED)).toBe('주간 회고 템플릿');
     expect(getMemoPreview(LAST_YEAR)).toBe('');
@@ -101,7 +101,7 @@ describe('메모 표시', () => {
 });
 
 describe('사이드바 펼친 내용 (D-055)', () => {
-  it('제목이 있으면 내용 전체, 제목 없으면 첫 줄(제목 자리) 다음부터', () => {
+  it('제목이 있으면 내용 전체, 제목 없으면 첫 줄(제목 자리) 다음부터 (D-055)', () => {
     expect(getMemoBody(BOOKS)).toBe('- 데미안\n- 코스모스');
     expect(getMemoBody(UNTITLED)).toBe('주간 회고 템플릿');
     expect(getMemoBody(LAST_YEAR)).toBe('');

@@ -105,7 +105,7 @@ describe('모바일 메모 편집 MO-15 (US-25)', () => {
     expect(api.all()).toHaveLength(0);
   });
 
-  it('새 메모에는 삭제 버튼이 없다', () => {
+  it('새 메모에는 삭제 버튼이 없다 (US-25)', () => {
     open(null);
     expect(screen.queryByRole('button', { name: '메모 삭제' })).not.toBeInTheDocument();
   });

@@ -171,7 +171,7 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(onChanged).toHaveBeenCalled();
   });
 
-  it('삭제 확인 중 취소하면 지우지 않는다', async () => {
+  it('삭제 확인 중 취소하면 지우지 않는다 (D-055)', async () => {
     const { api, user } = open('list');
     await waitFor(() => expect(titleInput()).toHaveValue('읽을 책 목록'));
     await user.click(screen.getByRole('button', { name: '삭제' }));
@@ -180,7 +180,7 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(api.calls('DELETE /memos/:id')).toHaveLength(0);
   });
 
-  it('새 메모에는 삭제 버튼이 없다', async () => {
+  it('새 메모에는 삭제 버튼이 없다 (US-25)', async () => {
     open('new');
     await waitFor(() => expect(listTexts()).toHaveLength(4));
     expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();

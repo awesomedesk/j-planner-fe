@@ -101,7 +101,7 @@ describe('모바일 일간 메모 탭 MO-14 (US-25)', () => {
     expect(cards()).toHaveLength(4);
   });
 
-  it('새 메모를 저장하면 목록 맨 위에 생긴다', async () => {
+  it('새 메모를 저장하면 목록 맨 위에 생긴다 (US-25, D-029)', async () => {
     const { user } = mountTab(1);
     await waitFor(() => expect(cards()).toHaveLength(4));
     await user.type(screen.getByRole('textbox', { name: '메모 제목' }), '장보기');
@@ -114,7 +114,7 @@ describe('모바일 일간 메모 탭 MO-14 (US-25)', () => {
     const { api, user } = mountTab();
     await waitFor(() => expect(cards()).toHaveLength(4));
     swipe(cards()[0], -120);
-    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(screen.getByRole('button', { name: '읽을 책 목록 삭제' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     await waitFor(() => expect(api.calls('DELETE /memos/:id')).toHaveLength(1));
     await waitFor(() => expect(cards()).toHaveLength(3));
@@ -129,29 +129,29 @@ describe('모바일 일간 메모 탭 MO-14 (US-25)', () => {
   it('카드를 왼쪽으로 밀면 삭제 버튼, 누르면 삭제 (D-055, D-030)', async () => {
     const { api, user } = mountTab();
     await waitFor(() => expect(cards()).toHaveLength(4));
-    expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /삭제$/ })).not.toBeInTheDocument();
     swipe(cards()[1], -120);
-    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(screen.getByRole('button', { name: '여행 준비물 삭제' }));
     await waitFor(() => expect(cards()).toHaveLength(3));
     expect(api.calls('DELETE /memos/:id')[0].path).toBe('/memos/2');
     expect(cardTexts().join()).not.toContain('여행 준비물');
   });
 
-  it('조금만 밀거나 오른쪽으로 밀면 삭제 버튼이 나오지 않는다', async () => {
+  it('조금만 밀거나 오른쪽으로 밀면 삭제 버튼이 나오지 않는다 (D-030)', async () => {
     mountTab();
     await waitFor(() => expect(cards()).toHaveLength(4));
     swipe(cards()[1], -20);
-    expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /삭제$/ })).not.toBeInTheDocument();
     swipe(cards()[1], 120);
-    expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /삭제$/ })).not.toBeInTheDocument();
   });
 
-  it('밀어서 나온 삭제 버튼은 다시 오른쪽으로 밀면 들어간다', async () => {
+  it('밀어서 나온 삭제 버튼은 다시 오른쪽으로 밀면 들어간다 (D-030)', async () => {
     mountTab();
     await waitFor(() => expect(cards()).toHaveLength(4));
     swipe(cards()[1], -120);
-    expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /삭제$/ })).toBeInTheDocument();
     swipe(cards()[1], 120);
-    expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /삭제$/ })).not.toBeInTheDocument();
   });
 });
