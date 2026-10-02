@@ -10,6 +10,7 @@ import Icon from '@components/icons/LineIcon';
 
 import { useMemoForm, type MemoForm } from './hooks/useMemoForm';
 import { useMemos } from './hooks/useMemos';
+import EmptyMemoMessage from './EmptyMemoMessage';
 import MemoDeleteButtons from './MemoDeleteButtons';
 import MemoFields from './MemoFields';
 import { getMemoHeading, getMemoPreview, pickMemoAfterDelete } from './utils/memoUtils';
@@ -99,6 +100,7 @@ export default function MemoDialog({ startWith, onClose, onChanged }: MemoDialog
               </li>
             ))}
           </ul>
+          {isLoaded && memos.length === 0 && <EmptyMemoMessage />}
           <button
             type="button"
             onClick={() => requestSelect(null)}

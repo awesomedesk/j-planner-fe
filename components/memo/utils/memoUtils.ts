@@ -5,6 +5,15 @@ import type { LocalDateTime, Memo, MemoRequest } from '@/types/api';
 /** 제목 최대 길이 (08-api-design 8절, 넘으면 400) */
 export const MEMO_TITLE_MAX_LENGTH = 255;
 
+/** 제목 글자 수 'n/255'를 보이기 시작하는 길이 (D-057) */
+export const MEMO_TITLE_COUNTER_FROM = 230;
+
+/** 빈 목록 안내 (D-057) */
+export const EMPTY_MEMO_MESSAGE = '아직 메모가 없어요';
+
+/** 사이드바 펼친 메모 자동 저장: 입력이 이만큼 멈추면 저장 (D-057) */
+export const MEMO_AUTOSAVE_DELAY_MS = 1000;
+
 /** PC 사이드바 메모 섹션에 보이는 개수 (D-055) */
 export const SIDEBAR_MEMO_COUNT = 3;
 
@@ -28,6 +37,9 @@ const normalizeContent = (content: string): string | null => (content.trim() ? c
 /** 제목·내용이 모두 비었는지 (공백만 있는 것도 빈 것). 빈 메모는 저장할 수 없다 (US-25 AC, D-032) */
 export const isMemoEmpty = (values: MemoFormValues): boolean =>
   normalizeTitle(values.title) === null && normalizeContent(values.content) === null;
+
+/** 제목 글자 수를 보일지 (230자부터, D-057) */
+export const shouldShowTitleCounter = (title: string): boolean => title.length >= MEMO_TITLE_COUNTER_FROM;
 
 export const memoToFormValues = (memo: Memo | null): MemoFormValues => ({
   title: memo?.title ?? '',

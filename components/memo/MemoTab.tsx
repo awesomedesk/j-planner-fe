@@ -8,6 +8,7 @@ import { memoApi } from '@utils/api';
 import { useErrorNotice } from '@utils/hooks/useErrorNotice';
 import { useNow } from '@utils/hooks/useNow';
 
+import EmptyMemoMessage from './EmptyMemoMessage';
 import { useMemos } from './hooks/useMemos';
 import MemoEditor from './mobile/MemoEditor';
 import SwipeDeleteItem from './mobile/SwipeDeleteItem';
@@ -27,12 +28,12 @@ type EditingMemo = { memo: Memo | null } | null;
 /**
  * MemoTab - 모바일 일간 '메모' 탭 내용 (MO-14, D-049)
  * 카드 목록(최근 수정 순, D-029). 누르면 메모 편집(MO-15), 저장하면 탭으로 돌아온다.
- * 카드를 왼쪽으로 밀면 삭제 (D-030 · D-055). 검색 없음 (D-030).
+ * 카드를 왼쪽으로 밀면 삭제 버튼, 누르면 확인 없이 바로 삭제 (D-030 · D-055 · D-057). 검색 없음 (D-030).
  */
 export default function MemoTab({ newMemoRequestKey }: MemoTabProps) {
   const now = useNow();
   const notifyError = useErrorNotice();
-  const { memos, upsertMemo, removeMemo } = useMemos();
+  const { memos, isLoaded, upsertMemo, removeMemo } = useMemos();
   const [editing, setEditing] = useState<EditingMemo>(null);
   const [deletingId, setDeletingId] = useState<Id | null>(null);
 
@@ -63,6 +64,7 @@ export default function MemoTab({ newMemoRequestKey }: MemoTabProps) {
           </SwipeDeleteItem>
         ))}
       </ul>
+      {isLoaded && memos.length === 0 && <EmptyMemoMessage />}
 
       {editing && (
         <MemoEditor

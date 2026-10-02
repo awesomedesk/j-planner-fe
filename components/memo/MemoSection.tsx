@@ -6,16 +6,19 @@ import type { Id } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { useMemos } from './hooks/useMemos';
+import EmptyMemoMessage from './EmptyMemoMessage';
 import MemoDialog, { type MemoDialogStart } from './MemoDialog';
-import { getMemoBody, getMemoHeading, pickEarliestCreatedMemos } from './utils/memoUtils';
+import MemoInlineEditor from './MemoInlineEditor';
+import { getMemoHeading, pickEarliestCreatedMemos } from './utils/memoUtils';
 
 /**
  * MemoSection - PC 사이드바 '메모' 섹션 내용 (D-055)
  * - 오른쪽 위 'n개'(전체 개수) → 메모 창(OV-06), + → 메모 창에서 새 메모
- * - 가장 먼저 만든 메모 3개 (createdAt 순). 긴 메모는 폭만큼 자르고, 누르면 그 자리에서 펼쳐 내용 전체 (편집은 메모 창)
+ * - 가장 먼저 만든 메모 3개 (createdAt 순). 긴 메모는 폭만큼 자른다
+ * - 누르면 그 자리에서 펼쳐 바로 고친다 — 이 자리만 자동 저장, 모두 비운 채 접으면 삭제 (D-057)
  */
 export default function MemoSection() {
-  const { memos, isLoaded, reload } = useMemos();
+  const { memos, isLoaded, reload, upsertMemo, removeMemo } = useMemos();
   const [dialogStart, setDialogStart] = useState<MemoDialogStart | null>(null);
   const [expandedId, setExpandedId] = useState<Id | null>(null);
 
@@ -46,7 +49,6 @@ export default function MemoSection() {
       <ul aria-label="사이드바 메모" className="flex flex-col gap-1.5">
         {sidebarMemos.map((memo) => {
           const isExpanded = expandedId === memo.id;
-          const body = getMemoBody(memo);
           return (
             <li key={memo.id} className="rounded-lg border border-tp-line bg-tp-bg">
               <button
@@ -57,11 +59,12 @@ export default function MemoSection() {
               >
                 {getMemoHeading(memo)}
               </button>
-              {isExpanded && body && <p className="whitespace-pre-wrap break-words px-2.5 pb-2.5 text-[13px] text-tp-text">{body}</p>}
+              {isExpanded && <MemoInlineEditor memo={memo} onSaved={upsertMemo} onDeleted={removeMemo} />}
             </li>
           );
         })}
       </ul>
+      {isLoaded && memos.length === 0 && <EmptyMemoMessage />}
 
       {dialogStart && <MemoDialog startWith={dialogStart} onClose={() => setDialogStart(null)} onChanged={() => void reload()} />}
     </div>
