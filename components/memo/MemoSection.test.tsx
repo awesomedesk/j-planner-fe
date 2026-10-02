@@ -6,6 +6,8 @@ import { MEMOS } from '@/test/memoFixtures';
 import { json, mockApi, problem } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 
+import { selectNotices } from '@store/slices/noticeSlice';
+
 import MemoSection from './MemoSection';
 
 const NOW = '2026-10-01T10:00:00';
@@ -21,6 +23,8 @@ interface SectionServerOptions {
   patchGates?: Promise<void>[];
   /** true를 돌려주면 PATCH가 500 */
   shouldPatchFail?: () => boolean;
+  /** true를 돌려주면 DELETE가 500 */
+  shouldDeleteFail?: () => boolean;
 }
 
 /** 밖에서 풀어 주는 Promise */
@@ -30,7 +34,10 @@ const deferred = () => {
   return { promise, resolve };
 };
 
-const mountSection = (initialMemos: Memo[] = MEMOS, { patchGates = [], shouldPatchFail = () => false }: SectionServerOptions = {}) => {
+const mountSection = (
+  initialMemos: Memo[] = MEMOS,
+  { patchGates = [], shouldPatchFail = () => false, shouldDeleteFail = () => false }: SectionServerOptions = {}
+) => {
   let serverMemos: Memo[] = [...initialMemos];
   const idOf = (path: string) => Number(path.split('/').pop());
   const api = mockApi({
@@ -45,6 +52,7 @@ const mountSection = (initialMemos: Memo[] = MEMOS, { patchGates = [], shouldPat
       return json(200, updated);
     },
     'DELETE /memos/:id': (req) => {
+      if (shouldDeleteFail()) return problem(500, 'INTERNAL_ERROR', '서버 오류');
       serverMemos = serverMemos.filter((m) => m.id !== idOf(req.path));
       return json(204);
     },
@@ -336,5 +344,36 @@ describe('사이드바 펼친 메모 자리 수정 보완 (US-25, D-058)', () =>
     unmount();
     await waitFor(() => expect(api.calls('PATCH /memos/:id')).toHaveLength(1));
     expect(api.calls('PATCH /memos/:id')[0].body).toEqual({ title: '여행 준비물!' });
+  });
+
+  it("사이드바가 사라질 때 저장에 실패하면 화면 아래 안내 '저장 못 했어요' (D-058)", async () => {
+    const { api, user, unmount, store } = mountSection(MEMOS, { shouldPatchFail: () => true });
+    await waitFor(() => expect(items()).toHaveLength(3));
+    await user.click(items()[2]);
+    fireEvent.change(titleBox(), { target: { value: '여행 준비물!' } });
+    unmount();
+    await waitFor(() => expect(api.calls('PATCH /memos/:id')).toHaveLength(1));
+    await waitFor(() => expect(selectNotices(store.getState()).map((notice) => notice.message)).toContain('저장 못 했어요'));
+  });
+
+  it("사이드바가 사라질 때 비운 메모 삭제에 실패하면 화면 아래 안내 '지우지 못했어요' (D-058)", async () => {
+    const { api, user, unmount, store } = mountSection(MEMOS, { shouldDeleteFail: () => true });
+    await waitFor(() => expect(items()).toHaveLength(3));
+    await user.click(items()[2]);
+    await user.clear(titleBox());
+    await user.clear(within(sectionList()).getByRole('textbox', { name: '메모 내용' }));
+    unmount();
+    await waitFor(() => expect(api.calls('DELETE /memos/:id')).toHaveLength(1));
+    await waitFor(() => expect(selectNotices(store.getState()).map((notice) => notice.message)).toContain('지우지 못했어요'));
+  });
+
+  it('펼친 채 저장에 실패하면 칸 안 한 줄만, 화면 아래 안내는 없다 (D-058)', async () => {
+    const { user, store } = mountSection(MEMOS, { shouldPatchFail: () => true });
+    await waitFor(() => expect(items()).toHaveLength(3));
+    await user.click(items()[2]);
+    await user.type(titleBox(), '!');
+    await user.click(items()[2]);
+    expect(await screen.findByText('저장 못 했어요')).toBeInTheDocument();
+    expect(selectNotices(store.getState())).toHaveLength(0);
   });
 });
