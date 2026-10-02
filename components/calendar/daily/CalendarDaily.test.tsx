@@ -76,7 +76,7 @@ describe('일간 시간표 (US-08, PC-03)', () => {
   it('맨 위 종일 줄: 여러 날 종일 일정 포함, 시간표에는 없음 (US-08 AC)', async () => {
     await setup();
     const allDay = screen.getByRole('region', { name: '종일' });
-    expect(await within(allDay).findByRole('button', { name: '3일 출장' })).toBeInTheDocument();
+    expect(await within(allDay).findByRole('button', { name: '3일 출장 (2/3일)' })).toBeInTheDocument();
     expect(within(timetable()).queryByRole('button', { name: /3일 출장/ })).not.toBeInTheDocument();
   });
 
@@ -341,5 +341,20 @@ describe('모바일 일간 탭 내용 (US-25 연결 지점, D-049)', () => {
     expect(store.getState().calendar.mobileDayTab).toBe('MEMO');
     await user.click(within(tabs).getByRole('tab', { name: '시간표' }));
     expect(screen.getByRole('group', { name: /시간표$/ })).toBeInTheDocument();
+  });
+});
+
+describe('일간 종일 줄의 여러 날 일정 — 몇째 날 (D-052 보완)', () => {
+  it("제목 뒤에 '(2/3일)', '+n' 목록에도 같게", async () => {
+    const TRIP = schedule({ id: 80, title: '출장', allDay: true, start: '2026-09-24T00:00:00', end: '2026-09-26T23:59:59' });
+    const MANY = [1, 2, 3].map((n) =>
+      schedule({ id: 80 + n, title: `종일 ${n}`, allDay: true, start: '2026-09-25T00:00:00', end: '2026-09-25T23:59:59' })
+    );
+    const { user } = await setup('pc', '2026-09-25', [TRIP, ...MANY]);
+    const row = screen.getByRole('region', { name: '종일' });
+    expect(await within(row).findByRole('button', { name: '출장 (2/3일)' })).toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: '종일 1 (1/1일)' })).not.toBeInTheDocument(); // 하루짜리는 안 붙임
+    await user.click(within(row).getByRole('button', { name: /종일 일정 1개 더 보기/ }));
+    expect(within(screen.getByRole('dialog', { name: '9월 25일 (금) 종일' })).getByRole('button', { name: '출장 (2/3일)' })).toBeInTheDocument();
   });
 });

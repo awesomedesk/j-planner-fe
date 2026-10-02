@@ -315,7 +315,8 @@ function AppShellContent() {
           categories={categories}
           onClose={() => closeScheduleForm(false)}
           onSaved={(schedule) => {
-            if (scheduleFormTarget.mode === 'create') hiddenSave.notify(schedule);
+            // 새 일정이든 수정이든, 필터에서 빠진 카테고리로 저장하면 알린다 (D-056 보완)
+            hiddenSave.notify(schedule);
             closeScheduleForm(true);
           }}
           onDeleted={() => closeScheduleForm(true)}

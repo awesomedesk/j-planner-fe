@@ -7,6 +7,7 @@ import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 
 import { formatDayTitle } from '@utils/date/dateUtils';
 
+import { multiDayProgress } from '../utils/calendarUtils';
 import { allDaySchedulesOn, layoutAllDayRow } from '../utils/timetableUtils';
 
 import AllDayChip from './AllDayChip';
@@ -49,6 +50,12 @@ export default function AllDayRow({
   onOpen,
 }: AllDayRowProps) {
   const [openDate, setOpenDate] = useState<LocalDate | null>(null);
+  /** 일간(하루)에서는 여러 날 일정에 '(2/3일)'. 주간 이어진 막대에는 붙이지 않는다 (D-052 보완) */
+  const suffixOf = (schedule: Schedule, date: LocalDate) => {
+    if (dates.length !== 1) return undefined;
+    const progress = multiDayProgress(schedule, date);
+    return progress ? `(${progress.nth}/${progress.total}일)` : undefined;
+  };
   const { bars, hidden, laneCount } = layoutAllDayRow(schedules, dates);
   const rowCount = Math.max(laneCount, 1) + (hidden.some(Boolean) ? 1 : 0);
   const style: CSSProperties = {
@@ -80,6 +87,7 @@ export default function AllDayRow({
           compact={compact}
           continuesBefore={bar.continuesBefore}
           continuesAfter={bar.continuesAfter}
+          suffix={suffixOf(bar.schedule, dates[bar.startCol])}
           onOpen={onOpen}
           style={{
             gridColumn: `${bar.startCol + 2} / span ${bar.span}`,
@@ -111,6 +119,7 @@ export default function AllDayRow({
                     key={schedule.id}
                     schedule={schedule}
                     category={categoriesById.get(schedule.categoryId)}
+                    suffix={suffixOf(schedule, dates[index])}
                     onOpen={(target) => {
                       setOpenDate(null);
                       onOpen(target);

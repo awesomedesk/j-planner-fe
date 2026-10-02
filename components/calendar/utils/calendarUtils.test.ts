@@ -7,6 +7,7 @@ import {
   LIGHT_TEXT,
   barTimeLabel,
   buildMonthGrid,
+  multiDayProgress,
   getGridRange,
   getWeekdayLabels,
   listTimeLabel,
@@ -120,5 +121,18 @@ describe('요일 글자색 (월간·모바일 주간)', () => {
     expect(weekdayTextClass(0)).toBe('text-sunday');
     expect(weekdayTextClass(6)).toBe('text-saturday');
     expect(weekdayTextClass(3)).toBeNull();
+  });
+});
+
+describe('여러 날 일정의 몇째 날 (D-052 보완)', () => {
+  const trip = schedule({ id: 1, allDay: true, start: '2026-09-24T00:00:00', end: '2026-09-26T23:59:59' });
+  it('2/3일, 하루짜리는 null', () => {
+    expect(multiDayProgress(trip, '2026-09-24')).toEqual({ nth: 1, total: 3 });
+    expect(multiDayProgress(trip, '2026-09-25')).toEqual({ nth: 2, total: 3 });
+    expect(multiDayProgress(schedule({ id: 2, allDay: true, start: '2026-09-24T00:00:00', end: '2026-09-24T23:59:59' }), '2026-09-24')).toBeNull();
+  });
+  it('달을 넘겨도 날짜로 센다 (9/30~10/2 → 10/1은 2/3일)', () => {
+    const s = schedule({ id: 3, allDay: true, start: '2026-09-30T00:00:00', end: '2026-10-02T23:59:59' });
+    expect(multiDayProgress(s, '2026-10-01')).toEqual({ nth: 2, total: 3 });
   });
 });

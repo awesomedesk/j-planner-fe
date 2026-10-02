@@ -81,6 +81,16 @@ export const lastDateOf = (schedule: Schedule) => {
 
 export const isMultiDay = (schedule: Schedule) => lastDateOf(schedule) > startDateOf(schedule);
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const daysBetween = (from: LocalDate, to: LocalDate) => Math.round((fromLocalDate(to).getTime() - fromLocalDate(from).getTime()) / DAY_MS);
+
+/** 여러 날 일정에서 그날이 몇째 날인지 (일간 종일 줄 '(2/3일)', D-052 보완). 하루짜리면 null */
+export const multiDayProgress = (schedule: Schedule, date: LocalDate) => {
+  if (!isMultiDay(schedule)) return null;
+  const start = startDateOf(schedule);
+  return { nth: daysBetween(start, date) + 1, total: daysBetween(start, lastDateOf(schedule)) + 1 };
+};
+
 export const occursOn = (schedule: Schedule, date: LocalDate) => startDateOf(schedule) <= date && date <= lastDateOf(schedule);
 
 /**

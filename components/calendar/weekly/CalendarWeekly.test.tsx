@@ -82,7 +82,7 @@ describe('주간 시간표 (US-07, PC-02)', () => {
 
     it('여러 날 종일 일정은 이어진 막대 하나, 제목은 한 번 (22~24일 = 4~6열)', async () => {
       await setup('pc', undefined, [TRIP]);
-      const bars = await within(allDayRow()).findAllByRole('button', { name: '출장' });
+      const bars = await within(allDayRow()).findAllByRole('button', { name: '출장' }); // 주간 이어진 막대에는 '(n/m일)' 없음
       expect(bars).toHaveLength(1);
       expect(bars[0].style.gridColumn).toBe('4 / span 3');
       expect(within(column('9월 23일 (수)')).queryByRole('button', { name: /출장/ })).not.toBeInTheDocument();

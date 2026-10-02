@@ -25,6 +25,7 @@ const setup = async (width: number) => {
     'GET /schedules': () => json(200, SEED_SCHEDULES),
     'GET /categories': () => json(200, CATEGORIES),
     'POST /schedules': (req) => json(201, { id: 90, ...(req.body as object) }),
+    'PATCH /schedules/:id': (req) => json(200, { ...SEED_SCHEDULES.find((x) => `/schedules/${x.id}` === req.path), ...(req.body as object) }),
   });
   const store = makeStore();
   await store.dispatch(fetchCategories());
@@ -423,6 +424,19 @@ describe('필터에서 빠진 카테고리로 저장 (US-11, D-056)', () => {
     await user.click(screen.getByRole('menuitem', { name: '일정' }));
     const dialog = screen.getByRole('dialog', { name: '일정 추가' });
     await user.type(within(dialog).getByRole('textbox', { name: '제목' }), '운동 가기');
+    await user.selectOptions(within(dialog).getByRole('combobox', { name: '카테고리' }), '운동');
+    await user.click(within(dialog).getAllByRole('button', { name: '저장' })[0]);
+    const panel = await screen.findByRole('dialog', { name: '카테고리 선택' });
+    expect(within(panel).getByRole('checkbox', { name: '운동' }).closest('label')).toHaveAttribute('data-marked');
+  });
+
+  it('기존 일정을 수정해 빠진 카테고리로 바꿔 저장해도 같다 (D-056 보완)', async () => {
+    const { user, store } = await setup(1440);
+    act(() => {
+      store.dispatch(setCategoryFilter([3])); // '업무'만
+    });
+    await user.click(await screen.findByRole('button', { name: /팀 주간 회의/ }));
+    const dialog = screen.getByRole('dialog', { name: '일정 수정' });
     await user.selectOptions(within(dialog).getByRole('combobox', { name: '카테고리' }), '운동');
     await user.click(within(dialog).getAllByRole('button', { name: '저장' })[0]);
     const panel = await screen.findByRole('dialog', { name: '카테고리 선택' });

@@ -14,6 +14,8 @@ interface AllDayChipProps {
   /** 보이는 기간 앞·뒤로 이어지면 그쪽 모서리를 각지게 (D-052 ①) */
   continuesBefore?: boolean;
   continuesAfter?: boolean;
+  /** 제목 뒤에 붙일 글자 (일간의 여러 날 일정 '(2/3일)', D-052 보완) */
+  suffix?: string;
   /** 종일 줄 격자 안 자리 (gridColumn·gridRow) */
   style?: CSSProperties;
   onOpen: (schedule: Schedule) => void;
@@ -25,12 +27,12 @@ interface AllDayChipProps {
  * - PC는 넘치면 '…' (D-023), 모바일 7칸은 '…' 없이 칸 끝에서 자른다 (글자가 더 많이 보이게)
  * - 누르면 일정 수정 창
  */
-export default function AllDayChip({ schedule, category, compact = false, continuesBefore = false, continuesAfter = false, style, onOpen }: AllDayChipProps) {
+export default function AllDayChip({ schedule, category, compact = false, continuesBefore = false, continuesAfter = false, suffix, style, onOpen }: AllDayChipProps) {
   const radius = `${continuesBefore ? 'rounded-l-none' : ''} ${continuesAfter ? 'rounded-r-none' : ''}`;
   return (
     <button
       type="button"
-      title={schedule.title}
+      title={suffix ? `${schedule.title} ${suffix}` : schedule.title}
       onClick={() => onOpen(schedule)}
       data-continues-before={continuesBefore || undefined}
       data-continues-after={continuesAfter || undefined}
@@ -39,7 +41,7 @@ export default function AllDayChip({ schedule, category, compact = false, contin
       }`}
       style={{ ...style, background: blockBackground(category, schedule.color), color: readableTextColor(schedule.color) }}
     >
-      {schedule.title}
+      {suffix ? `${schedule.title} ${suffix}` : schedule.title}
     </button>
   );
 }
