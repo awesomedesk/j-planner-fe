@@ -24,6 +24,7 @@ const setup = async (width: number) => {
   const api = mockApi({
     'GET /schedules': () => json(200, SEED_SCHEDULES),
     'GET /categories': () => json(200, CATEGORIES),
+    'GET /memos': () => json(200, []),
     'POST /schedules': (req) => json(201, { id: 90, ...(req.body as object) }),
     'PATCH /schedules/:id': (req) => json(200, { ...SEED_SCHEDULES.find((x) => `/schedules/${x.id}` === req.path), ...(req.body as object) }),
   });

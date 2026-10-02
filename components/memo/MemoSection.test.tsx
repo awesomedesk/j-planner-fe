@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Memo } from '@/types/api';
@@ -375,5 +376,23 @@ describe('사이드바 펼친 메모 자리 수정 보완 (US-25, D-058)', () =>
     await user.click(items()[2]);
     expect(await screen.findByText('저장 못 했어요')).toBeInTheDocument();
     expect(selectNotices(store.getState())).toHaveLength(0);
+  });
+});
+
+describe('사이드바 섹션 머리 연결 (US-25, D-055)', () => {
+  it("받은 header로 섹션 머리를 그리고, 머리 오른쪽 위에 'n개'·+ 버튼 (D-055)", async () => {
+    mockApi({ 'GET /memos': () => json(200, MEMOS) });
+    const header = (actions?: ReactNode) => (
+      <div data-testid="section-header">
+        <h3>메모</h3>
+        {actions && <div data-testid="section-header-actions">{actions}</div>}
+      </div>
+    );
+    renderWithStore(<MemoSection header={header} />);
+    const actions = await screen.findByTestId('section-header-actions');
+    expect(await within(actions).findByRole('button', { name: '메모 4개 모두 보기' })).toBeInTheDocument();
+    expect(within(actions).getByRole('button', { name: '새 메모' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '새 메모' })).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: '메모' })).toBeInTheDocument();
   });
 });
