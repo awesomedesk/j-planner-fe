@@ -13,6 +13,7 @@ import {
   memoToFormValues,
   pickEarliestCreatedMemos,
   pickMemoAfterDelete,
+  shouldShowTitleCounter,
   sortMemosByRecentUpdate,
   toMemoCreateRequest,
   toMemoUpdateRequest,
@@ -21,6 +22,11 @@ import {
 describe('메모 규칙 (US-25)', () => {
   it('제목은 255자까지 (08-api-design 8절)', () => {
     expect(MEMO_TITLE_MAX_LENGTH).toBe(255);
+  });
+
+  it('제목 글자 수는 230자부터 보인다 (D-057)', () => {
+    expect(shouldShowTitleCounter('a'.repeat(229))).toBe(false);
+    expect(shouldShowTitleCounter('a'.repeat(230))).toBe(true);
   });
 
   it('제목·내용이 모두 비면(공백만 포함) 빈 메모 (US-25 AC, D-032)', () => {
@@ -87,7 +93,7 @@ describe('메모 표시', () => {
     expect(getMemoPreview(LAST_YEAR)).toBe('');
   });
 
-  it("수정일은 'M/D', 올해가 아니면 'YYYY. M/D' (확인 부탁)", () => {
+  it("수정일은 'M/D', 올해가 아니면 'YYYY. M/D' (D-057)", () => {
     const now = new Date(2026, 9, 1);
     expect(formatMemoDate(BOOKS.updatedAt, now)).toBe('9/24');
     expect(formatMemoDate(LAST_YEAR.updatedAt, now)).toBe('2025. 12/31');

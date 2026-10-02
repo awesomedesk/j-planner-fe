@@ -69,7 +69,7 @@ describe('모바일 메모 편집 MO-15 (US-25)', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('저장 버튼으로 POST, 저장되면 onSaved (탭으로 돌아감, 확인 부탁)', async () => {
+  it('저장 버튼으로 POST, 저장되면 onSaved (탭으로 돌아감, D-057)', async () => {
     const { api, onSaved, user } = open(null);
     await user.type(titleInput(), '  장보기 ');
     await user.type(contentInput(), '우유');
@@ -79,7 +79,7 @@ describe('모바일 메모 편집 MO-15 (US-25)', () => {
     expect(onSaved.mock.calls[0][0]).toMatchObject({ id: 10, title: '장보기' });
   });
 
-  it("기존 메모: 값과 'M/D 수정' 표시, 바뀐 칸만 PATCH (확인 부탁)", async () => {
+  it("기존 메모: 값과 'M/D 수정' 표시, 바뀐 칸만 PATCH (D-057)", async () => {
     const { api, onSaved, user } = open(BOOKS);
     expect(titleInput()).toHaveValue('읽을 책 목록');
     expect(screen.getByText('9/24 수정')).toBeInTheDocument();
@@ -96,6 +96,13 @@ describe('모바일 메모 편집 MO-15 (US-25)', () => {
     await user.click(screen.getByRole('button', { name: '메모 삭제 확인' }));
     await waitFor(() => expect(onDeleted).toHaveBeenCalledWith(1));
     expect(api.calls('DELETE /memos/:id')[0].path).toBe('/memos/1');
+  });
+
+  it('입력해도 저장 버튼 전에는 요청 없음 — MO-15는 자동 저장 없음 (D-030, D-057)', async () => {
+    const { api, user } = open(BOOKS);
+    await user.type(contentInput(), '!');
+    await new Promise((resolve) => setTimeout(resolve, 1300));
+    expect(api.all()).toHaveLength(0);
   });
 
   it('새 메모에는 삭제 버튼이 없다', () => {

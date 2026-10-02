@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Memo } from '@/types/api';
@@ -55,7 +55,7 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(within(memoList()).getByText('플래너 위젯 아이디어')).toBeInTheDocument();
   });
 
-  it("'n개'로 열면 맨 위(최근 수정) 메모를 보여 준다, 날짜 칸 없음 (D-011, 확인 부탁)", async () => {
+  it("'n개'로 열면 맨 위(최근 수정) 메모를 보여 준다, 날짜 칸 없음 (D-011, D-057)", async () => {
     open('list');
     await waitFor(() => expect(titleInput()).toHaveValue('읽을 책 목록'));
     expect(contentInput()).toHaveValue('- 데미안\n- 코스모스');
@@ -133,7 +133,7 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('지운 뒤에는 남은 맨 위 메모를 연다', async () => {
+  it('지운 뒤에는 남은 맨 위 메모를 연다 (D-057)', async () => {
     const { user } = open('list');
     await waitFor(() => expect(titleInput()).toHaveValue('읽을 책 목록'));
     await user.click(screen.getByRole('button', { name: '삭제' }));
@@ -186,7 +186,7 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
   });
 
-  it('400이 오면 제목·내용 두 칸 모두 오류 표시 (D-047, 확인 부탁)', async () => {
+  it('400이 오면 제목·내용 두 칸 모두 오류 표시 (D-047)', async () => {
     const { user } = open('new', {
       'POST /memos': () =>
         problem(400, 'VALIDATION_FAILED', '입력값을 확인하세요', [
@@ -202,10 +202,20 @@ describe('메모 창 OV-06 (US-25)', () => {
     expect(contentInput()).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('제목은 255자까지 입력 (08-api-design 8절, 확인 부탁)', async () => {
+  it('제목은 255자까지, 글자 수 n/255는 230자부터만 보인다 (D-057)', async () => {
     open('list');
     await waitFor(() => expect(titleInput()).toHaveValue(BOOKS.title));
     expect(titleInput()).toHaveAttribute('maxLength', '255');
-    expect(screen.getByText('7/255')).toBeInTheDocument();
+    expect(screen.queryByText('7/255')).not.toBeInTheDocument();
+    fireEvent.change(titleInput(), { target: { value: 'a'.repeat(229) } });
+    expect(screen.queryByText('229/255')).not.toBeInTheDocument();
+    fireEvent.change(titleInput(), { target: { value: 'a'.repeat(230) } });
+    expect(screen.getByText('230/255')).toBeInTheDocument();
+  });
+
+  it('메모가 없으면 목록 자리에 "아직 메모가 없어요", 새 메모로 시작 (D-057)', async () => {
+    open('list', { 'GET /memos': () => json(200, []) });
+    expect(await screen.findByText('아직 메모가 없어요')).toBeInTheDocument();
+    expect(titleInput()).toHaveValue('');
   });
 });

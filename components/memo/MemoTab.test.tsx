@@ -18,9 +18,9 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-const mountTab = (newMemoRequestKey?: number) => {
+const mountTab = (newMemoRequestKey?: number, initialMemos: Memo[] = MEMOS) => {
   const api = mockApi({
-    'GET /memos': () => json(200, MEMOS),
+    'GET /memos': () => json(200, initialMemos),
     'POST /memos': (req) => json(201, { id: 10, createdAt: NOW, updatedAt: NOW, ...(req.body as object) }),
     'PATCH /memos/:id': (req) => {
       const base = MEMOS.find((m) => req.path.endsWith(`/${m.id}`)) as Memo;
@@ -43,7 +43,7 @@ const swipe = (el: HTMLElement, dx: number) => {
 };
 
 describe('모바일 일간 메모 탭 MO-14 (US-25)', () => {
-  it('카드 목록은 최근 수정 순, 카드에 수정일 (D-029)', async () => {
+  it('카드 목록은 최근 수정 순, 카드에는 날짜만 (D-029, D-057)', async () => {
     mountTab();
     await waitFor(() => expect(cards()).toHaveLength(4));
     expect(cardTexts()[0]).toContain('읽을 책 목록');
@@ -64,7 +64,7 @@ describe('모바일 일간 메모 탭 MO-14 (US-25)', () => {
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
-  it('카드를 누르면 메모 편집(MO-15), 저장하면 탭으로 돌아와 맨 위로 (D-029)', async () => {
+  it('카드를 누르면 메모 편집(MO-15), 저장하면 탭으로 돌아와 맨 위로 (D-029, D-057)', async () => {
     const { api, user } = mountTab();
     await waitFor(() => expect(cards()).toHaveLength(4));
     await user.click(within(cardList()).getByRole('button', { name: /여행 준비물/ }));
@@ -108,6 +108,22 @@ describe('모바일 일간 메모 탭 MO-14 (US-25)', () => {
     await user.click(screen.getAllByRole('button', { name: '저장' })[0]);
     await waitFor(() => expect(cards()).toHaveLength(5));
     expect(cardTexts()[0]).toContain('장보기');
+  });
+
+  it('밀어서 나온 삭제 버튼은 확인·실행 취소 없이 바로 삭제 (D-057)', async () => {
+    const { api, user } = mountTab();
+    await waitFor(() => expect(cards()).toHaveLength(4));
+    swipe(cards()[0], -120);
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(api.calls('DELETE /memos/:id')).toHaveLength(1));
+    await waitFor(() => expect(cards()).toHaveLength(3));
+    expect(screen.queryByRole('button', { name: /실행 취소|되돌리기/ })).not.toBeInTheDocument();
+  });
+
+  it('메모가 없으면 "아직 메모가 없어요" (D-057)', async () => {
+    mountTab(undefined, []);
+    expect(await screen.findByText('아직 메모가 없어요')).toBeInTheDocument();
   });
 
   it('카드를 왼쪽으로 밀면 삭제 버튼, 누르면 삭제 (D-055, D-030)', async () => {
