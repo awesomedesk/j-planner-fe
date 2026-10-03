@@ -80,7 +80,11 @@ export function useDragReorder(ids: Id[], onMove: (id: Id, insertIndex: number) 
     });
     const fromIndex = idsRef.current.indexOf(p.id);
     active.current = { id: p.id, startY: p.startY, center: own.top + own.height / 2, others, fromIndex, insertIndex: fromIndex };
-    p.el.setPointerCapture?.(p.pointerId);
+    try {
+      p.el.setPointerCapture?.(p.pointerId);
+    } catch {
+      // 포인터가 이미 사라졌으면 붙잡지 못한다. 끌기는 그대로 이어 간다
+    }
     if (p.pointerType !== 'mouse') navigator.vibrate?.(10);
     pending.current = null;
     setDrag({ id: p.id, dy: 0, insertIndex: fromIndex, fromIndex });
@@ -146,7 +150,11 @@ export function useDragReorder(ids: Id[], onMove: (id: Id, insertIndex: number) 
         setDrag({ id: a.id, dy, insertIndex: a.insertIndex, fromIndex: a.fromIndex });
       },
       onPointerUp: (e: ReactPointerEvent<HTMLElement>) => {
-        e.currentTarget.releasePointerCapture?.(e.pointerId);
+        try {
+          e.currentTarget.releasePointerCapture?.(e.pointerId);
+        } catch {
+          // 붙잡지 못했던 포인터
+        }
         finish(true);
       },
       onPointerCancel: () => finish(false),

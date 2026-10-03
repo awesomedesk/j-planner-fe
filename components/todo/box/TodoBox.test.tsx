@@ -181,6 +181,16 @@ describe('끌어서 순서 바꾸기 (US-14, TODO-09, D-029 · D-030)', () => {
     expect(list().querySelector('[data-drop-indicator]')).toBeNull();
   });
 
+  it('포인터를 붙잡지 못해도(이미 사라진 포인터) 끌기는 계속된다 (US-14 화면 확인 중 발견)', async () => {
+    const { api } = await setup();
+    layout();
+    Element.prototype.setPointerCapture = vi.fn(() => {
+      throw new DOMException('No active pointer with the given id is found.', 'NotFoundError');
+    });
+    drag(row('장보기'), 58, 150);
+    await waitFor(() => expect(api.calls('PUT /todos/:id/position')[0]).toMatchObject({ path: '/todos/2/position', body: { afterId: 4 } }));
+  });
+
   it('제자리에 놓으면 요청하지 않는다', async () => {
     const { api } = await setup();
     layout();
