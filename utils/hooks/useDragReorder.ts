@@ -6,6 +6,7 @@ import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as Reac
 import type { Id } from '@/types/api';
 
 import { getInsertIndex } from '@utils/list/reorder';
+import { useLatest } from '@utils/hooks/useLatest';
 
 /** 모바일 길게 누르기 (US-14: 짧게 누르면 열기, 길게 누르면 끌기) */
 export const LONG_PRESS_MS = 400;
@@ -57,10 +58,8 @@ export function useDragReorder(ids: Id[], onMove: (id: Id, insertIndex: number) 
   const pending = useRef<Pending | null>(null);
   const active = useRef<Active | null>(null);
   const suppressClick = useRef(false);
-  const idsRef = useRef(ids);
-  idsRef.current = ids;
-  const onMoveRef = useRef(onMove);
-  onMoveRef.current = onMove;
+  const idsRef = useLatest(ids);
+  const onMoveRef = useLatest(onMove);
 
   const clearPending = () => {
     if (pending.current?.timer) clearTimeout(pending.current.timer);
@@ -88,7 +87,7 @@ export function useDragReorder(ids: Id[], onMove: (id: Id, insertIndex: number) 
     if (p.pointerType !== 'mouse') navigator.vibrate?.(10);
     pending.current = null;
     setDrag({ id: p.id, dy: 0, insertIndex: fromIndex, fromIndex });
-  }, []);
+  }, [idsRef]);
 
   const finish = (commit: boolean) => {
     const a = active.current;

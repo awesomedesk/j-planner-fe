@@ -29,8 +29,21 @@ export const useMemos = () => {
   }, [notifyError]);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    let isActive = true;
+    memoApi
+      .getList()
+      .then((list) => {
+        if (!isActive) return;
+        setMemos(sortMemosByRecentUpdate(list));
+        setIsLoaded(true);
+      })
+      .catch((error: unknown) => {
+        if (isActive) notifyError(error);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [notifyError]);
 
   /** 저장한 메모를 목록에 넣고 다시 정렬 (방금 고친 메모가 맨 위로) */
   const upsertMemo = useCallback((memo: Memo) => {

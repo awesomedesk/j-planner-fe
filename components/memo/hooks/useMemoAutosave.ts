@@ -17,6 +17,7 @@ import {
   type MemoFormField,
   type MemoFormValues,
 } from '../utils/memoUtils';
+import { useLatest } from '@utils/hooks/useLatest';
 
 interface UseMemoAutosaveOptions {
   /** 펼칠 때의 메모. 펼칠 때마다 새로 시작하므로(접으면 이 훅을 쓰는 부품이 사라짐) 최신 메모로 시작한다 */
@@ -54,8 +55,7 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
   /** 저장·삭제 요청 줄. 앞 요청이 끝난 뒤 이어 붙인다 */
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const timerRef = useRef<number | null>(null);
-  const callbacksRef = useRef({ onSaved, onDeleted });
-  callbacksRef.current = { onSaved, onDeleted };
+  const callbacksRef = useLatest({ onSaved, onDeleted });
 
   /** 실패 안내: 펼친 채면 칸 안 한 줄, 사라진 뒤면 화면 아래 안내 */
   const reportFailure = useCallback(
@@ -97,7 +97,7 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
       reportFailure(AUTOSAVE_FAILED_MESSAGE);
       return false;
     }
-  }, [reportFailure]);
+  }, [reportFailure, callbacksRef]);
 
   /** 줄 안에서만 부른다. 모두 비었으면 삭제, 아니면 저장 */
   const finishInQueue = useCallback(async (): Promise<boolean> => {
@@ -113,7 +113,7 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
       reportFailure(AUTODELETE_FAILED_MESSAGE);
       return false;
     }
-  }, [reportFailure, saveInQueue]);
+  }, [reportFailure, saveInQueue, callbacksRef]);
 
   const saveNow = useCallback(() => {
     clearTimer();

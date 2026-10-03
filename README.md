@@ -2,7 +2,7 @@
 
 MBTI 'J' 성향 사용자를 위한 플래너의 **반응형 웹** 프론트엔드입니다. 하루 계획(Todo를 시간표에 배치)과 한 달 일정 관리를 한곳에서 합니다.
 
-- 기술: Next.js 15 (App Router) · React 18 · TypeScript · Redux Toolkit · Tailwind CSS 3 · date-fns 4
+- 기술: Next.js 16 (App Router) · React 19.2 · TypeScript · Redux Toolkit · Tailwind CSS 3 · date-fns 4
 - 서버: [`J-planner-BE`](https://github.com/awesomedesk/J-planner-BE) (REST API)
 - **기획은 이 저장소에 없습니다.** 요구사항·결정·화면기획서·API 명세는 [`j-planner-product`](https://github.com/awesomedesk/j-planner-product)(비공개)가 기준입니다. 로컬에서는 `../j-planner-product`
 
@@ -34,7 +34,7 @@ npm run dev          # http://localhost:3000
 |---|---|
 | `npm run dev` / `dev:local` | 개발 서버 (test / local 환경) |
 | `npm test` / `npm run test:watch` | 테스트 (Vitest). 커밋 전에 lint와 같이 |
-| `npm run lint` | ESLint |
+| `npm run lint` | ESLint (`eslint .`, Next 16부터 `next lint` 없음) |
 | `npm run build` | 타입 검사 포함 빌드. 커밋 전에 한 번 |
 | `npm run api:types` | API 명세(`../j-planner-product/08-openapi.yaml`)가 바뀌면 타입(`types/api/schema.d.ts`)을 다시 만든다 |
 

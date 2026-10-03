@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent, SyntheticEvent } from 'react';
 
 import type { Id } from '@/types/api';
+import { useLatest } from '@utils/hooks/useLatest';
 
 /** 필터에서 빠진 카테고리로 저장했을 때 필터 목록을 저절로 펼치는 요청 (D-056) */
 export interface FilterReveal {
@@ -41,12 +42,19 @@ interface Options {
  * @returns 목록 틀에 붙일 panelProps, 줄 표시용 markedId·glow, 버튼 커짐용 pulse
  */
 export function useFilterReveal(reveal: FilterReveal | null | undefined, { isOpen, open, close, onDone, trackMouseMove = false }: Options) {
-  const [state, setState] = useState<{ markedId: Id; glow: boolean; pulse: boolean } | null>(null);
+  const [state, setState] = useState<{ markedId: Id; glow: boolean; pulse: boolean } | null>(() =>
+    reveal ? { markedId: reveal.categoryId, glow: false, pulse: true } : null
+  );
+  // 새 reveal이 오면 렌더 중에 표시를 정한다 (effect 안 setState 대신, React 권장 '이전 값과 비교')
+  const [lastReveal, setLastReveal] = useState(reveal);
+  if (reveal !== lastReveal) {
+    setLastReveal(reveal);
+    if (reveal) setState({ markedId: reveal.categoryId, glow: false, pulse: true });
+  }
   const openedAt = useRef(0);
   const held = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
-  const callbacks = useRef({ open, close, onDone });
-  callbacks.current = { open, close, onDone };
+  const callbacks = useLatest({ open, close, onDone });
 
   useEffect(() => {
     if (!reveal) return undefined;
@@ -54,7 +62,6 @@ export function useFilterReveal(reveal: FilterReveal | null | undefined, { isOpe
     openedAt.current = Date.now();
     held.current = false;
     lastPoint.current = null;
-    setState({ markedId: reveal.categoryId, glow: false, pulse: true });
     const timers = [
       setTimeout(() => setState((s) => s && { ...s, glow: true }), REVEAL_TIMING.glowDelay),
       setTimeout(() => {
@@ -63,7 +70,7 @@ export function useFilterReveal(reveal: FilterReveal | null | undefined, { isOpe
       }, REVEAL_TIMING.close),
     ];
     return () => timers.forEach((timer) => clearTimeout(timer));
-  }, [reveal]);
+  }, [reveal, callbacks]);
 
   // 목록이 닫히면 표시도 지운다 (열림 → 닫힘일 때만)
   const wasOpen = useRef(isOpen);

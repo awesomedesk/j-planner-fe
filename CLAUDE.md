@@ -23,7 +23,10 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 - `npm run dev` (test env) / `npm run dev:local` — http://localhost:3000
 - `npm test` (Vitest, once) / `npm run test:watch` — run with lint before every commit
-- `npm run lint`, `npm run build` (includes type check) — run before committing
+- `npm run lint` (= `eslint .`, flat config `eslint.config.mjs`; Next 16 has no `next lint`), `npx tsc --noEmit`, `npm run build`
+  (Turbopack, type check) — run before committing. `next build` no longer lints.
+- Install with `npm ci` (lockfile). `test/security/supplyChain.test.ts` fails if next < 16.3.6, react ≠ 19.2.x, or the lockfile
+  contains a version from `test/security/compromised-packages.txt` (Shai-Hulud 2025-09 … ChainDrop 2026-08, D-060).
 - `npm run api:types` — regenerate `types/api/schema.d.ts` from `../j-planner-product/08-openapi.yaml`
 
 ## Architecture
@@ -103,6 +106,10 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 ## Gotchas
 
+- Stack (US-31, D-060): Next 16.3 + React 19.2. React 19 lint (`react-hooks` 7) forbids writing refs during render and
+  calling setState synchronously in effects. For "latest value" refs use `useLatest` (`utils/hooks/useLatest.ts`);
+  for "reset when a prop changes" compare with the previous value during render (`useState(prev)` pattern), not in an effect.
+  `useRef<T>(null)` is `RefObject<T | null>` — take `RefObject<HTMLElement | null>` in hook params.
 - Don't name a folder `icon` — the macOS `Icon` rule in `.gitignore` hides it from git. Icons live in `components/icons/`.
 - Don't use `next/font/google` — it downloads fonts at build time and fails without network. The font is a `<link>` in `app/layout.tsx` (D-038).
 - `.env.*` files are committed. Never put real secrets in them.

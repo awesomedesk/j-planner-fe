@@ -35,8 +35,6 @@ export default function MemoDialog({ startWith, onClose, onChanged }: MemoDialog
   const { memos, isLoaded, upsertMemo, removeMemo } = useMemos();
   /** 바꾼 것이 있는 채 고른 메모 — 확인 뒤 연다 (undefined = 확인 중 아님, null = 새 메모) */
   const [pendingSelection, setPendingSelection] = useState<Memo | null | undefined>(undefined);
-  /** 지운 뒤 열 메모 (undefined = 없음, null = 새 메모) */
-  const [nextAfterDelete, setNextAfterDelete] = useState<Memo | null | undefined>(undefined);
   const hasOpenedFirst = useRef(false);
 
   const form = useMemoForm({
@@ -47,17 +45,11 @@ export default function MemoDialog({ startWith, onClose, onChanged }: MemoDialog
     },
     onDeleted: (id: Id) => {
       removeMemo(id);
-      setNextAfterDelete(pickMemoAfterDelete(memos, id));
+      // 지운 뒤 남은 맨 위 메모(없으면 새 메모)를 연다. form은 이 콜백이 불릴 때(삭제 뒤)에는 이미 있다
+      form.load(pickMemoAfterDelete(memos, id));
       onChanged?.();
     },
   });
-
-  // 지운 뒤 남은 맨 위 메모(없으면 새 메모)를 연다
-  useEffect(() => {
-    if (nextAfterDelete === undefined) return;
-    form.load(nextAfterDelete);
-    setNextAfterDelete(undefined);
-  }, [form, nextAfterDelete]);
 
   // 다른 메모로 바꿀지 묻는 중에는 Esc가 그 확인만 닫는다 (창 닫기 확인이 겹치지 않게)
   useEffect(() => {

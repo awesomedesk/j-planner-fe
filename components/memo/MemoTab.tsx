@@ -34,12 +34,16 @@ export default function MemoTab({ newMemoRequestKey }: MemoTabProps) {
   const now = useNow();
   const notifyError = useErrorNotice();
   const { memos, isLoaded, upsertMemo, removeMemo } = useMemos();
-  const [editing, setEditing] = useState<EditingMemo>(null);
+  // 처음 그릴 때 이미 + 요청이 있으면(탭으로 오며 + 를 누른 경우) 바로 새 메모 편집 — 이전 effect와 같은 동작
+  const [editing, setEditing] = useState<EditingMemo>(() => (newMemoRequestKey ? { memo: null } : null));
   const [deletingId, setDeletingId] = useState<Id | null>(null);
 
-  useEffect(() => {
+  // + 를 누를 때마다(newMemoRequestKey가 바뀔 때) 새 메모 편집. effect 대신 렌더 중에 이전 값과 비교 (React 권장)
+  const [lastRequestKey, setLastRequestKey] = useState(newMemoRequestKey);
+  if (newMemoRequestKey !== lastRequestKey) {
+    setLastRequestKey(newMemoRequestKey);
     if (newMemoRequestKey) setEditing({ memo: null });
-  }, [newMemoRequestKey]);
+  }
 
   const handleSwipeDelete = async (id: Id) => {
     setDeletingId(id);

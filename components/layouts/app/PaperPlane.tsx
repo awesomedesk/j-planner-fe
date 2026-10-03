@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from 'react';
 
 import { PAPER_PLANE_DURATION_MS, PAPER_PLANE_EASING, PAPER_PLANE_SIZE, paperPlaneFrames, type Point } from './paperPlaneUtils';
+import { useLatest } from '@utils/hooks/useLatest';
 
 interface PaperPlaneProps {
   from: Point;
@@ -17,8 +18,7 @@ interface PaperPlaneProps {
  */
 export default function PaperPlane({ from, to, variant, onDone }: PaperPlaneProps) {
   const ref = useRef<SVGSVGElement>(null);
-  const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  const onDoneRef = useLatest(onDone);
 
   useLayoutEffect(() => {
     const plane = ref.current;
@@ -34,7 +34,7 @@ export default function PaperPlane({ from, to, variant, onDone }: PaperPlaneProp
     });
     animation.onfinish = () => onDoneRef.current();
     return () => animation.cancel();
-  }, [from, to, variant]);
+  }, [from, to, variant, onDoneRef]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[46]" aria-hidden="true">

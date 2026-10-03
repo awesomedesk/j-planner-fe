@@ -99,8 +99,8 @@ export function useTimetableQuickAdd({ hourHeight, enableDragCreate, onAddAt, dr
  * 임시 블록 자리(날짜·시작)가 바뀔 때 맞춘다. 제목을 쓰는 동안에는 움직이지 않는다.
  */
 export const useRevealDraft = (
-  scrollRef: RefObject<HTMLElement>,
-  draftRef: RefObject<HTMLElement>,
+  scrollRef: RefObject<HTMLElement | null>,
+  draftRef: RefObject<HTMLElement | null>,
   draft: TimetableDraft | null | undefined,
   coverBottom: number
 ) => {

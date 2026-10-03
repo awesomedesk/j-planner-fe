@@ -11,6 +11,7 @@ import {
   type MinuteRange,
   type TimetableDraft,
 } from '../utils/timetableUtils';
+import { useLatest } from '@utils/hooks/useLatest';
 
 /** 이만큼(px) 움직여야 끌기로 본다 (그보다 적으면 클릭) */
 const DRAG_THRESHOLD = 4;
@@ -26,8 +27,7 @@ const pxToMinutes = (px: number, hourHeight: number) => (px / hourHeight) * 60;
  */
 export function useDraftDrag(draft: TimetableDraft | null | undefined, hourHeight: number, onDraftChange?: (range: MinuteRange) => void) {
   const drag = useRef<{ grip: DraftGrip; y: number; origin: MinuteRange; last: string } | null>(null);
-  const onChangeRef = useRef(onDraftChange);
-  onChangeRef.current = onDraftChange;
+  const onChangeRef = useLatest(onDraftChange);
 
   useEffect(() => {
     const handleMove = (event: PointerEvent) => {
@@ -54,7 +54,7 @@ export function useDraftDrag(draft: TimetableDraft | null | undefined, hourHeigh
       window.removeEventListener('pointerup', handleUp);
       window.removeEventListener('pointercancel', handleUp);
     };
-  }, [hourHeight]);
+  }, [hourHeight, onChangeRef]);
 
   /** 손잡이·몸통의 onPointerDown */
   const startDrag = useCallback(
@@ -65,7 +65,7 @@ export function useDraftDrag(draft: TimetableDraft | null | undefined, hourHeigh
       const origin = draftRange(draft);
       drag.current = { grip, y: event.clientY, origin, last: `${origin.start}-${origin.end}` };
     },
-    [draft]
+    [draft, onChangeRef]
   );
 
   return { startDrag };
@@ -80,8 +80,7 @@ export function useDragCreate(hourHeight: number, enabled: boolean, onCreate: (d
   const [creating, setCreating] = useState<{ date: string; range: MinuteRange } | null>(null);
   const drag = useRef<{ date: string; fromMinutes: number; y: number; column: DOMRect; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
-  const onCreateRef = useRef(onCreate);
-  onCreateRef.current = onCreate;
+  const onCreateRef = useLatest(onCreate);
 
   useEffect(() => {
     const handleMove = (event: PointerEvent) => {
@@ -107,7 +106,7 @@ export function useDragCreate(hourHeight: number, enabled: boolean, onCreate: (d
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
     };
-  }, [hourHeight]);
+  }, [hourHeight, onCreateRef]);
 
   /** 날짜 칸의 onPointerDown */
   const onPointerDown = useCallback(

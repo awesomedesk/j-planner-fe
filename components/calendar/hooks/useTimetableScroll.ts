@@ -43,11 +43,10 @@ export function useTimetableScroll({ scrollRef, days, schedules, isLoaded, hourH
 
   // '오늘'을 누르면 처음 위치 규칙으로 다시 자리 잡는다
   const scrollReset = useAppSelector(selectTimetableScrollReset);
-  const lastReset = useRef(scrollReset);
-  if (lastReset.current !== scrollReset) {
-    lastReset.current = scrollReset;
+  // 아래 자리 잡기 effect보다 먼저 선언해야 같은 커밋에서 다시 자리 잡는다
+  useLayoutEffect(() => {
     isPlaced.current = false;
-  }
+  }, [scrollReset]);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
