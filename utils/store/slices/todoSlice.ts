@@ -1,8 +1,11 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 
 import type { Id, LocalDate, Todo } from '@/types/api';
 
 import { todoApi, toErrorMessage } from '@utils/api';
+
+import { moveAfter } from '@utils/list/reorder';
 
 import { showNotice } from './noticeSlice';
 
@@ -68,6 +71,13 @@ const todoSlice = createSlice({
   name: 'todo',
   initialState,
   reducers: {
+    moved: (state, action: PayloadAction<{ id: Id; afterId: Id | null }>) => {
+      state.items = moveAfter(state.items, action.payload.id, action.payload.afterId);
+    },
+    restoreOrder: (state, action: PayloadAction<Id[]>) => {
+      const rank = new Map(action.payload.map((id, i) => [id, i]));
+      state.items.sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity));
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -99,6 +109,25 @@ const todoSlice = createSlice({
       });
   },
 });
+
+/**
+ * 순서 바꾸기 (US-14, TODO-09). 놓는 즉시 박스 순서를 바꾸고 PUT /todos/{id}/position
+ * 성공하면 화면 순서를 그대로 쓰고(다시 받지 않음, 08-api-design), 실패하면 원래 순서로 되돌리고 짧은 안내
+ */
+export const moveTodo = createAsyncThunk<void, { id: Id; afterId: Id | null }, { state: { todo: TodoState }; rejectValue: null }>(
+  'todo/moveTodo',
+  async ({ id, afterId }, { dispatch, getState, rejectWithValue }) => {
+    const before = getState().todo.items.map((t) => t.id);
+    dispatch(todoSlice.actions.moved({ id, afterId }));
+    try {
+      await todoApi.move(id, { afterId });
+    } catch (error) {
+      dispatch(todoSlice.actions.restoreOrder(before));
+      dispatch(showNotice(toErrorMessage(error), 'error'));
+      return rejectWithValue(null);
+    }
+  }
+);
 
 export const selectDayTodos = (state: { todo: TodoState }) => state.todo.items;
 export const selectDayTodoQuery = (state: { todo: TodoState }) => state.todo.query;

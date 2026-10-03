@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES, todo } from '@/test/fixtures';
@@ -30,6 +30,7 @@ const setup = async (routes: Parameters<typeof mockApi>[0] = {}, filter: number[
   const api = mockApi({
     'GET /categories': () => json(200, CATEGORIES),
     'GET /todos': () => json(200, TODOS),
+    'PUT /todos/:id/position': (req) => json(200, TODOS.find((t) => req.path === `/todos/${t.id}/position`)),
     'PATCH /todos/:id': (req) => json(200, { ...TODOS.find((t) => `/todos/${t.id}` === req.path), ...(req.body as object) }),
     ...routes,
   });
@@ -127,5 +128,177 @@ describe('그날의 Todo 한 박스 (US-13, D-013)', () => {
     const store = makeStore();
     renderWithStore(<TodoBox date="2026-09-25" />, { store });
     expect(await screen.findByText('Todo가 없어요')).toBeInTheDocument();
+  });
+});
+
+describe('끌어서 순서 바꾸기 (US-14, TODO-09, D-029 · D-030)', () => {
+  beforeEach(() => {
+    Element.prototype.setPointerCapture = vi.fn();
+    Element.prototype.releasePointerCapture = vi.fn();
+  });
+
+  /** 줄 높이 36px, 간격 4px로 세운다: 장보기(2번째 줄)는 40~76, 가운데 58 */
+  const layout = () =>
+    within(list())
+      .getAllByRole('listitem')
+      .forEach((li, i) => {
+        li.getBoundingClientRect = () => ({ top: i * 40, bottom: i * 40 + 36, height: 36, left: 0, right: 300, width: 300, x: 0, y: i * 40, toJSON: () => ({}) });
+      });
+  const row = (name: string) => screen.getByRole('button', { name: `${name} 수정` }).closest('li') as HTMLElement;
+  const drag = (el: HTMLElement, fromY: number, toY: number, pointerType = 'mouse') => {
+    fireEvent.pointerDown(el, { pointerId: 1, pointerType, clientY: fromY, button: 0 });
+    fireEvent.pointerMove(el, { pointerId: 1, pointerType, clientY: fromY + 2 });
+    fireEvent.pointerMove(el, { pointerId: 1, pointerType, clientY: toY });
+    fireEvent.pointerUp(el, { pointerId: 1, pointerType, clientY: toY });
+  };
+
+  it('PC: 마우스로 끌어 놓으면 그 자리로 옮기고 PUT /todos/{id}/position { afterId: 바로 앞 }', async () => {
+    const { api } = await setup();
+    layout();
+    drag(row('장보기'), 58, 150); // 가운데 150 → 러닝 3회(120~156) 뒤
+    expect(titles()).toEqual(['기획서 초안', '보고서 작성', '러닝 3회', '장보기', '책 1권 읽기']);
+    await waitFor(() => expect(api.calls('PUT /todos/:id/position')).toHaveLength(1));
+    expect(api.calls('PUT /todos/:id/position')[0]).toMatchObject({ path: '/todos/2/position', body: { afterId: 4 } });
+  });
+
+  it('맨 위로 옮기면 afterId: null', async () => {
+    const { api } = await setup();
+    layout();
+    drag(row('러닝 3회'), 138, 5);
+    expect(titles()[0]).toBe('러닝 3회');
+    await waitFor(() => expect(api.calls('PUT /todos/:id/position')[0]).toMatchObject({ path: '/todos/4/position', body: { afterId: null } }));
+  });
+
+  it('끄는 동안 놓일 자리를 선으로 보이고, 놓으면 사라진다', async () => {
+    await setup();
+    layout();
+    const el = row('장보기');
+    fireEvent.pointerDown(el, { pointerId: 1, clientY: 58, button: 0 });
+    fireEvent.pointerMove(el, { pointerId: 1, clientY: 150 });
+    expect(list().querySelector('[data-drop-indicator]')).not.toBeNull();
+    expect(el).toHaveAttribute('data-dragging');
+    fireEvent.pointerUp(el, { pointerId: 1, clientY: 150 });
+    expect(list().querySelector('[data-drop-indicator]')).toBeNull();
+  });
+
+  it('제자리에 놓으면 요청하지 않는다', async () => {
+    const { api } = await setup();
+    layout();
+    drag(row('장보기'), 58, 62);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(api.calls('PUT /todos/:id/position')).toHaveLength(0);
+  });
+
+  it('끌고 나서 손을 떼도 수정 창은 열리지 않는다. 그냥 누르면 열린다', async () => {
+    const { openTodo, user } = await setup();
+    layout();
+    const el = row('장보기');
+    drag(el, 58, 150);
+    fireEvent.click(screen.getByRole('button', { name: '장보기 수정' }));
+    expect(openTodo).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '장보기 수정' }));
+    expect(openTodo).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
+  });
+
+  it('체크박스에서 시작하면 끌지 않는다', async () => {
+    const { api } = await setup();
+    layout();
+    drag(screen.getByRole('checkbox', { name: '장보기 완료' }), 58, 150);
+    expect(titles()[1]).toBe('장보기');
+    expect(api.calls('PUT /todos/:id/position')).toHaveLength(0);
+  });
+
+  it('옮기기에 실패하면 원래 순서로 되돌리고 짧은 안내', async () => {
+    const { store } = await setup({ 'PUT /todos/:id/position': () => problem(500, 'INTERNAL_ERROR', '서버 오류가 났어요') });
+    layout();
+    drag(row('장보기'), 58, 150);
+    await waitFor(() => expect(titles()).toEqual(['기획서 초안', '장보기', '보고서 작성', '러닝 3회', '책 1권 읽기']));
+    expect(store.getState().notice.items.map((n) => n.message)).toContain('서버 오류가 났어요');
+  });
+
+  describe('모바일: 길게 눌러 끌기, 짧게 누르면 열기', () => {
+    /** 이미 Date만 가짜인 상태에서 다시 부르면 무시되므로 한 번 풀고 건다 */
+    const useTimers = () => {
+      vi.useRealTimers();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    };
+
+    it('길게(0.4초) 누른 뒤 끌면 옮긴다', async () => {
+      const { api } = await setup();
+      layout();
+      useTimers();
+      const el = row('장보기');
+      fireEvent.pointerDown(el, { pointerId: 1, pointerType: 'touch', clientY: 58 });
+      act(() => vi.advanceTimersByTime(400));
+      expect(el).toHaveAttribute('data-dragging');
+      fireEvent.pointerMove(el, { pointerId: 1, pointerType: 'touch', clientY: 150 });
+      fireEvent.pointerUp(el, { pointerId: 1, pointerType: 'touch', clientY: 150 });
+      vi.useRealTimers();
+      expect(titles()).toEqual(['기획서 초안', '보고서 작성', '러닝 3회', '장보기', '책 1권 읽기']);
+      await waitFor(() => expect(api.calls('PUT /todos/:id/position')[0]).toMatchObject({ path: '/todos/2/position', body: { afterId: 4 } }));
+    });
+
+    it('길게 누르기 전에 움직이면 스크롤로 보고 끌지 않는다', async () => {
+      const { api } = await setup();
+      layout();
+      useTimers();
+      const el = row('장보기');
+      fireEvent.pointerDown(el, { pointerId: 1, pointerType: 'touch', clientY: 58 });
+      fireEvent.pointerMove(el, { pointerId: 1, pointerType: 'touch', clientY: 80 });
+      act(() => vi.advanceTimersByTime(500));
+      fireEvent.pointerMove(el, { pointerId: 1, pointerType: 'touch', clientY: 150 });
+      fireEvent.pointerUp(el, { pointerId: 1, pointerType: 'touch', clientY: 150 });
+      vi.useRealTimers();
+      expect(el).not.toHaveAttribute('data-dragging');
+      expect(titles()[1]).toBe('장보기');
+      expect(api.calls('PUT /todos/:id/position')).toHaveLength(0);
+    });
+
+    it('길게 눌렀다 그대로 떼면 수정 창을 열지 않는다', async () => {
+      const { openTodo } = await setup();
+      layout();
+      useTimers();
+      const el = row('장보기');
+      fireEvent.pointerDown(el, { pointerId: 1, pointerType: 'touch', clientY: 58 });
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.pointerUp(el, { pointerId: 1, pointerType: 'touch', clientY: 58 });
+      fireEvent.click(screen.getByRole('button', { name: '장보기 수정' }));
+      vi.useRealTimers();
+      expect(openTodo).not.toHaveBeenCalled();
+    });
+
+    it('짧게 누르면 수정 창을 연다', async () => {
+      const { openTodo } = await setup();
+      layout();
+      useTimers();
+      const el = row('장보기');
+      fireEvent.pointerDown(el, { pointerId: 1, pointerType: 'touch', clientY: 58 });
+      act(() => vi.advanceTimersByTime(150));
+      fireEvent.pointerUp(el, { pointerId: 1, pointerType: 'touch', clientY: 58 });
+      fireEvent.click(screen.getByRole('button', { name: '장보기 수정' }));
+      vi.useRealTimers();
+      expect(openTodo).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
+    });
+  });
+
+  it('완료한 Todo는 끌지 않는다 (박스 순서는 미완료끼리)', async () => {
+    const { api, user } = await setup();
+    await user.click(screen.getByRole('button', { name: '완료 1개 보기' }));
+    const done = within(screen.getByRole('list', { name: '완료한 Todo' })).getByRole('listitem');
+    drag(done, 10, 200);
+    expect(done).not.toHaveAttribute('data-dragging');
+    expect(api.calls('PUT /todos/:id/position')).toHaveLength(0);
+  });
+
+  it('키보드: 제목에서 Alt+↓/↑로 한 칸씩 옮긴다', async () => {
+    const { api, user } = await setup();
+    screen.getByRole('button', { name: '장보기 수정' }).focus();
+    await user.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    expect(titles()).toEqual(['기획서 초안', '보고서 작성', '장보기', '러닝 3회', '책 1권 읽기']);
+    await waitFor(() => expect(api.calls('PUT /todos/:id/position')[0]).toMatchObject({ path: '/todos/2/position', body: { afterId: 3 } }));
+    expect(screen.getByRole('button', { name: '장보기 수정' })).toHaveFocus();
+    screen.getByRole('button', { name: '기획서 초안 수정' }).focus();
+    await user.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    expect(api.calls('PUT /todos/:id/position')).toHaveLength(1);
   });
 });
