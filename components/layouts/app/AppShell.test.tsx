@@ -24,6 +24,7 @@ const setup = async (width: number) => {
   const api = mockApi({
     'GET /schedules': () => json(200, SEED_SCHEDULES),
     'GET /categories': () => json(200, CATEGORIES),
+    'GET /memos': () => json(200, []),
     'POST /schedules': (req) => json(201, { id: 90, ...(req.body as object) }),
     'GET /todos': () => json(200, [todo({ id: 1, title: '장보기' })]),
     'POST /todos': (req) => json(201, { id: 91, completed: false, completedAt: null, sortOrder: 1, overdue: false, ...(req.body as object) }),

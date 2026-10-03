@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { LocalDate } from '@/types/api';
 import type { SidebarItemType } from '@/types/calendar';
+import MemoTab from '@components/memo/MemoTab';
 import TodoBox from '@components/todo/box/TodoBox';
 
 /**
@@ -28,6 +29,7 @@ const DAY_TAB_SLOTS: DayTabSlots = {
       </div>
     ),
   },
+  MEMO: { render: ({ addRequestKey }) => <MemoTab newMemoRequestKey={addRequestKey} />, directAddLabel: '새 메모' },
 };
 
 let override: DayTabSlots | null = null;
