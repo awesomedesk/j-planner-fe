@@ -4,7 +4,6 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run lint)",
-      "Bash(curl:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git log:*)",
