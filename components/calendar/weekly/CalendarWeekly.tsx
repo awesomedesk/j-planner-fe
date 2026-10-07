@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from 'react';
 
-import type { LocalDate, Schedule } from '@/types/api';
+import type { LocalDate, Schedule, Todo } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
@@ -16,8 +16,10 @@ import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
+import TimetableTodoBlock from '../common/TimetableTodoBlock';
 import { useRevealDraft, useTimetableQuickAdd, type TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
+import { useTimetableTodos } from '../hooks/useTimetableTodos';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import { weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import {
@@ -35,6 +37,8 @@ interface CalendarWeeklyProps {
   /** PC·태블릿(PC-02) / 모바일 7칸(MO-05) */
   variant: 'pc' | 'mobile';
   onOpenSchedule: (schedule: Schedule) => void;
+  /** 시간표의 Todo 블록 제목을 누름 → Todo 수정 창 (US-15, US-12) */
+  onOpenTodo?: (todo: Todo) => void;
   /** 빈 시간을 누름 → 빠른 추가 (US-10) */
   onAddAt?: (slot: TimetableSlot) => void;
   /** 빠른 추가 중 임시 블록 (D-017) */
@@ -61,9 +65,9 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
  * - 겹치는 일정은 나란히, 시각 있는 여러 날 일정은 날마다 나눠서 (D-045)
  * - 날짜 머리글: 한 번 누르면 그날 선택, 두 번 누르면 일간 (월간과 같게, D-015·D-041)
  * - 빈 시간을 누르면 빠른 추가 + 그날 칸에 점선 임시 블록 (US-10, D-017 · D-021)
- * - Todo 블록(US-15)·D-Day(US-23)는 각 스토리에서 붙인다
+ * - 시간 지정 Todo 블록(US-15): 일정과 같이 칸을 나누고, 체크박스로 바로 완료 · 제목은 Todo 수정 창. D-Day(US-23)는 그 스토리에서
  */
-export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
+export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -81,6 +85,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
   const range = useMemo(() => getWeekRange(viewDate, DEFAULT_WEEK_START), [viewDate]);
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
+  const todos = useTimetableTodos(range);
 
   const nowMinutes = nowLineMinutes(now, hours);
 
@@ -193,17 +198,29 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
               className="relative border-l border-tp-line"
               {...quickAdd.columnProps(day.date)}
             >
-              {layoutDayBlocks(schedules, day.date, hours).map((layout) => (
-                <TimetableBlock
-                  key={layout.schedule.id}
-                  layout={layout}
-                  category={categoriesById.get(layout.schedule.categoryId) ?? null}
-                  hourHeight={size.hourHeight}
-                  fontSize={size.fontSize}
-                  onOpen={onOpenSchedule}
-                  showLink={!isMobile}
-                />
-              ))}
+              {layoutDayBlocks(schedules, day.date, hours, todos).map((layout) =>
+                layout.schedule ? (
+                  <TimetableBlock
+                    key={`s${layout.schedule.id}`}
+                    layout={layout}
+                    category={categoriesById.get(layout.schedule.categoryId) ?? null}
+                    hourHeight={size.hourHeight}
+                    fontSize={size.fontSize}
+                    onOpen={onOpenSchedule}
+                    showLink={!isMobile}
+                  />
+                ) : (
+                  <TimetableTodoBlock
+                    key={`t${layout.todo.id}-${layout.top}`}
+                    layout={layout}
+                    category={categoriesById.get(layout.todo.categoryId) ?? null}
+                    hourHeight={size.hourHeight}
+                    fontSize={size.fontSize}
+                    onOpen={onOpenTodo}
+                    compact={isMobile}
+                  />
+                )
+              )}
               {renderDraft(day.date)}
               {day.isToday && nowMinutes !== null && (
                 <NowLine minutes={nowMinutes} hourHeight={size.hourHeight} now={now} showDot={!isMobile} />
@@ -215,3 +232,5 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onAddAt, draft
     </div>
   );
 }
+
+const NO_OP = () => undefined;

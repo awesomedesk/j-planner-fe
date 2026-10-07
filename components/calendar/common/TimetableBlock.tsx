@@ -4,10 +4,10 @@ import type { Category, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { blockBackground, readableTextColor } from '../utils/calendarUtils';
-import { blockDetailText, lineClampFor, type TimetableBlockLayout } from '../utils/timetableUtils';
+import { blockDetailText, lineClampFor, type ScheduleBlockLayout } from '../utils/timetableUtils';
 
 interface TimetableBlockProps {
-  layout: TimetableBlockLayout;
+  layout: ScheduleBlockLayout;
   category: Category | null;
   /** 1시간 높이 (px) */
   hourHeight: number;

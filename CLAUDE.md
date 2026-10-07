@@ -59,6 +59,11 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
     → `onDraftChange(range)` (`hooks/useTimetableDrag`), mobile scroll so the sheet doesn't hide the draft (US-10, D-053). AppShell state: `layouts/app/useQuickAddState`.
   - `common/` — `ScheduleBar` (month), `TimetableBlock`, `DraftBlock` (dashed quick-add block), `AllDayRow` + `AllDayChip`
     (week/day all-day row: spanning bars, 3 lanes + '+n', `layoutAllDayRow`, D-052), `DayListPopover`, `NowLine`, `HourLabels`.
+  - Todo blocks (US-15, D-007·019·027): `hooks/useTimetableTodos(range)` → store `todo.scheduled` (`GET /todos?from&to&scheduled=true`,
+    category filter), `layoutDayBlocks(schedules, date, hours, todos)` lays out schedules and timed Todos together (a layout has either
+    `schedule` or `todo`; Todos repeat every day of their range, past-midnight part shows on the next day), `common/TimetableTodoBlock`
+    (stripe + white + item-color border + checkbox; title → `onOpenTodo` prop from AppShell). After saving a Todo call `refreshTodos()`
+    (box + timetable); `setTodoCompleted` updates both lists.
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).

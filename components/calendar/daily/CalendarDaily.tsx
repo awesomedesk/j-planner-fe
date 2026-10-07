@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, type ReactNode } from 'react';
 
-import type { Schedule } from '@/types/api';
+import type { Schedule, Todo } from '@/types/api';
 import type { MobileDayTabKey, SidebarItemType } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
@@ -18,8 +18,10 @@ import DraftBlock from '../common/DraftBlock';
 import HourLabels from '../common/HourLabels';
 import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
+import TimetableTodoBlock from '../common/TimetableTodoBlock';
 import { useRevealDraft, useTimetableQuickAdd, type TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
+import { useTimetableTodos } from '../hooks/useTimetableTodos';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import type { CalendarDay } from '../utils/calendarUtils';
 import {
@@ -35,6 +37,8 @@ interface CalendarDailyProps {
   /** PC·태블릿(PC-03) / 모바일(MO-03) */
   variant: 'pc' | 'mobile';
   onOpenSchedule: (schedule: Schedule) => void;
+  /** 시간표의 Todo 블록 제목을 누름 → Todo 수정 창 (US-15, US-12) */
+  onOpenTodo?: (todo: Todo) => void;
   /** 빈 시간을 누름 → 빠른 추가 (US-10) */
   onAddAt?: (slot: TimetableSlot) => void;
   /** 빠른 추가 중 임시 블록 (D-017) */
@@ -63,9 +67,9 @@ const SIZE = {
  * - 모바일 탭: 시간표 + 사이드바 항목(설정 순서, 끈 것 숨김), 좁으면 좌우 스크롤 (D-049)
  * - 세로 위치는 주간과 같은 규칙: 시간표끼리 바꾸면 보던 시간 유지, 월간에서 오면 처음 위치 (useTimetableScroll)
  * - 빈 시간을 누르면 빠른 추가 + 점선 임시 블록 (US-10, D-017)
- * - Todo 블록·시간 미지정 Todo 안내(US-15), D-Day(US-23)는 각 스토리에서
+ * - 시간 지정 Todo 블록(US-15)은 일정과 같이 칸을 나눈다. 시간 없는 Todo 놓기(US-18)·D-Day(US-23)는 각 스토리에서
  */
-export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft, onDraftChange, coverBottom = 0, tabContent }: CalendarDailyProps) {
+export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, draft, onDraftChange, coverBottom = 0, tabContent }: CalendarDailyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
@@ -85,6 +89,7 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
   const range = useMemo(() => ({ from: viewDate, to: viewDate }), [viewDate]);
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
+  const todos = useTimetableTodos(range);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { handleScroll } = useTimetableScroll({
@@ -180,17 +185,28 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
             <div />
             <div role="group" aria-label={`${formatDayTitle(viewDate)} 시간표`} className="relative" {...quickAdd.columnProps(viewDate)}>
               <div className="relative h-full">
-                {layoutDayBlocks(schedules, viewDate, hours).map((layout) => (
-                  <TimetableBlock
-                    key={layout.schedule.id}
-                    layout={layout}
-                    category={categoriesById.get(layout.schedule.categoryId) ?? null}
-                    hourHeight={size.hourHeight}
-                    fontSize={size.fontSize}
-                    onOpen={onOpenSchedule}
-                    showDetail={!isMobile}
-                  />
-                ))}
+                {layoutDayBlocks(schedules, viewDate, hours, todos).map((layout) =>
+                  layout.schedule ? (
+                    <TimetableBlock
+                      key={`s${layout.schedule.id}`}
+                      layout={layout}
+                      category={categoriesById.get(layout.schedule.categoryId) ?? null}
+                      hourHeight={size.hourHeight}
+                      fontSize={size.fontSize}
+                      onOpen={onOpenSchedule}
+                      showDetail={!isMobile}
+                    />
+                  ) : (
+                    <TimetableTodoBlock
+                      key={`t${layout.todo.id}-${layout.top}`}
+                      layout={layout}
+                      category={categoriesById.get(layout.todo.categoryId) ?? null}
+                      hourHeight={size.hourHeight}
+                      fontSize={size.fontSize}
+                      onOpen={onOpenTodo}
+                    />
+                  )
+                )}
               </div>
               {dayDraft && (
                 <DraftBlock
@@ -209,3 +225,5 @@ export default function CalendarDaily({ variant, onOpenSchedule, onAddAt, draft,
     </div>
   );
 }
+
+const NO_OP = () => undefined;

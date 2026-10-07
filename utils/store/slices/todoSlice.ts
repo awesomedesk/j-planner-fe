@@ -19,16 +19,28 @@ export interface DayTodoQuery {
   categoryId?: Id[];
 }
 
+/** 시간표(주간·일간) Todo 블록 조회 조건 (US-15, 08-api-design 11절) */
+export interface ScheduledTodoQuery {
+  from: LocalDate;
+  to: LocalDate;
+  categoryId?: Id[];
+}
+
 interface TodoState {
   items: Todo[];
   query: DayTodoQuery | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  /** 시간표 블록: 보이는 기간과 겹치고 시간이 있는 Todo */
+  scheduled: { items: Todo[]; query: ScheduledTodoQuery | null; status: 'idle' | 'loading' | 'succeeded' | 'failed' };
 }
 
 const queryKey = ({ date, categoryId }: DayTodoQuery) => `${date}|${categoryId?.join(',') ?? '*'}`;
 export const isSameTodoQuery = (a: DayTodoQuery | null, b: DayTodoQuery) => a !== null && queryKey(a) === queryKey(b);
 
-const initialState: TodoState = { items: [], query: null, status: 'idle' };
+const scheduledKey = ({ from, to, categoryId }: ScheduledTodoQuery) => `${from}~${to}|${categoryId?.join(',') ?? '*'}`;
+export const isSameScheduledTodoQuery = (a: ScheduledTodoQuery | null, b: ScheduledTodoQuery) => a !== null && scheduledKey(a) === scheduledKey(b);
+
+const initialState: TodoState = { items: [], query: null, status: 'idle', scheduled: { items: [], query: null, status: 'idle' } };
 
 export const fetchDayTodos = createAsyncThunk<Todo[], DayTodoQuery, { rejectValue: string }>(
   'todo/fetchDayTodos',
@@ -42,12 +54,28 @@ export const fetchDayTodos = createAsyncThunk<Todo[], DayTodoQuery, { rejectValu
   }
 );
 
-/** 지금 박스를 다시 받는다 (Todo 저장·삭제 뒤) */
-export const refreshDayTodos = createAsyncThunk<void, void, { state: { todo: TodoState } }>(
-  'todo/refreshDayTodos',
+/** 시간표 Todo 블록 받기 (US-15). 카테고리를 하나도 안 고르면 요청 없이 빈 목록 (US-11) */
+export const fetchScheduledTodos = createAsyncThunk<Todo[], ScheduledTodoQuery, { rejectValue: string }>(
+  'todo/fetchScheduledTodos',
+  async ({ from, to, categoryId }, { rejectWithValue }) => {
+    if (categoryId?.length === 0) return [];
+    try {
+      return await todoApi.getList(categoryId ? { from, to, scheduled: true, categoryId } : { from, to, scheduled: true });
+    } catch (error) {
+      return rejectWithValue(toErrorMessage(error));
+    }
+  }
+);
+
+/** Todo를 저장·삭제한 뒤: 박스와 시간표 블록을 둘 다 다시 받는다 (US-15) */
+export const refreshTodos = createAsyncThunk<void, void, { state: { todo: TodoState } }>(
+  'todo/refreshTodos',
   async (_, { getState, dispatch }) => {
-    const { query } = getState().todo;
-    if (query) await dispatch(fetchDayTodos(query));
+    const { query, scheduled } = getState().todo;
+    await Promise.all([
+      query ? dispatch(fetchDayTodos(query)) : null,
+      scheduled.query ? dispatch(fetchScheduledTodos(scheduled.query)) : null,
+    ]);
   }
 );
 
@@ -95,17 +123,37 @@ const todoSlice = createSlice({
         if (!isSameTodoQuery(state.query, action.meta.arg)) return;
         state.status = 'failed';
       })
+      // 완료 체크는 박스와 시간표 블록에 같이 (US-15)
       .addCase(setTodoCompleted.pending, (state, action) => {
-        const item = state.items.find((t) => t.id === action.meta.arg.id);
-        if (item) item.completed = action.meta.arg.completed;
+        [state.items, state.scheduled.items].forEach((list) => {
+          const item = list.find((t) => t.id === action.meta.arg.id);
+          if (item) item.completed = action.meta.arg.completed;
+        });
       })
       .addCase(setTodoCompleted.fulfilled, (state, action) => {
-        const index = state.items.findIndex((t) => t.id === action.payload.id);
-        if (index >= 0) state.items[index] = action.payload;
+        [state.items, state.scheduled.items].forEach((list) => {
+          const index = list.findIndex((t) => t.id === action.payload.id);
+          if (index >= 0) list[index] = action.payload;
+        });
       })
       .addCase(setTodoCompleted.rejected, (state, action) => {
-        const item = state.items.find((t) => t.id === action.meta.arg.id);
-        if (item) item.completed = !action.meta.arg.completed;
+        [state.items, state.scheduled.items].forEach((list) => {
+          const item = list.find((t) => t.id === action.meta.arg.id);
+          if (item) item.completed = !action.meta.arg.completed;
+        });
+      })
+      .addCase(fetchScheduledTodos.pending, (state, action) => {
+        state.scheduled.status = 'loading';
+        state.scheduled.query = action.meta.arg;
+      })
+      .addCase(fetchScheduledTodos.fulfilled, (state, action) => {
+        if (!isSameScheduledTodoQuery(state.scheduled.query, action.meta.arg)) return;
+        state.scheduled.status = 'succeeded';
+        state.scheduled.items = action.payload;
+      })
+      .addCase(fetchScheduledTodos.rejected, (state, action) => {
+        if (!isSameScheduledTodoQuery(state.scheduled.query, action.meta.arg)) return;
+        state.scheduled.status = 'failed';
       });
   },
 });
@@ -131,6 +179,8 @@ export const moveTodo = createAsyncThunk<void, { id: Id; afterId: Id | null }, {
 
 export const selectDayTodos = (state: { todo: TodoState }) => state.todo.items;
 export const selectDayTodoQuery = (state: { todo: TodoState }) => state.todo.query;
+export const selectScheduledTodos = (state: { todo: TodoState }) => state.todo.scheduled.items;
+export const selectScheduledTodoQuery = (state: { todo: TodoState }) => state.todo.scheduled.query;
 export const selectDayTodoStatus = (state: { todo: TodoState }) => state.todo.status;
 
 export default todoSlice.reducer;

@@ -1,6 +1,6 @@
 import { addDays, format, startOfWeek } from 'date-fns';
 
-import type { LocalDate, Schedule } from '@/types/api';
+import type { LocalDate, Schedule, Todo } from '@/types/api';
 
 import { lastDateOf, occursOn, startDateOf, type CalendarDay } from './calendarUtils';
 import { fromLocalDate, shiftDate, toLocalDate, weekStartsOn, type WeekStartDay } from '@utils/date/dateUtils';
@@ -126,8 +126,13 @@ export const layoutAllDayRow = (schedules: Schedule[], dates: LocalDate[], maxLa
   };
 };
 
-export interface TimetableBlockLayout {
-  schedule: Schedule;
+/** 시간표 블록 하나: 일정이거나 시간 지정 Todo (US-15, D-007) — 둘 중 하나만 있다 */
+export type TimetableBlockLayout = TimetableBlockGeometry & ({ schedule: Schedule; todo?: undefined } | { todo: Todo; schedule?: undefined });
+
+export type ScheduleBlockLayout = Extract<TimetableBlockLayout, { schedule: Schedule }>;
+export type TodoBlockLayout = Extract<TimetableBlockLayout, { todo: Todo }>;
+
+export interface TimetableBlockGeometry {
   /** 표시 시작부터의 분 */
   top: number;
   /** 분 (최소 MIN_BLOCK_MINUTES) */
@@ -140,6 +145,8 @@ export interface TimetableBlockLayout {
   continuesAfter: boolean;
 }
 
+type SegmentBase = Pick<TimetableBlockGeometry, 'top' | 'height' | 'continuesBefore' | 'continuesAfter'>;
+
 /** `YYYY-MM-DDTHH:mm:ss` → 그날 0시부터의 분 (날짜가 다르면 앞뒤 날로 넘침) */
 const minutesFromDayStart = (dateTime: string, date: LocalDate) => {
   const dayDiff = Math.round((fromLocalDate(dateTime.slice(0, 10)).getTime() - fromLocalDate(date).getTime()) / 86_400_000);
@@ -150,13 +157,19 @@ const minutesFromDayStart = (dateTime: string, date: LocalDate) => {
  * 그날 시간표 블록 배치
  * - 종일 일정은 빼고(종일 줄), 자정을 넘거나 여러 날인 일정은 그날 부분만 (D-045)
  * - 겹치는 일정은 칸을 나눠 나란히 둔다 (먼저 시작한 일정이 왼쪽, 빈 칸은 다시 쓴다)
+ * - 시간 지정 Todo(US-15)도 같은 규칙으로 함께 칸을 나눈다. 범위 안 매일 같은 시각 (D-027)
  */
-export const layoutDayBlocks = (schedules: Schedule[], date: LocalDate, hours: TimetableHours): TimetableBlockLayout[] => {
+export const layoutDayBlocks = (
+  schedules: Schedule[],
+  date: LocalDate,
+  hours: TimetableHours,
+  todos: Todo[] = []
+): TimetableBlockLayout[] => {
   const rangeStart = hours.startHour * 60;
   const rangeEnd = hours.endHour * 60;
   const total = rangeEnd - rangeStart;
 
-  const segments = schedules
+  const scheduleSegments = schedules
     .filter((s) => !s.allDay && occursOn(s, date))
     .map((schedule) => {
       const start = minutesFromDayStart(schedule.start, date);
@@ -166,17 +179,44 @@ export const layoutDayBlocks = (schedules: Schedule[], date: LocalDate, hours: T
       const height = Math.max(dayEnd - dayStart, MIN_BLOCK_MINUTES);
       // 끝에 붙은 짧은 일정도 칸 안에 들어오게
       const top = Math.min(dayStart - rangeStart, total - height);
-      return { schedule, top, height, continuesBefore: start < 0, continuesAfter: end > 1440 };
-    })
-    .sort((a, b) => a.top - b.top || b.height - a.height || a.schedule.title.localeCompare(b.schedule.title, 'ko'));
+      return { schedule, top, height, continuesBefore: start < 0, continuesAfter: end > 1440 } as SegmentBase & { schedule: Schedule };
+    });
+
+  // 시간 지정 Todo: 범위 안 매일 같은 시각 (D-027). 자정을 넘으면 다음 날 앞부분도 (전날 반복분)
+  const todoSegments = todos.flatMap((todo) => {
+    if (!todo.time) return [];
+    const startMinutes = clockToMinutes(todo.time.start);
+    const endMinutes = startMinutes + todo.time.durationMinutes;
+    return [date, shiftDate(date, 'day', -1)]
+      .filter((day) => todo.startDate <= day && day <= todo.endDate)
+      .map((day) => {
+        const offset = day === date ? 0 : -1440;
+        const start = offset + startMinutes;
+        const end = offset + endMinutes;
+        return { start, end };
+      })
+      .filter(({ start, end }) => end > Math.max(0, rangeStart) && start < Math.min(1440, rangeEnd))
+      .map(({ start, end }) => {
+        const dayStart = Math.max(start, 0, rangeStart);
+        const dayEnd = Math.min(end, 1440, rangeEnd);
+        const height = Math.max(dayEnd - dayStart, MIN_BLOCK_MINUTES);
+        const top = Math.min(dayStart - rangeStart, total - height);
+        return { todo, top, height, continuesBefore: start < 0, continuesAfter: end > 1440 } as SegmentBase & { todo: Todo };
+      });
+  });
+
+  const titleOf = (segment: { schedule?: Schedule; todo?: Todo }) => (segment.schedule ?? segment.todo)?.title ?? '';
+  const segments = [...scheduleSegments, ...todoSegments].sort(
+    (a, b) => a.top - b.top || b.height - a.height || titleOf(a).localeCompare(titleOf(b), 'ko')
+  );
 
   // 서로 이어서 겹치는 묶음마다 칸을 나눈다
   const result: TimetableBlockLayout[] = [];
-  let group: (typeof segments[number] & { column: number })[] = [];
+  let group: ((typeof segments)[number] & { column: number })[] = [];
   let groupEnd = -1;
   const flush = () => {
     const columns = Math.max(0, ...group.map((g) => g.column)) + 1;
-    group.forEach((g) => result.push({ ...g, columns }));
+    group.forEach((g) => result.push({ ...g, columns } as TimetableBlockLayout));
     group = [];
   };
   for (const segment of segments) {

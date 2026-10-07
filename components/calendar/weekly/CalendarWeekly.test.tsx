@@ -2,11 +2,11 @@ import type { ComponentProps } from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CATEGORIES, schedule } from '@/test/fixtures';
+import { CATEGORIES, schedule, todo } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
-import { goToday, moveView, selectDate, setTimetableTopMinutes, setViewMode } from '@store/slices/calendarSlice';
+import { goToday, moveView, selectDate, setCategoryFilter, setTimetableTopMinutes, setViewMode } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
 import { makeStore } from '@store/store';
 
@@ -327,5 +327,80 @@ describe('빈 시간 눌러 빠른 추가 (US-10, D-021)', () => {
     expect(draft).toHaveTextContent('(제목 없음) · 14:00-15:00');
     expect(draft).toHaveStyle({ top: `${14 * 46}px`, height: '46px' });
     expect(within(column('9월 25일 (금)')).queryByTestId('draft-block')).not.toBeInTheDocument();
+  });
+});
+
+describe('시간표의 Todo 블록 (US-15, D-007 · D-019 · D-027)', () => {
+  const TODOS = [
+    todo({ id: 1, title: '기획서 초안', startDate: '2026-09-25', endDate: '2026-09-25', time: { start: '11:00', durationMinutes: 90 }, categoryId: 3, color: '#4A90D9' }),
+    todo({ id: 3, title: '아침 독서', type: 'PERIOD', startDate: '2026-09-23', endDate: '2026-09-24', time: { start: '07:00', durationMinutes: 30 }, categoryId: 2 }),
+  ];
+
+  const setupTodos = async (variant: 'pc' | 'mobile' = 'pc', filter: number[] | null = null) => {
+    const api = mockApi({
+      'GET /schedules': () => json(200, []),
+      'GET /categories': () => json(200, CATEGORIES),
+      'GET /todos': () => json(200, TODOS),
+      'PATCH /todos/:id': (req) => json(200, { ...TODOS.find((t) => req.path === `/todos/${t.id}`), ...(req.body as object) }),
+    });
+    const store = makeStore();
+    await store.dispatch(fetchCategories());
+    if (filter) store.dispatch(setCategoryFilter(filter));
+    store.dispatch(setViewMode('WEEK'));
+    const onOpenTodo = vi.fn();
+    const view = renderWithStore(<CalendarWeekly variant={variant} onOpenSchedule={vi.fn()} onOpenTodo={onOpenTodo} />, { store });
+    await within(column('9월 25일 (금)')).findByRole('checkbox', { name: '기획서 초안 완료' });
+    return { api, onOpenTodo, ...view };
+  };
+
+  it('그 주의 시간 지정 Todo를 받는다: GET /todos?from&to&scheduled=true (08-api-design 11절)', async () => {
+    const { api } = await setupTodos();
+    expect(api.calls('GET /todos')[0].query.toString()).toBe('from=2026-09-20&to=2026-09-26&scheduled=true');
+  });
+
+  it('카테고리 필터를 같이 보낸다 (CAT-03)', async () => {
+    const { api } = await setupTodos('pc', [2, 3]);
+    expect(api.calls('GET /todos')[0].query.toString()).toBe('from=2026-09-20&to=2026-09-26&scheduled=true&categoryId=2&categoryId=3');
+  });
+
+  it('블록: 왼쪽 카테고리 띠 + 흰 바탕 + 항목 색 테두리 + 체크박스 (D-019)', async () => {
+    await setupTodos();
+    const body = within(column('9월 25일 (금)')).getByRole('button', { name: '기획서 초안 Todo, 11:00~12:30' }).closest('[data-todo-block]') as HTMLElement;
+    // jsdom은 gradient 안 색을 그대로 둔다: 업무 #A6323F 띠 5px + 흰 바탕
+    expect(body.style.background).toMatch(/#A6323F 0 5px, #ffffff 5px/i);
+    expect(body.style.borderColor).toBe('rgb(74, 144, 217)'); // 항목 색 #4A90D9
+  });
+
+  it('항목 색이 없으면 테두리는 테마 Theme2 (D-030)', async () => {
+    await setupTodos();
+    const body = within(column('9월 23일 (수)')).getByRole('button', { name: '아침 독서 Todo, 07:00~07:30' }).closest('[data-todo-block]') as HTMLElement;
+    expect(body.style.borderColor).toBe('var(--tp-theme2)');
+  });
+
+  it('기간 Todo는 범위 안 매일 같은 시간에 (D-027)', async () => {
+    await setupTodos();
+    expect(within(column('9월 23일 (수)')).getByRole('checkbox', { name: '아침 독서 완료' })).toBeInTheDocument();
+    expect(within(column('9월 24일 (목)')).getByRole('checkbox', { name: '아침 독서 완료' })).toBeInTheDocument();
+    expect(within(column('9월 25일 (금)')).queryByRole('checkbox', { name: '아침 독서 완료' })).not.toBeInTheDocument();
+  });
+
+  it('블록에서 바로 완료 체크: PATCH { completed: true }, 체크 표시는 남고 줄이 그어진다', async () => {
+    const { api, user } = await setupTodos();
+    const check = within(column('9월 25일 (금)')).getByRole('checkbox', { name: '기획서 초안 완료' });
+    await user.click(check);
+    expect(check).toBeChecked();
+    await waitFor(() => expect(api.calls('PATCH /todos/:id')[0]).toMatchObject({ path: '/todos/1', body: { completed: true } }));
+    expect(within(column('9월 25일 (금)')).getByText('기획서 초안')).toHaveClass('line-through');
+  });
+
+  it('제목을 누르면 Todo 수정 창 (US-12)', async () => {
+    const { onOpenTodo, user } = await setupTodos();
+    await user.click(within(column('9월 25일 (금)')).getByRole('button', { name: '기획서 초안 Todo, 11:00~12:30' }));
+    expect(onOpenTodo).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+  });
+
+  it('모바일 7칸에서도 체크박스가 있다', async () => {
+    await setupTodos('mobile');
+    expect(within(column('9월 25일 (금)')).getByRole('checkbox', { name: '기획서 초안 완료' })).toBeInTheDocument();
   });
 });

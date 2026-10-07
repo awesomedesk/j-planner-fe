@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CATEGORIES, schedule } from '@/test/fixtures';
+import { CATEGORIES, schedule, todo } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
@@ -356,5 +356,23 @@ describe('일간 종일 줄의 여러 날 일정 — 몇째 날 (D-052 보완)',
     expect(within(row).queryByRole('button', { name: '종일 1 (1/1일)' })).not.toBeInTheDocument(); // 하루짜리는 안 붙임
     await user.click(within(row).getByRole('button', { name: /종일 일정 1개 더 보기/ }));
     expect(within(screen.getByRole('dialog', { name: '9월 25일 (금) 종일' })).getByRole('button', { name: '출장 (2/3일)' })).toBeInTheDocument();
+  });
+});
+
+describe('일간 시간표의 Todo 블록 (US-15, PC-03 · MO-03)', () => {
+  it('그날 시간 지정 Todo를 받아 블록으로: GET /todos?from=그날&to=그날&scheduled=true', async () => {
+    const api = mockApi({
+      'GET /schedules': () => json(200, []),
+      'GET /categories': () => json(200, CATEGORIES),
+      'GET /todos': () =>
+        json(200, [todo({ id: 1, title: '기획서 초안', time: { start: '11:00', durationMinutes: 90 }, categoryId: 3 })]),
+    });
+    const store = makeStore();
+    await store.dispatch(fetchCategories());
+    store.dispatch(setViewMode('DAY'));
+    renderWithStore(<CalendarDaily variant="pc" onOpenSchedule={vi.fn()} onOpenTodo={vi.fn()} />, { store });
+    expect(await screen.findByRole('checkbox', { name: '기획서 초안 완료' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '기획서 초안 Todo, 11:00~12:30' })).toBeInTheDocument();
+    expect(api.calls('GET /todos')[0].query.toString()).toBe('from=2026-09-25&to=2026-09-25&scheduled=true');
   });
 });

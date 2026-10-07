@@ -37,7 +37,7 @@ import {
 } from '@store/slices/calendarSlice';
 import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
 import { refreshSchedules, selectSchedules } from '@store/slices/scheduleSlice';
-import { refreshDayTodos } from '@store/slices/todoSlice';
+import { refreshTodos } from '@store/slices/todoSlice';
 
 import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
@@ -116,10 +116,10 @@ function AppShellContent() {
     if (changed) void dispatch(refreshSchedules());
   };
   const closeQuickAdd = quickAdd.close;
-  /** Todo 저장·삭제 뒤: 창을 닫고 박스를 다시 받는다 (US-13) */
+  /** Todo 저장·삭제 뒤: 창을 닫고 박스와 시간표 Todo 블록을 다시 받는다 (US-13, US-15) */
   const closeTodoForm = () => {
     setTodoFormTarget(null);
-    void dispatch(refreshDayTodos());
+    void dispatch(refreshTodos());
   };
   const todoActions = useMemo(() => ({ openTodo: (todo: Todo) => setTodoFormTarget({ mode: 'edit', todo }) }), []);
   const saveQuickAdd = (schedule: Schedule) => {
@@ -187,6 +187,7 @@ function AppShellContent() {
   /** 시간표(주간·일간) 공통: 블록 → 수정, 빈 시간 → 빠른 추가 (US-10) */
   const timetableProps = {
     onOpenSchedule: openSchedule,
+    onOpenTodo: todoActions.openTodo,
     onAddAt: quickAdd.addAt,
     draft: quickAdd.draft,
     onDraftChange: quickAdd.changeDraftRange,

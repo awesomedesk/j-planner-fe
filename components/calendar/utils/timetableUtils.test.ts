@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { schedule } from '@/test/fixtures';
+import { schedule, todo } from '@/test/fixtures';
 
 import {
   DEFAULT_TIMETABLE_HOURS,
@@ -152,7 +152,7 @@ describe('시간표 블록 배치 (PC-02 ⑥)', () => {
     const c = schedule({ id: 3, title: 'C', start: '2026-09-25T20:30:00', end: '2026-09-25T22:00:00' });
     const d = schedule({ id: 4, title: 'D', start: '2026-09-25T07:00:00', end: '2026-09-25T08:00:00' });
     const blocks = layoutDayBlocks([c, b, a, d], '2026-09-25', HOURS);
-    const byTitle = Object.fromEntries(blocks.map((x) => [x.schedule.title, x]));
+    const byTitle = Object.fromEntries(blocks.map((x) => [x.schedule?.title, x]));
     expect(byTitle.D).toMatchObject({ column: 0, columns: 1 });
     expect(byTitle.A).toMatchObject({ column: 0, columns: 2 });
     expect(byTitle.B).toMatchObject({ column: 1, columns: 2 });
@@ -344,5 +344,46 @@ describe('종일 줄 배치 — 이어진 막대·3줄·+n (D-052)', () => {
     expect(layoutAllDayRow([timed, allDay(8, '2026-09-28', '2026-09-29')], WEEK).bars).toEqual([]);
     const { bars } = layoutAllDayRow([allDay(1, '2026-09-22', '2026-09-26')], ['2026-09-25']);
     expect(brief(bars)).toEqual([{ id: 1, lane: 0, startCol: 0, span: 1, continuesBefore: true, continuesAfter: true }]);
+  });
+});
+
+describe('시간표의 Todo 블록 배치 (US-15, D-007 · D-027)', () => {
+  const at = (start: string, durationMinutes: number) => ({ start, durationMinutes });
+
+  it('시간 지정 하루 Todo는 그날 그 시각에 블록 (위치·높이는 일정과 같은 규칙)', () => {
+    const t = todo({ id: 1, startDate: '2026-09-25', endDate: '2026-09-25', time: at('11:00', 90) });
+    expect(layoutDayBlocks([], '2026-09-25', HOURS, [t])).toEqual([
+      expect.objectContaining({ todo: t, top: 660, height: 90, column: 0, columns: 1 }),
+    ]);
+    expect(layoutDayBlocks([], '2026-09-24', HOURS, [t])).toEqual([]);
+  });
+
+  it('시간이 없는 Todo는 시간표에 두지 않는다 (목록에만, D-007)', () => {
+    expect(layoutDayBlocks([], '2026-09-25', HOURS, [todo({ id: 1, time: null })])).toEqual([]);
+  });
+
+  it('기간·주간·월간 Todo는 범위 안의 매일 같은 시간에 (D-027)', () => {
+    const period = todo({ id: 2, type: 'PERIOD', startDate: '2026-09-21', endDate: '2026-09-23', time: at('07:00', 30) });
+    const week = todo({ id: 3, type: 'WEEK', startDate: '2026-09-20', endDate: '2026-09-26', time: at('21:00', 60) });
+    ['2026-09-21', '2026-09-22', '2026-09-23'].forEach((date) =>
+      expect(layoutDayBlocks([], date, HOURS, [period])[0]).toMatchObject({ todo: period, top: 420, height: 30 })
+    );
+    expect(layoutDayBlocks([], '2026-09-24', HOURS, [period])).toEqual([]);
+    expect(layoutDayBlocks([], '2026-09-20', HOURS, [week])[0]).toMatchObject({ todo: week, top: 1260 });
+    expect(layoutDayBlocks([], '2026-09-26', HOURS, [week])[0]).toMatchObject({ todo: week, top: 1260 });
+  });
+
+  it('자정을 넘는 Todo(23:00부터 2시간)는 다음 날 00:00~01:00에도 이어서 그린다', () => {
+    const t = todo({ id: 4, startDate: '2026-09-25', endDate: '2026-09-25', time: at('23:00', 120) });
+    expect(layoutDayBlocks([], '2026-09-25', HOURS, [t])[0]).toMatchObject({ top: 1380, height: 60, continuesAfter: true });
+    expect(layoutDayBlocks([], '2026-09-26', HOURS, [t])[0]).toMatchObject({ top: 0, height: 60, continuesBefore: true });
+  });
+
+  it('일정과 겹치면 같이 칸을 나눈다 (먼저 시작한 것이 왼쪽)', () => {
+    const s = schedule({ id: 1, title: '회의', start: '2026-09-25T10:00:00', end: '2026-09-25T12:00:00' });
+    const t = todo({ id: 5, title: '기획서', time: at('11:00', 60) });
+    const blocks = layoutDayBlocks([s], '2026-09-25', HOURS, [t]);
+    expect(blocks.find((b) => b.schedule)).toMatchObject({ column: 0, columns: 2 });
+    expect(blocks.find((b) => b.todo)).toMatchObject({ column: 1, columns: 2 });
   });
 });
