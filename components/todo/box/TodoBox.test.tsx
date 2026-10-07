@@ -6,6 +6,7 @@ import { json, mockApi, problem } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { setCategoryFilter } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
+import { refreshTodos } from '@store/slices/todoSlice';
 import { makeStore } from '@store/store';
 
 import { TodoActionsContext } from '../TodoActionsContext';
@@ -310,5 +311,77 @@ describe('끌어서 순서 바꾸기 (US-14, TODO-09, D-029 · D-030)', () => {
     screen.getByRole('button', { name: '기획서 초안 수정' }).focus();
     await user.keyboard('{Alt>}{ArrowUp}{/Alt}');
     expect(api.calls('PUT /todos/:id/position')).toHaveLength(1);
+  });
+});
+
+describe('지난 미완료 Todo 경고 (US-16, TODO-13, D-029 · D-015)', () => {
+  // 오늘은 9/25. 9/22 하루 Todo '수학 문제집'과 9/10 마감 기간 Todo '독후감'을 아직 안 끝냈다
+  const MATH = todo({ id: 11, title: '수학 문제집', startDate: '2026-09-22', endDate: '2026-09-22', overdue: true });
+  const ESSAY = todo({ id: 12, title: '독후감', type: 'PERIOD', startDate: '2026-09-01', endDate: '2026-09-10', overdue: true });
+
+  const renderBox = async (date: string, todos: () => unknown[]) => {
+    const api = mockApi({
+      'GET /categories': () => json(200, CATEGORIES),
+      'GET /todos': () => json(200, todos()),
+      'PATCH /todos/:id': (req) => json(200, { ...MATH, ...(req.body as object), overdue: false }),
+    });
+    const store = makeStore();
+    await store.dispatch(fetchCategories());
+    const view = renderWithStore(
+      <TodoActionsContext.Provider value={{ openTodo: vi.fn() }}>
+        <TodoBox date={date} />
+      </TodoActionsContext.Provider>,
+      { store }
+    );
+    await screen.findAllByRole('button', { name: /수정$/ });
+    return { api, store, ...view };
+  };
+  const rowOf = (title: string) => screen.getByRole('button', { name: `${title} 수정` }).closest('li') as HTMLElement;
+
+  it("원래 날짜 박스: 빨간 ! + 'n/n 지남' (D-029)", async () => {
+    await renderBox('2026-09-22', () => [MATH, todo({ id: 13, title: '장보기', startDate: '2026-09-22', endDate: '2026-09-22' })]);
+    expect(within(rowOf('수학 문제집')).getByRole('img', { name: '기한 지남' })).toHaveTextContent('!');
+    expect(rowOf('수학 문제집')).toHaveTextContent('9/22 지남');
+    expect(within(rowOf('장보기')).queryByRole('img', { name: '기한 지남' })).not.toBeInTheDocument();
+    expect(rowOf('장보기')).not.toHaveTextContent('지남');
+  });
+
+  it("오늘 박스에도 같이: 서버가 함께 준 지난 미완료에 '!'와 마감일 (D-029)", async () => {
+    await renderBox('2026-09-25', () => [todo({ id: 1, title: '기획서 초안' }), MATH, ESSAY]);
+    expect(within(rowOf('수학 문제집')).getByRole('img', { name: '기한 지남' })).toBeInTheDocument();
+    expect(rowOf('수학 문제집')).toHaveTextContent('9/22 지남');
+    expect(rowOf('독후감')).toHaveTextContent('기간');
+    expect(rowOf('독후감')).toHaveTextContent('9/10 지남');
+    expect(rowOf('독후감')).not.toHaveTextContent('~9/10');
+  });
+
+  it('순서는 제자리: 맨 위로 올리지 않고 서버 순서 그대로 (D-015)', async () => {
+    await renderBox('2026-09-25', () => [todo({ id: 1, title: '기획서 초안' }), MATH, todo({ id: 2, title: '장보기' })]);
+    expect(titles()).toEqual(['기획서 초안', '수학 문제집', '장보기']);
+  });
+
+  it('날짜를 자동으로 바꾸지 않는다: 보여 주기만 하고 수정 요청을 보내지 않는다 (D-007, D-029)', async () => {
+    const { api } = await renderBox('2026-09-25', () => [MATH]);
+    expect(api.calls('PATCH /todos/:id')).toHaveLength(0);
+    expect(api.calls('PUT /todos/:id/position')).toHaveLength(0);
+  });
+
+  it('완료하면 경고가 사라진다 (완료한 Todo 목록에서도 ! 없음)', async () => {
+    const { user } = await renderBox('2026-09-22', () => [MATH]);
+    await user.click(screen.getByRole('checkbox', { name: '수학 문제집 완료' }));
+    await user.click(screen.getByRole('button', { name: '완료 1개 보기' }));
+    const done = screen.getByRole('list', { name: '완료한 Todo' });
+    expect(within(done).queryByRole('img', { name: '기한 지남' })).not.toBeInTheDocument();
+    expect(done).not.toHaveTextContent('지남');
+  });
+
+  it('날짜를 바꿔 저장하면(다시 받은 overdue: false) 경고가 사라진다 (TODO-13)', async () => {
+    let current = [MATH];
+    const { store } = await renderBox('2026-09-22', () => current);
+    expect(within(rowOf('수학 문제집')).getByRole('img', { name: '기한 지남' })).toBeInTheDocument();
+    current = [{ ...MATH, startDate: '2026-09-22', endDate: '2026-09-27', type: 'PERIOD', overdue: false }];
+    await act(() => store.dispatch(refreshTodos()));
+    await waitFor(() => expect(within(rowOf('수학 문제집')).queryByRole('img', { name: '기한 지남' })).not.toBeInTheDocument());
+    expect(rowOf('수학 문제집')).toHaveTextContent('~9/27');
   });
 });

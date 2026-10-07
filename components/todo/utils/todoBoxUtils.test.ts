@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { todo } from '@/test/fixtures';
 
-import { getDropAfterId, getInsertIndex, moveTodoAfter, todoRowTag, todoRowTrailing } from './todoBoxUtils';
+import { getDropAfterId, getInsertIndex, isOverdueWarning, moveTodoAfter, todoRowTag, todoRowTrailing } from './todoBoxUtils';
 
 describe('박스 한 줄 글자 (US-13, MO-10)', () => {
   it('꼬리표: 하루는 없음, 기간·주간·월간', () => {
@@ -16,6 +16,21 @@ describe('박스 한 줄 글자 (US-13, MO-10)', () => {
     expect(todoRowTrailing(todo({ id: 1, time: { start: '11:00', durationMinutes: 60 } }))).toBe('11:00');
     expect(todoRowTrailing(todo({ id: 1, type: 'PERIOD', endDate: '2026-09-30' }))).toBe('~9/30');
     expect(todoRowTrailing(todo({ id: 1, type: 'PERIOD', endDate: '2026-10-02', time: { start: '07:00', durationMinutes: 30 } }))).toBe('~10/2 07:00');
+  });
+});
+
+describe('지난 미완료 경고 (US-16, TODO-13, D-029)', () => {
+  it('서버가 overdue로 준 미완료 Todo만 경고. 완료하면 경고 없음 (완료하거나 날짜를 바꿀 때까지)', () => {
+    expect(isOverdueWarning(todo({ id: 1, overdue: true }))).toBe(true);
+    expect(isOverdueWarning(todo({ id: 1, overdue: false }))).toBe(false);
+    expect(isOverdueWarning(todo({ id: 1, overdue: true, completed: true }))).toBe(false);
+  });
+  it("오른쪽 글자는 마감일 'n/n 지남' (MO-10 캔버스 '9/22 지남')", () => {
+    expect(todoRowTrailing(todo({ id: 1, endDate: '2026-09-22', overdue: true }))).toBe('9/22 지남');
+    expect(todoRowTrailing(todo({ id: 1, type: 'PERIOD', startDate: '2026-09-01', endDate: '2026-09-10', overdue: true }))).toBe('9/10 지남');
+    expect(
+      todoRowTrailing(todo({ id: 1, endDate: '2026-10-02', time: { start: '07:00', durationMinutes: 30 }, overdue: true }))
+    ).toBe('10/2 지남');
   });
 });
 
