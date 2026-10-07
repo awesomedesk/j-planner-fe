@@ -15,7 +15,7 @@ import { useDragReorder } from '@utils/hooks/useDragReorder';
 
 import { useDayTodos } from '../hooks/useDayTodos';
 import { useTodoActions } from '../TodoActionsContext';
-import { getDropAfterId, todoRowTag, todoRowTrailing } from '../utils/todoBoxUtils';
+import { getDropAfterId, isOverdueWarning, todoRowTag, todoRowTrailing } from '../utils/todoBoxUtils';
 
 interface TodoBoxProps {
   date: LocalDate;
@@ -28,6 +28,7 @@ interface TodoBoxProps {
  * - 하루·기간·주간·월간을 나누지 않고 사용자 순서 그대로, 종류는 꼬리표로만
  * - 체크하면 박스에서 숨기고 '완료 n개 보기'로 펼친다. 기간·주간·월간도 한 번이면 전체 완료
  * - 제목을 누르면 Todo 수정 창 (US-12)
+ * - 지난 미완료 (US-16, D-029): 원래 날짜 박스와 오늘 박스(서버가 함께 줌)에 빨간 ! + 'n/n 지남'. 순서는 제자리 (D-015)
  * - 끌어서 순서 바꾸기 (US-14, TODO-09): PC는 마우스로 끌기, 모바일은 길게 눌러 끌기, 키보드는 제목에서 Alt+↑/↓.
  *   미완료끼리만 옮긴다 (완료한 것은 숨겨지는 목록이라 끌지 않음)
  * PC 사이드바 Todo 섹션, 폴드 오른쪽 패널, 모바일 일간 Todo 탭(MO-10)이 같이 쓴다
@@ -140,11 +141,12 @@ function TodoRow({ todo, category, rowProps, dropMark = null, onTitleKeyDown }: 
   const { openTodo } = useTodoActions();
   const tag = todoRowTag(todo);
   const trailing = todoRowTrailing(todo);
+  const overdue = isOverdueWarning(todo);
 
   return (
     <li
       {...rowProps}
-      className={`relative flex select-none items-center gap-2 rounded-lg border border-tp-line bg-white px-2 py-1.5 text-[13px] text-ink [-webkit-touch-callout:none] ${
+      className={`relative flex select-none items-center gap-2 rounded-lg border ${overdue ? 'border-danger-line' : 'border-tp-line'} bg-white px-2 py-1.5 text-[13px] text-ink [-webkit-touch-callout:none] ${
         rowProps?.['data-dragging'] !== undefined ? 'cursor-grabbing shadow-lg ring-1 ring-tp-primary' : ''
       }`}
     >
@@ -162,6 +164,15 @@ function TodoRow({ todo, category, rowProps, dropMark = null, onTitleKeyDown }: 
         onChange={() => void dispatch(setTodoCompleted({ id: todo.id, completed: !todo.completed }))}
         className="m-0 h-[15px] w-[15px] shrink-0 accent-tp-primary"
       />
+      {overdue && (
+        <span
+          role="img"
+          aria-label="기한 지남"
+          className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full bg-danger text-[10px] font-extrabold leading-none text-white"
+        >
+          !
+        </span>
+      )}
       {category && (
         <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: getCategoryListColor(category) }} />
       )}
@@ -172,7 +183,7 @@ function TodoRow({ todo, category, rowProps, dropMark = null, onTitleKeyDown }: 
         data-todo-title=""
         onClick={() => openTodo(todo)}
         onKeyDown={onTitleKeyDown}
-        className={`min-w-0 flex-1 truncate text-left ${todo.completed ? 'text-tp-muted line-through' : ''}`}
+        className={`min-w-0 flex-1 truncate text-left ${todo.completed ? 'text-tp-muted line-through' : ''} ${overdue ? 'font-semibold text-danger' : ''}`}
       >
         {todo.title}
       </button>
@@ -181,7 +192,9 @@ function TodoRow({ todo, category, rowProps, dropMark = null, onTitleKeyDown }: 
           {tag}
         </span>
       )}
-      {trailing && <span className="shrink-0 whitespace-nowrap text-[11px] text-tp-muted">{trailing}</span>}
+      {trailing && (
+        <span className={`shrink-0 whitespace-nowrap text-[11px] ${overdue ? 'text-danger' : 'text-tp-muted'}`}>{trailing}</span>
+      )}
     </li>
   );
 }

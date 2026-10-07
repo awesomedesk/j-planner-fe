@@ -79,7 +79,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   `formStyles` (`INPUT_CLASS`), `serverErrors` (`toFormErrors`: VALIDATION_FAILED → per-field errors). Used by schedule and todo forms.
 - **Features**: `components/category/` (US-04), `components/todo/` (US-12 form: `TodoFormDialog`, `useTodoForm`, `todoFormUtils`; US-13 box: `box/TodoBox` +
   `useDayTodos` + store `todo` slice, edit opens via `TodoActionsContext` provided by AppShell; US-14 drag reorder: `utils/hooks/useDragReorder`
-  + `utils/list/reorder` (`afterId` for `PUT …/position`) + `moveTodo` thunk), `components/memo/` (US-25, D-055·057·058: `MemoDialog` (PC 메모 창), `MemoTab` + `mobile/MemoEditor` (모바일 메모 탭, 밀어서 삭제
+  + `utils/list/reorder` (`afterId` for `PUT …/position`) + `moveTodo` thunk; US-16 지난 미완료: `isOverdueWarning` (server `overdue` and not completed) → red ! + endDate 'n/n 지남' + `danger-line` border, order unchanged), `components/memo/` (US-25, D-055·057·058: `MemoDialog` (PC 메모 창), `MemoTab` + `mobile/MemoEditor` (모바일 메모 탭, 밀어서 삭제
   `SwipeDeleteItem`), `MemoSection` (사이드바 3개, 펼친 자리 `MemoInlineEditor` 자동 저장 `useMemoAutosave` 1초), rules in `utils/memoUtils`;
   plugged in via the two slot files above), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
   AppShell owns the quick-add state and passes `draft` to the timetable). Feature hooks in `components/<feature>/hooks/`,

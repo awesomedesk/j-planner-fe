@@ -334,7 +334,7 @@ describe('지난 미완료 Todo 경고 (US-16, TODO-13, D-029 · D-015)', () => 
       { store }
     );
     await screen.findAllByRole('button', { name: /수정$/ });
-    return { api, store, ...view };
+    return { ...view, api, store };
   };
   const rowOf = (title: string) => screen.getByRole('button', { name: `${title} 수정` }).closest('li') as HTMLElement;
 
