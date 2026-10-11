@@ -64,6 +64,9 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
     `schedule` or `todo`; Todos repeat every day of their range, past-midnight part shows on the next day), `common/TimetableTodoBlock`
     (stripe + white + item-color border + checkbox; title → `onOpenTodo` prop from AppShell). After saving a Todo call `refreshTodos()`
     (box + timetable); `setTodoCompleted` updates both lists.
+  - Mobile day Todo tab agenda (US-17, D-022 · MO-10 ③): `common/DayAgendaList` under the Todo box — schedules + timed Todos of that
+    day in time order (`utils/dayAgendaUtils` `dayAgendaItems`), reads what CalendarDaily already fetched (no new request). Slot render
+    context has `openSchedule` for it.
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).

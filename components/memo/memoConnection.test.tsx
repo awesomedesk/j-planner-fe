@@ -24,7 +24,7 @@ describe('메모 연결 지점 (US-25, D-049, D-055)', () => {
   it('모바일 일간 메모 탭 내용은 메모 카드 목록 (MO-14, D-049)', async () => {
     setViewportWidth(390);
     const slot = getDayTabSlots().MEMO;
-    renderWithStore(<>{slot?.render({ date: '2026-10-01', addRequestKey: 0 })}</>);
+    renderWithStore(<>{slot?.render({ date: '2026-10-01', addRequestKey: 0, openSchedule: () => undefined })}</>);
     await waitFor(() => expect(within(screen.getByRole('list', { name: '메모 목록' })).getAllByRole('listitem')).toHaveLength(4));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -32,7 +32,7 @@ describe('메모 연결 지점 (US-25, D-049, D-055)', () => {
   it('+ 를 누를 때마다 늘어나는 addRequestKey로 새 메모 편집이 열린다 (D-055)', async () => {
     setViewportWidth(390);
     const slot = getDayTabSlots().MEMO;
-    renderWithStore(<>{slot?.render({ date: '2026-10-01', addRequestKey: 1 })}</>);
+    renderWithStore(<>{slot?.render({ date: '2026-10-01', addRequestKey: 1, openSchedule: () => undefined })}</>);
     expect(await screen.findByRole('dialog', { name: '메모' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '메모 제목' })).toHaveValue('');
   });

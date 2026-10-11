@@ -161,7 +161,7 @@ function AppShellContent() {
   /** + 를 누를 때마다 1씩 → 탭 내용이 새로 만들기를 연다 (directAddLabel이 있는 탭) */
   const [tabAddRequest, setTabAddRequest] = useState(0);
   const tabContent = Object.fromEntries(
-    Object.entries(dayTabSlots).map(([key, slot]) => [key, slot.render({ date: viewDate, addRequestKey: tabAddRequest })])
+    Object.entries(dayTabSlots).map(([key, slot]) => [key, slot.render({ date: viewDate, addRequestKey: tabAddRequest, openSchedule })])
   );
 
   const openDayPlan = (date: LocalDate) => {

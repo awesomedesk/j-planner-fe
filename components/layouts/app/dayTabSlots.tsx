@@ -1,18 +1,20 @@
 import type { ReactNode } from 'react';
 
-import type { LocalDate } from '@/types/api';
+import type { LocalDate, Schedule } from '@/types/api';
 import type { SidebarItemType } from '@/types/calendar';
+import DayAgendaList from '@components/calendar/common/DayAgendaList';
 import MemoTab from '@components/memo/MemoTab';
 import TodoBox from '@components/todo/box/TodoBox';
 
 /**
  * 모바일 일간 탭 내용 (D-049, US-25 연결 지점)
- * - render: 탭 내용. addRequestKey는 + 버튼을 누를 때마다 1씩 늘어난다 (directAddLabel이 있을 때)
+ * - render: 탭 내용. addRequestKey는 + 버튼을 누를 때마다 1씩 늘어난다 (directAddLabel이 있을 때).
+ *   openSchedule은 일정 수정 창 열기 (US-17 그날 일정 목록)
  * - directAddLabel: 있으면 이 탭에서는 + 가 추가 메뉴 대신 바로 이 동작 (예: 메모 탭 '새 메모', D-055)
  * 여기 꽂은 탭만 탭 줄에서 눌린다. 탭별 스와이프·필터·< >는 sidebarItems의 dayTabBehavior
  */
 export interface DayTabSlot {
-  render: (context: { date: LocalDate; addRequestKey: number }) => ReactNode;
+  render: (context: { date: LocalDate; addRequestKey: number; openSchedule: (schedule: Schedule) => void }) => ReactNode;
   directAddLabel?: string;
 }
 
@@ -21,11 +23,13 @@ type DayTabSlots = Partial<Record<SidebarItemType, DayTabSlot>>;
 /** 기능을 만들 때 여기에 한 줄씩 꽂는다 (Todo M2, D-Day·일기·메모 M3) */
 const DAY_TAB_SLOTS: DayTabSlots = {
   TODO: {
-    render: ({ date }) => (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-24">
+    render: ({ date, openSchedule }) => (
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-24">
         <div className="rounded-xl border border-tp-line bg-tp-panel p-3">
           <TodoBox date={date} />
         </div>
+        {/* 그날 일정 목록 (US-17, D-022 · MO-10 ③) */}
+        <DayAgendaList date={date} onOpenSchedule={openSchedule} />
       </div>
     ),
   },
