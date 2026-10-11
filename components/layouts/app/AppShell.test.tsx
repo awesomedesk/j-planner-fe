@@ -604,4 +604,23 @@ describe('Todo 박스 연결 (US-13)', () => {
     expect(await within(panel).findByRole('list', { name: '9월 25일 (금) Todo' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다음 날' })).toBeInTheDocument();
   });
+
+  it('390px 일간 Todo 탭: Todo 박스 아래 그날 일정 목록, 누르면 일정 수정 창 (US-17, MO-10)', async () => {
+    const { user, store } = await setup(390);
+    act(() => {
+      store.dispatch(setViewMode('DAY'));
+    });
+    await user.click(within(screen.getByRole('tablist', { name: '일간 보기' })).getByRole('tab', { name: 'Todo' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Todo' });
+    const agenda = await within(panel).findByRole('list', { name: '오늘 일정' });
+    await within(agenda).findByText('헬스장');
+    expect(within(agenda).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      expect.stringContaining('헬스장'),
+      expect.stringContaining('치과'),
+      expect.stringContaining('영어 회화'),
+      expect.stringContaining('저녁 약속'),
+    ]);
+    await user.click(within(agenda).getByRole('button', { name: /치과/ }));
+    expect(screen.getByRole('dialog', { name: '일정 수정' })).toBeInTheDocument();
+  });
 });
