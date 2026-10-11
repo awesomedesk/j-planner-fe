@@ -558,6 +558,49 @@ describe('추가 → Todo (US-12)', () => {
   });
 });
 
+describe('일간 시간 미지정 Todo 안내 연결 (US-18)', () => {
+  it("1440px 일간: '시간 미지정 Todo 1개' 상자, 제목을 누르면 시간 지정을 켠 Todo 수정 창 (PC-03 ⑧)", async () => {
+    const { user, store } = await setup(1440);
+    act(() => {
+      store.dispatch(setViewMode('DAY'));
+    });
+    const notice = await screen.findByRole('region', { name: '시간 미지정 Todo' });
+    expect(within(notice).getByText('시간 미지정 Todo 1개')).toBeInTheDocument();
+    await user.click(within(notice).getByRole('button', { name: '장보기 시간 지정' }));
+    expect(screen.getByRole('dialog', { name: 'Todo 수정' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '시간 지정' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('390px 일간 시간표 탭: 아래 줄을 누르면(1개) 시간 지정을 켠 Todo 수정 창 (MO-03 ③)', async () => {
+    const { user, store } = await setup(390);
+    act(() => {
+      store.dispatch(setViewMode('DAY'));
+    });
+    await user.click(await screen.findByRole('button', { name: '시간 미지정 Todo 1개, 시간 지정하기' }));
+    expect(screen.getByRole('dialog', { name: 'Todo 수정' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '시간 지정' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('390px 일간 Todo 탭에서는 줄이 보이지 않는다 (박스가 이미 보임, US-18 Q3)', async () => {
+    const { user, store } = await setup(390);
+    act(() => {
+      store.dispatch(setViewMode('DAY'));
+    });
+    await screen.findByRole('button', { name: '시간 미지정 Todo 1개, 시간 지정하기' });
+    await user.click(within(screen.getByRole('tablist', { name: '일간 보기' })).getByRole('tab', { name: 'Todo' }));
+    expect(screen.queryByRole('button', { name: /시간 미지정 Todo/ })).not.toBeInTheDocument();
+  });
+
+  it('주간·월간에는 안내가 없다 (US-18 AC: 일간 시간표)', async () => {
+    const { api, store } = await setup(1440);
+    act(() => {
+      store.dispatch(setViewMode('WEEK'));
+    });
+    await waitFor(() => expect(api.calls('GET /todos').length).toBeGreaterThan(0));
+    expect(screen.queryByRole('region', { name: '시간 미지정 Todo' })).not.toBeInTheDocument();
+  });
+});
+
 describe('Todo 박스 연결 (US-13)', () => {
   it('PC 사이드바 Todo 섹션: 고른 날짜의 Todo, 항목을 누르면 Todo 수정 창 (US-12 수정·삭제)', async () => {
     const { user, api } = await setup(1440);

@@ -175,3 +175,37 @@ describe('Todo 수정·삭제 (US-12)', () => {
     expect(api.calls('DELETE /todos/:id')).toHaveLength(1);
   });
 });
+
+describe('시간 미지정 Todo에 시간 정하기 (US-18 Q4)', () => {
+  const NO_TIME: Todo = { ...TODO, id: 16, title: '장보기', type: 'DAY', startDate: '2026-09-24', endDate: '2026-09-24', time: null };
+  const openWithTime = (routes: Parameters<typeof mockApi>[0] = {}) => {
+    const api = mockApi(routes);
+    const handlers = { onSaved: vi.fn(), onDeleted: vi.fn(), onClose: vi.fn() };
+    const view = renderWithStore(
+      <TodoFormDialog target={{ mode: 'edit', todo: NO_TIME, withTime: true }} categories={CATEGORIES} {...handlers} />
+    );
+    return { api, ...handlers, ...view };
+  };
+
+  it("수정 창이 '시간 지정'을 켠 채 열리고, 시각은 지금 이후 가장 가까운 정각부터 1시간 (US-12 기본)", () => {
+    openWithTime();
+    expect(screen.getByRole('dialog', { name: 'Todo 수정' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '시간 지정' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByLabelText('시작 시간')).toHaveValue('15:00');
+    expect(screen.getByLabelText('종료 시간')).toHaveValue('16:00');
+  });
+
+  it('바로 저장하면 시간만 PATCH → 시간표 블록 (US-18 AC)', async () => {
+    const { api, user, onSaved } = openWithTime({ 'PATCH /todos/:id': (req) => json(200, { ...NO_TIME, ...(req.body as object) }) });
+    await user.click(saveButton());
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(api.calls('PATCH /todos/:id')[0]).toMatchObject({ path: '/todos/16', body: { time: { start: '15:00', durationMinutes: 60 } } });
+  });
+
+  it("켜 둔 것도 바뀐 내용이라 그냥 닫으면 '작성을 취소할까요?' (D-037)", async () => {
+    const { user, onClose } = openWithTime();
+    await user.keyboard('{Escape}');
+    expect(screen.getByText('작성을 취소할까요?')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});

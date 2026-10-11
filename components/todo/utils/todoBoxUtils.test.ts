@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { todo } from '@/test/fixtures';
 
-import { getDropAfterId, getInsertIndex, isOverdueWarning, moveTodoAfter, todoRowTag, todoRowTrailing } from './todoBoxUtils';
+import { getDropAfterId, getInsertIndex, isOverdueWarning, moveTodoAfter, todoRowTag, todoRowTrailing, unscheduledOpenTodos } from './todoBoxUtils';
 
 describe('박스 한 줄 글자 (US-13, MO-10)', () => {
   it('꼬리표: 하루는 없음, 기간·주간·월간', () => {
@@ -64,5 +64,21 @@ describe('끌어서 순서 바꾸기 계산 (US-14, TODO-09, D-030)', () => {
     expect(moveTodoAfter(items, 4, 1).map((t) => t.id)).toEqual([1, 4, 2, 3]);
     expect(moveTodoAfter(items, 3, null).map((t) => t.id)).toEqual([3, 1, 2, 4]);
     expect(moveTodoAfter(items, 1, 4).map((t) => t.id)).toEqual([2, 3, 4, 1]);
+  });
+});
+
+describe('시간 미지정 Todo (US-18, D-021 · PC-03 ⑧ · MO-03 ③)', () => {
+  it('박스에서 시간 없음 + 미완료만, 박스 순서 그대로 (US-18 Q1)', () => {
+    const todos = [
+      todo({ id: 1, title: '기획서 초안', time: { start: '11:00', durationMinutes: 90 } }),
+      todo({ id: 2, title: '장보기' }),
+      todo({ id: 3, title: '물 2L', completed: true }),
+      todo({ id: 4, title: '보고서 작성', type: 'PERIOD', startDate: '2026-09-21', endDate: '2026-09-30' }),
+      todo({ id: 5, title: '지난 할 일', endDate: '2026-09-20', overdue: true }),
+    ];
+    expect(unscheduledOpenTodos(todos).map((t) => t.id)).toEqual([2, 4, 5]);
+  });
+  it('없으면 빈 목록', () => {
+    expect(unscheduledOpenTodos([todo({ id: 1, time: { start: '09:00', durationMinutes: 30 } })])).toEqual([]);
   });
 });

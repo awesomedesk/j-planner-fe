@@ -376,3 +376,20 @@ describe('일간 시간표의 Todo 블록 (US-15, PC-03 · MO-03)', () => {
     expect(api.calls('GET /todos')[0].query.toString()).toBe('from=2026-09-25&to=2026-09-25&scheduled=true');
   });
 });
+
+describe('시간표 안내 자리 (US-18, PC-03 ⑧ · MO-03 ③)', () => {
+  it('PC: 받은 안내를 시간표 위에 그린다', async () => {
+    await setup('pc', '2026-09-25', SCHEDULES, { timetableNotice: <p>시간 미지정 안내</p> });
+    expect(screen.getByText('시간 미지정 안내')).toBeVisible();
+  });
+
+  it('모바일: 시간표 탭에서만, 다른 탭을 고르면 안 보인다', async () => {
+    const { user } = await setup('mobile', '2026-09-25', SCHEDULES, {
+      timetableNotice: <p>시간 미지정 안내</p>,
+      tabContent: { MEMO: <p>메모 목록</p> },
+    });
+    expect(screen.getByText('시간 미지정 안내')).toBeVisible();
+    await user.click(within(screen.getByRole('tablist', { name: '일간 보기' })).getByRole('tab', { name: '메모' }));
+    expect(screen.queryByText('시간 미지정 안내')).not.toBeVisible();
+  });
+});
