@@ -68,7 +68,7 @@ describe('끌어서 순서 바꾸기 계산 (US-14, TODO-09, D-030)', () => {
 });
 
 describe('시간 미지정 Todo (US-18, D-021 · PC-03 ⑧ · MO-03 ③)', () => {
-  it('박스에서 시간 없음 + 미완료만, 박스 순서 그대로 (US-18 Q1)', () => {
+  it('박스에서 시간 없음 + 미완료 + 그날이 범위 안인 것만, 박스 순서 그대로 (US-18 Q1)', () => {
     const todos = [
       todo({ id: 1, title: '기획서 초안', time: { start: '11:00', durationMinutes: 90 } }),
       todo({ id: 2, title: '장보기' }),
@@ -76,9 +76,14 @@ describe('시간 미지정 Todo (US-18, D-021 · PC-03 ⑧ · MO-03 ③)', () =>
       todo({ id: 4, title: '보고서 작성', type: 'PERIOD', startDate: '2026-09-21', endDate: '2026-09-30' }),
       todo({ id: 5, title: '지난 할 일', endDate: '2026-09-20', overdue: true }),
     ];
-    expect(unscheduledOpenTodos(todos).map((t) => t.id)).toEqual([2, 4, 5]);
+    expect(unscheduledOpenTodos(todos, '2026-09-25').map((t) => t.id)).toEqual([2, 4]);
+  });
+  it('오늘 박스의 지난 미완료는 빼기: 시간을 정해도 원래 날짜 시간표에 놓여 오늘 시간표엔 안 생김 (US-18 Q1, D-029)', () => {
+    const overdue = todo({ id: 5, startDate: '2026-09-20', endDate: '2026-09-20', overdue: true });
+    expect(unscheduledOpenTodos([overdue], '2026-09-25')).toEqual([]);
+    expect(unscheduledOpenTodos([overdue], '2026-09-20')).toEqual([overdue]);
   });
   it('없으면 빈 목록', () => {
-    expect(unscheduledOpenTodos([todo({ id: 1, time: { start: '09:00', durationMinutes: 30 } })])).toEqual([]);
+    expect(unscheduledOpenTodos([todo({ id: 1, time: { start: '09:00', durationMinutes: 30 } })], '2026-09-25')).toEqual([]);
   });
 });

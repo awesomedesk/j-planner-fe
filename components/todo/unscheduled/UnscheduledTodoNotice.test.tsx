@@ -23,6 +23,7 @@ const TODOS = [
   todo({ id: 2, title: '장보기' }),
   todo({ id: 3, title: '책 1권 읽기', type: 'MONTH', startDate: '2026-09-01', endDate: '2026-09-30', categoryId: 2 }),
   todo({ id: 4, title: '물 2L', completed: true, completedAt: '2026-09-25T08:00:00' }),
+  todo({ id: 5, title: '지난 빨래', startDate: '2026-09-20', endDate: '2026-09-20', overdue: true }),
 ];
 
 const setup = async (variant: 'pc' | 'mobile', todos: Todo[] = TODOS, filter: number[] | null = null) => {
@@ -49,7 +50,7 @@ describe('PC 일간 시간 미지정 Todo 안내 (US-18, PC-03 ⑧)', () => {
     expect(within(notice).getByText('시간 미지정 Todo 2개')).toBeInTheDocument();
     expect(within(notice).getByRole('button', { name: '장보기 시간 지정' })).toBeInTheDocument();
     expect(within(notice).getByRole('button', { name: '책 1권 읽기 시간 지정' })).toBeInTheDocument();
-    expect(within(notice).queryByRole('button', { name: /기획서 초안|물 2L/ })).not.toBeInTheDocument();
+    expect(within(notice).queryByRole('button', { name: /기획서 초안|물 2L|지난 빨래/ })).not.toBeInTheDocument();
     expect(api.calls('GET /todos')[0].query.toString()).toBe('date=2026-09-25');
   });
 
@@ -80,7 +81,7 @@ describe('PC 일간 시간 미지정 Todo 안내 (US-18, PC-03 ⑧)', () => {
   it('Todo를 저장해 박스를 다시 받으면 수가 줄어든다 (US-18 Q5)', async () => {
     const { store, setTodos } = await setup('pc');
     expect(await screen.findByText('시간 미지정 Todo 2개')).toBeInTheDocument();
-    setTodos([TODOS[0], { ...TODOS[1], time: { start: '15:00', durationMinutes: 60 } }, TODOS[2], TODOS[3]]);
+    setTodos([TODOS[0], { ...TODOS[1], time: { start: '15:00', durationMinutes: 60 } }, TODOS[2], TODOS[3], TODOS[4]]);
     await act(async () => {
       await store.dispatch(refreshTodos());
     });
