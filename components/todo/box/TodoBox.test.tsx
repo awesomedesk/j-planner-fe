@@ -40,7 +40,7 @@ const setup = async (routes: Parameters<typeof mockApi>[0] = {}, filter: number[
   if (filter) store.dispatch(setCategoryFilter(filter));
   const openTodo = vi.fn();
   const view = renderWithStore(
-    <TodoActionsContext.Provider value={{ openTodo }}>
+    <TodoActionsContext.Provider value={{ openTodo, scheduleTodo: vi.fn() }}>
       <TodoBox date="2026-09-25" />
     </TodoActionsContext.Provider>,
     { store }
@@ -328,7 +328,7 @@ describe('지난 미완료 Todo 경고 (US-16, TODO-13, D-029 · D-015)', () => 
     const store = makeStore();
     await store.dispatch(fetchCategories());
     const view = renderWithStore(
-      <TodoActionsContext.Provider value={{ openTodo: vi.fn() }}>
+      <TodoActionsContext.Provider value={{ openTodo: vi.fn(), scheduleTodo: vi.fn() }}>
         <TodoBox date={date} />
       </TodoActionsContext.Provider>,
       { store }

@@ -23,7 +23,11 @@ import {
   type TodoFormValues,
 } from '../utils/todoFormUtils';
 
-export type TodoFormTarget = { mode: 'create'; baseDate: LocalDate } | { mode: 'edit'; todo: Todo };
+/**
+ * 새 Todo 또는 수정할 Todo.
+ * `withTime`: 시간 미지정 Todo에 시간을 정하러 열 때(US-18) '시간 지정'을 켠 채 연다. 켠 것도 바뀐 내용 (D-037)
+ */
+export type TodoFormTarget = { mode: 'create'; baseDate: LocalDate } | { mode: 'edit'; todo: Todo; withTime?: boolean };
 
 interface UseTodoFormOptions {
   target: TodoFormTarget;
@@ -41,7 +45,7 @@ export const useTodoForm = ({ target, weekStart = DEFAULT_WEEK_START, onSaved, o
   const [initialValues] = useState<TodoFormValues>(() =>
     target.mode === 'edit' ? todoToFormValues(target.todo) : createEmptyTodoValues(target.baseDate)
   );
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState(() => (target.mode === 'edit' && target.withTime ? { ...initialValues, hasTime: true } : initialValues));
   const [errors, setErrors] = useState<TodoFormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

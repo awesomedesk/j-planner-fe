@@ -40,7 +40,7 @@ const setup = async (date = '2026-09-25', schedules = SCHEDULES, todos = TODOS) 
   const onOpenSchedule = vi.fn();
   const openTodo = vi.fn();
   const view = renderWithStore(
-    <TodoActionsContext.Provider value={{ openTodo }}>
+    <TodoActionsContext.Provider value={{ openTodo, scheduleTodo: vi.fn() }}>
       <DayAgendaList date={date} onOpenSchedule={onOpenSchedule} />
     </TodoActionsContext.Provider>,
     { store }

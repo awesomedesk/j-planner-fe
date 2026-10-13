@@ -7,6 +7,7 @@ import type { CalendarViewMode } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
 import CalendarDaily from '@components/calendar/daily/CalendarDaily';
+import UnscheduledTodoNotice from '@components/todo/unscheduled/UnscheduledTodoNotice';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
 import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
@@ -121,7 +122,13 @@ function AppShellContent() {
     setTodoFormTarget(null);
     void dispatch(refreshTodos());
   };
-  const todoActions = useMemo(() => ({ openTodo: (todo: Todo) => setTodoFormTarget({ mode: 'edit', todo }) }), []);
+  const todoActions = useMemo(
+    () => ({
+      openTodo: (todo: Todo) => setTodoFormTarget({ mode: 'edit', todo }),
+      scheduleTodo: (todo: Todo) => setTodoFormTarget({ mode: 'edit', todo, withTime: true }),
+    }),
+    []
+  );
   const saveQuickAdd = (schedule: Schedule) => {
     hiddenSave.notify(schedule);
     closeQuickAdd();
@@ -206,7 +213,12 @@ function AppShellContent() {
     ) : viewMode === 'WEEK' ? (
       <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} />
     ) : (
-      <CalendarDaily variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} tabContent={tabContent} />
+      <CalendarDaily
+        variant={isTabletUp ? 'pc' : 'mobile'}
+        {...timetableProps}
+        tabContent={tabContent}
+        timetableNotice={<UnscheduledTodoNotice date={viewDate} variant={isTabletUp ? 'pc' : 'mobile'} onPick={todoActions.scheduleTodo} />}
+      />
     );
 
   return (

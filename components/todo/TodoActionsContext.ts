@@ -11,7 +11,9 @@ import type { Todo } from '@/types/api';
 export interface TodoActions {
   /** Todo 수정 창 열기 (US-12) */
   openTodo: (todo: Todo) => void;
+  /** 시간 미지정 Todo에 시간 정하기: '시간 지정'을 켠 수정 창 (US-18) */
+  scheduleTodo: (todo: Todo) => void;
 }
 
-export const TodoActionsContext = createContext<TodoActions>({ openTodo: () => undefined });
+export const TodoActionsContext = createContext<TodoActions>({ openTodo: () => undefined, scheduleTodo: () => undefined });
 export const useTodoActions = () => useContext(TodoActionsContext);

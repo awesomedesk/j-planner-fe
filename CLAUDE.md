@@ -67,6 +67,11 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   - Mobile day Todo tab agenda (US-17, D-022 · MO-10 ③): `common/DayAgendaList` under the Todo box — schedules + timed Todos of that
     day in time order (`utils/dayAgendaUtils` `dayAgendaItems`), reads what CalendarDaily already fetched (no new request). Slot render
     context has `openSchedule` for it.
+  - Unscheduled Todo notice (US-18, PC-03 ⑧ · MO-03 ③): `components/todo/unscheduled/UnscheduledTodoNotice` — reads the day box
+    (`useDayTodos`, `unscheduledOpenTodos` = no time + not completed), hidden at 0. PC: floating box bottom-right of the timetable,
+    title → pick; mobile: bar left of the + button, 1 → pick, more → bottom sheet. AppShell passes it as CalendarDaily
+    `timetableNotice` (timetable tab only) and picks via `TodoActions.scheduleTodo` → `TodoFormTarget { mode: 'edit', withTime: true }`
+    (form opens with '시간 지정' on, counts as dirty).
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).

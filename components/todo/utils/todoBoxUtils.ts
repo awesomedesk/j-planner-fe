@@ -22,6 +22,11 @@ export const todoRowTrailing = (todo: Todo) => {
   return parts.length > 0 ? parts.join(' ') : null;
 };
 
+/**
+ * 시간 미지정 Todo (US-18, PC-03 ⑧ · MO-03 ③): 그날 박스에서 시간이 없고 아직 안 끝낸 것, 박스 순서 그대로.
+ * 박스와 같은 기준이라 오늘이면 지난 미완료(D-029)도 들어간다
+ */
+export const unscheduledOpenTodos = (todos: Todo[]) => todos.filter((t) => t.time === null && !t.completed);
 
 /** 끌어서 순서 바꾸기 계산 (US-14) — 목록 공통 규칙은 utils/list/reorder */
 export { getDropAfterId, getInsertIndex, moveAfter as moveTodoAfter } from '@utils/list/reorder';

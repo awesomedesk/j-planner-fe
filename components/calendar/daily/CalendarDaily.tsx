@@ -50,6 +50,11 @@ interface CalendarDailyProps {
    * 내용은 AppShell의 dayTabSlots 한 곳에서 꽂는다
    */
   tabContent?: Partial<Record<SidebarItemType, ReactNode>>;
+  /**
+   * 시간표 위에 띄우는 안내 (US-18 시간 미지정 Todo, PC-03 ⑧ · MO-03 ③). 시간표 탭에서만 보인다.
+   * 내용은 AppShell이 꽂는다 (달력은 Todo 기능을 모름)
+   */
+  timetableNotice?: ReactNode;
   /** 화면 아래를 가리는 높이 (모바일 빠른 추가 시트). 임시 블록이 그 위로 보이게 스크롤한다 (MO-12) */
   coverBottom?: number;
 }
@@ -67,9 +72,9 @@ const SIZE = {
  * - 모바일 탭: 시간표 + 사이드바 항목(설정 순서, 끈 것 숨김), 좁으면 좌우 스크롤 (D-049)
  * - 세로 위치는 주간과 같은 규칙: 시간표끼리 바꾸면 보던 시간 유지, 월간에서 오면 처음 위치 (useTimetableScroll)
  * - 빈 시간을 누르면 빠른 추가 + 점선 임시 블록 (US-10, D-017)
- * - 시간 지정 Todo 블록(US-15)은 일정과 같이 칸을 나눈다. 시간 없는 Todo 놓기(US-18)·D-Day(US-23)는 각 스토리에서
+ * - 시간 지정 Todo 블록(US-15)은 일정과 같이 칸을 나눈다. 시간 없는 Todo 안내(US-18)는 timetableNotice로 받는다. D-Day(US-23)는 그 스토리에서
  */
-export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, draft, onDraftChange, coverBottom = 0, tabContent }: CalendarDailyProps) {
+export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, draft, onDraftChange, coverBottom = 0, tabContent, timetableNotice }: CalendarDailyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
@@ -168,12 +173,13 @@ export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO
         />
 
         {/* 시간표 */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
         <div
           ref={scrollRef}
           data-testid="timetable-scroll"
           onScroll={handleScroll}
           className="min-h-0 flex-1 overflow-y-auto pt-2"
-          style={visibleDraft && coverBottom ? { paddingBottom: coverBottom } : undefined}
+          style={visibleDraft && coverBottom ? { paddingBottom: coverBottom } : isMobile && timetableNotice ? { paddingBottom: MOBILE_NOTICE_SPACE } : undefined}
         >
           <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
             <HourLabels
@@ -221,9 +227,14 @@ export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO
             </div>
           </div>
         </div>
+        {timetableNotice}
+        </div>
       </div>
     </div>
   );
 }
 
 const NO_OP = () => undefined;
+
+/** 모바일: 아래 떠 있는 안내 줄(MO-03 ③)이 시간표 맨 아래(23시)를 가리지 않게 남기는 여백 */
+const MOBILE_NOTICE_SPACE = 76;
