@@ -36,7 +36,7 @@ export default function ApiStatusDevPage() {
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-4 p-6 text-sm">
       <h1 className="text-lg font-bold">개발용 · API 연결 확인 (US-03)</h1>
       <p className="text-tp-muted">
-        서버: {envConfig.apiBaseUrl || '(NEXT_PUBLIC_API_BASE_URL 없음)'}
+        서버: {envConfig.apiBaseUrl || '같은 주소 (/api → 개발 서버가 BE로 넘김)'}
         {API_PREFIX}
       </p>
       <div className="flex flex-wrap gap-2">

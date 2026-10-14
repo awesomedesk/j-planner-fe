@@ -6,6 +6,7 @@ import type {
   ProblemDetail,
   QueryParams,
 } from './types';
+import { CSRF_HEADER, readCsrfToken } from './csrf';
 
 /** 모든 API 주소 앞에 붙는 경로 (08-api-design.md 2-1절) */
 export const API_PREFIX = '/api/v1';
@@ -30,6 +31,8 @@ export class ApiError extends Error {
   readonly code: ApiErrorCode | ClientErrorCode;
   readonly errors: FieldErrorDetail[];
   readonly problem?: ProblemDetail;
+  /** 429일 때 다시 시도할 수 있기까지 남은 초 (Retry-After 헤더, US-34) */
+  readonly retryAfterSeconds?: number;
 
   constructor(params: {
     message: string;
@@ -37,6 +40,7 @@ export class ApiError extends Error {
     code: ApiErrorCode | ClientErrorCode;
     errors?: FieldErrorDetail[];
     problem?: ProblemDetail;
+    retryAfterSeconds?: number;
   }) {
     super(params.message);
     this.name = 'ApiError';
@@ -44,6 +48,7 @@ export class ApiError extends Error {
     this.code = params.code;
     this.errors = params.errors ?? [];
     this.problem = params.problem;
+    this.retryAfterSeconds = params.retryAfterSeconds;
   }
 }
 
@@ -74,7 +79,29 @@ function buildQuery(params?: QueryParams): string {
   return query ? `?${query}` : '';
 }
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+/**
+ * 로그인이 끝났을 때(401) 할 일 (US-34, D-072). 앱의 로그인 담당이 등록한다.
+ * - 돌려준 값이 true면: 다시 로그인했으니 **같은 요청을 한 번 더** 보낸다 (새 CSRF로)
+ * - false면: 401 오류를 그대로 던진다
+ * 로그인 API(`/auth/...`)와 로그인 확인(`GET /me`)의 401은 알리지 않는다 (그 자리에서 처리).
+ */
+export type UnauthenticatedHandler = (request: { method: HttpMethod; path: string }) => Promise<boolean>;
+
+let unauthenticatedHandler: UnauthenticatedHandler | null = null;
+
+export function setUnauthenticatedHandler(handler: UnauthenticatedHandler | null) {
+  unauthenticatedHandler = handler;
+}
+
+const isAuthCheck = (method: HttpMethod, path: string) => path.startsWith('/auth/') || (method === 'GET' && path === '/me');
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds) : undefined;
+}
 
 /**
  * HTTP 클라이언트 (fetch 래퍼)
@@ -87,10 +114,13 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
  * const todo  = await apiClient.patch<Todo>(`/todos/${id}`, { completed: true });
  * await apiClient.delete(`/todos/${id}`);
  */
-class ApiClient {
+export class ApiClient {
   private baseURL: string;
   private timeout: number;
   private defaultHeaders: Record<string, string>;
+
+  /** 진행 중인 GET /auth/csrf (동시에 여러 번 받지 않게) */
+  private csrfRequest: Promise<void> | null = null;
 
   constructor(config: ApiClientConfig) {
     this.baseURL = config.baseURL;
@@ -101,35 +131,42 @@ class ApiClient {
     };
   }
 
+  /**
+   * CSRF 쿠키를 새로 받는다 (`GET /auth/csrf`, 204). 앱을 열 때 한 번, 쿠키가 없거나 틀렸을 때 다시.
+   * 동시에 불러도 요청은 한 번만 나간다.
+   */
+  fetchCsrfToken(): Promise<void> {
+    if (!this.csrfRequest) {
+      this.csrfRequest = this.send('GET', '/auth/csrf', {})
+        .then(() => undefined)
+        .finally(() => {
+          this.csrfRequest = null;
+        });
+    }
+    return this.csrfRequest;
+  }
+
   private async request<T>(
     method: HttpMethod,
     path: string,
     options: { params?: QueryParams; body?: unknown } = {}
   ): Promise<T> {
-    const url = `${this.baseURL}${API_PREFIX}${path}${buildQuery(options.params)}`;
-    const hasBody = options.body !== undefined;
+    let response = await this.send(method, path, options);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    // CSRF 토큰이 틀렸으면 새로 받아 한 번만 다시 (08 13-2)
+    if (response.status === 403) {
+      const error = await this.toApiError(response);
+      if (error.code !== 'CSRF_INVALID') throw error;
+      await this.fetchCsrfToken();
+      response = await this.send(method, path, options);
+    }
 
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method,
-        headers: {
-          ...this.defaultHeaders,
-          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: hasBody ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new ApiError({ message: '응답이 늦어 요청을 멈췄어요. 다시 시도하세요.', status: 0, code: 'TIMEOUT' });
-      }
-      throw new ApiError({ message: '서버에 연결할 수 없어요. 잠시 후 다시 시도하세요.', status: 0, code: 'NETWORK_ERROR' });
-    } finally {
-      clearTimeout(timeoutId);
+    // 로그인이 끝났으면 로그인 담당에게 묻고, 다시 로그인했으면 같은 요청을 한 번만 다시 (D-072)
+    if (response.status === 401 && unauthenticatedHandler && !isAuthCheck(method, path)) {
+      const error = await this.toApiError(response);
+      const retry = await unauthenticatedHandler({ method, path });
+      if (!retry) throw error;
+      response = await this.send(method, path, options);
     }
 
     if (!response.ok) {
@@ -141,6 +178,45 @@ class ApiClient {
     }
     const text = await response.text();
     return (text ? JSON.parse(text) : undefined) as T;
+  }
+
+  /** 요청 한 번 (바꾸는 요청이면 CSRF 헤더를 붙인다. 쿠키가 없으면 먼저 받는다) */
+  private async send(method: HttpMethod, path: string, options: { params?: QueryParams; body?: unknown }): Promise<Response> {
+    const url = `${this.baseURL}${API_PREFIX}${path}${buildQuery(options.params)}`;
+    const hasBody = options.body !== undefined;
+
+    const headers: Record<string, string> = {
+      ...this.defaultHeaders,
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    };
+    if (method !== 'GET') {
+      let token = readCsrfToken();
+      if (!token) {
+        await this.fetchCsrfToken();
+        token = readCsrfToken();
+      }
+      if (token) headers[CSRF_HEADER] = token;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      return await fetch(url, {
+        method,
+        headers,
+        body: hasBody ? JSON.stringify(options.body) : undefined,
+        credentials: 'same-origin',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new ApiError({ message: '응답이 늦어 요청을 멈췄어요. 다시 시도하세요.', status: 0, code: 'TIMEOUT' });
+      }
+      throw new ApiError({ message: '서버에 연결할 수 없어요. 잠시 후 다시 시도하세요.', status: 0, code: 'NETWORK_ERROR' });
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   private async toApiError(response: Response): Promise<ApiError> {
@@ -160,6 +236,7 @@ class ApiClient {
         code: body.code,
         errors: body.errors ?? [],
         problem: body,
+        retryAfterSeconds: parseRetryAfter(response.headers.get('Retry-After')),
       });
     }
 
