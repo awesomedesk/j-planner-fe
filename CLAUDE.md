@@ -68,7 +68,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
     day in time order (`utils/dayAgendaUtils` `dayAgendaItems`), reads what CalendarDaily already fetched (no new request). Slot render
     context has `openSchedule` for it.
   - Unscheduled Todo notice (US-18, PC-03 ⑧ · MO-03 ③): `components/todo/unscheduled/UnscheduledTodoNotice` — reads the day box
-    (`useDayTodos`, `unscheduledOpenTodos` = no time + not completed), hidden at 0. PC: floating box bottom-right of the timetable,
+    (`useDayTodos`, `unscheduledOpenTodos` = no time + not completed + date in range, so overdue ones are left out), hidden at 0. PC: floating box bottom-right of the timetable,
     title → pick; mobile: bar left of the + button, 1 → pick, more → bottom sheet. AppShell passes it as CalendarDaily
     `timetableNotice` (timetable tab only) and picks via `TodoActions.scheduleTodo` → `TodoFormTarget { mode: 'edit', withTime: true }`
     (form opens with '시간 지정' on, counts as dirty).

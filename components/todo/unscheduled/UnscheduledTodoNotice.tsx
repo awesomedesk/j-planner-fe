@@ -18,14 +18,15 @@ interface UnscheduledTodoNoticeProps {
 
 /**
  * UnscheduledTodoNotice - 일간 시간표의 '시간 미지정 Todo n개' 안내 (US-18, D-021 · PC-03 ⑧ · MO-03 ③)
- * - 그날 Todo 박스와 같은 목록(GET /todos?date=, 카테고리 필터)에서 시간 없고 안 끝낸 것만 센다. 0개면 그리지 않는다
+ * - 그날 Todo 박스와 같은 목록(GET /todos?date=, 카테고리 필터)에서 시간 없고 안 끝냈고 그날이 범위 안인 것만 센다
+ *   (지난 미완료는 뺌, US-18 Q1). 0개면 그리지 않는다
  * - PC: 시간표 오른쪽 아래 떠 있는 연한 상자. 제목을 누르면 그 Todo의 시간을 정한다
  * - 모바일: 화면 아래 떠 있는 줄(+ 버튼 왼쪽까지). 1개면 바로, 여러 개면 아래 시트에서 고른다
  * 저장하면 박스를 다시 받으므로(refreshTodos) 수가 저절로 줄고 시간표에 블록이 생긴다
  */
 export default function UnscheduledTodoNotice({ date, variant, onPick }: UnscheduledTodoNoticeProps) {
   const { todos } = useDayTodos(date);
-  const items = unscheduledOpenTodos(todos);
+  const items = unscheduledOpenTodos(todos, date);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   if (items.length === 0) return null;

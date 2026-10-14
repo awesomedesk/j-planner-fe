@@ -1,4 +1,4 @@
-import type { Todo } from '@/types/api';
+import type { LocalDate, Todo } from '@/types/api';
 
 /** 박스 꼬리표: 기간 / 주간 / 월간 (하루는 없음, D-013) */
 export const todoRowTag = (todo: Todo) => ({ DAY: null, PERIOD: '기간', WEEK: '주간', MONTH: '월간' })[todo.type];
@@ -23,10 +23,11 @@ export const todoRowTrailing = (todo: Todo) => {
 };
 
 /**
- * 시간 미지정 Todo (US-18, PC-03 ⑧ · MO-03 ③): 그날 박스에서 시간이 없고 아직 안 끝낸 것, 박스 순서 그대로.
- * 박스와 같은 기준이라 오늘이면 지난 미완료(D-029)도 들어간다
+ * 시간 미지정 Todo (US-18, PC-03 ⑧ · MO-03 ③): 그날 박스에서 시간이 없고 아직 안 끝냈고 그날이 범위 안인 것, 박스 순서 그대로.
+ * 오늘 박스에 함께 오는 지난 미완료(D-029)는 뺀다 — 시간을 정해도 원래 날짜에 놓여 이 시간표에는 블록이 생기지 않으므로
  */
-export const unscheduledOpenTodos = (todos: Todo[]) => todos.filter((t) => t.time === null && !t.completed);
+export const unscheduledOpenTodos = (todos: Todo[], date: LocalDate) =>
+  todos.filter((t) => t.time === null && !t.completed && t.startDate <= date && date <= t.endDate);
 
 /** 끌어서 순서 바꾸기 계산 (US-14) — 목록 공통 규칙은 utils/list/reorder */
 export { getDropAfterId, getInsertIndex, moveAfter as moveTodoAfter } from '@utils/list/reorder';
