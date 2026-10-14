@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { todo } from '@/test/fixtures';
 
-import { getDropAfterId, getInsertIndex, isOverdueWarning, moveTodoAfter, todoRowTag, todoRowTrailing, unscheduledOpenTodos } from './todoBoxUtils';
+import { getDropAfterId, getInsertIndex, isOverdueWarning, moveTodoAfter, todoRowTag, todoRowTrailing, todoShowTier, pickVisibleTodos, unscheduledOpenTodos } from './todoBoxUtils';
 
 describe('박스 한 줄 글자 (US-13, MO-10)', () => {
   it('꼬리표: 하루는 없음, 기간·주간·월간', () => {
@@ -85,5 +85,56 @@ describe('시간 미지정 Todo (US-18, D-021 · PC-03 ⑧ · MO-03 ③)', () =>
   });
   it('없으면 빈 목록', () => {
     expect(unscheduledOpenTodos([todo({ id: 1, time: { start: '09:00', durationMinutes: 30 } })], '2026-09-25')).toEqual([]);
+  });
+});
+
+describe('PC 사이드바 박스 5개 + 더 보기 — 보일 것 고르기 (D-067)', () => {
+  const D = '2026-09-25';
+  it('우선순위 단계: ① 그날 시간 정한 것 ② 시간 없는 하루 ③ 진행 중 기간·주간·월간 ④ 지난 미완료(시간이 있어도) (D-067 Q5)', () => {
+    expect(todoShowTier(todo({ id: 1, time: { start: '09:00', durationMinutes: 30 } }), D)).toBe(1);
+    expect(todoShowTier(todo({ id: 2, type: 'WEEK', startDate: '2026-09-20', endDate: '2026-09-26', time: { start: '07:00', durationMinutes: 30 } }), D)).toBe(1);
+    expect(todoShowTier(todo({ id: 3 }), D)).toBe(2);
+    expect(todoShowTier(todo({ id: 4, type: 'PERIOD', startDate: '2026-09-21', endDate: '2026-09-30' }), D)).toBe(3);
+    expect(todoShowTier(todo({ id: 5, type: 'MONTH', startDate: '2026-09-01', endDate: '2026-09-30' }), D)).toBe(3);
+    expect(todoShowTier(todo({ id: 6, startDate: '2026-09-20', endDate: '2026-09-20', overdue: true }), D)).toBe(4);
+    expect(todoShowTier(todo({ id: 7, startDate: '2026-09-20', endDate: '2026-09-20', time: { start: '09:00', durationMinutes: 30 }, overdue: true }), D)).toBe(4);
+  });
+
+  it('5개 이하면 모두 보이고 숨은 것 없음', () => {
+    const todos = [1, 2, 3].map((id) => todo({ id }));
+    expect(pickVisibleTodos(todos, D, 5)).toEqual({ visible: todos, hidden: [] });
+  });
+
+  it('우선순위로 5개를 고르되, 보이는 순서는 서버(끌어서 정한) 순서 그대로 (D-067, D-015)', () => {
+    const todos = [
+      todo({ id: 1, title: '지난 9/20', startDate: '2026-09-20', endDate: '2026-09-20', overdue: true }),
+      todo({ id: 2, title: '월간', type: 'MONTH', startDate: '2026-09-01', endDate: '2026-09-30' }),
+      todo({ id: 3, title: '하루 A' }),
+      todo({ id: 4, title: '지난 9/23', startDate: '2026-09-23', endDate: '2026-09-23', overdue: true }),
+      todo({ id: 5, title: '시간', time: { start: '11:00', durationMinutes: 60 } }),
+      todo({ id: 6, title: '기간', type: 'PERIOD', startDate: '2026-09-21', endDate: '2026-09-30' }),
+      todo({ id: 7, title: '하루 B' }),
+      todo({ id: 8, title: '지난 9/23 둘째', startDate: '2026-09-22', endDate: '2026-09-23', type: 'PERIOD', overdue: true }),
+    ];
+    const { visible, hidden } = pickVisibleTodos(todos, D, 5);
+    // ① 5 ② 3·7 ③ 2·6 → 5개 다 참. ④는 모두 숨김
+    expect(visible.map((t) => t.id)).toEqual([2, 3, 5, 6, 7]);
+    expect(hidden.map((t) => t.id)).toEqual([1, 4, 8]);
+  });
+
+  it('④ 지난 미완료끼리는 마감일이 최근인 것부터, 같으면 끈 순서 (D-067)', () => {
+    const todos = [
+      todo({ id: 1, title: '시간', time: { start: '11:00', durationMinutes: 60 } }),
+      todo({ id: 2, startDate: '2026-09-20', endDate: '2026-09-20', overdue: true }),
+      todo({ id: 3, startDate: '2026-09-23', endDate: '2026-09-23', overdue: true }),
+      todo({ id: 4, startDate: '2026-09-22', endDate: '2026-09-22', overdue: true }),
+      todo({ id: 5, startDate: '2026-09-23', endDate: '2026-09-23', overdue: true }),
+      todo({ id: 6, startDate: '2026-09-24', endDate: '2026-09-24', overdue: true }),
+      todo({ id: 7, startDate: '2026-09-10', endDate: '2026-09-10', overdue: true }),
+    ];
+    const { visible, hidden } = pickVisibleTodos(todos, D, 5);
+    // ① 1 → ④ 6(9/24) · 3(9/23) · 5(9/23) · 4(9/22) 까지 5개. 보이는 순서는 서버 순서
+    expect(visible.map((t) => t.id)).toEqual([1, 3, 4, 5, 6]);
+    expect(hidden.map((t) => t.id)).toEqual([2, 7]);
   });
 });

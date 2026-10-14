@@ -11,6 +11,7 @@ import { makeStore } from '@store/store';
 
 import { TodoActionsContext } from '../TodoActionsContext';
 import TodoBox from './TodoBox';
+import TodoSection from './TodoSection';
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
@@ -383,5 +384,137 @@ describe('지난 미완료 Todo 경고 (US-16, TODO-13, D-029 · D-015)', () => 
     await act(() => store.dispatch(refreshTodos()));
     await waitFor(() => expect(within(rowOf('수학 문제집')).queryByRole('img', { name: '기한 지남' })).not.toBeInTheDocument());
     expect(rowOf('수학 문제집')).toHaveTextContent('~9/27');
+  });
+});
+
+describe('PC 사이드바 박스 5개 + 더 보기 (D-067, US-13 AC 보완)', () => {
+  // 서버 순서. 9/25 기준 ① 시간 1 ② 하루 2·6 ③ 기간 3·주간 4·월간 5 ④ 지난 7(9/24)·8(9/20)
+  const MANY = [
+    todo({ id: 8, title: '지난 빨래', startDate: '2026-09-20', endDate: '2026-09-20', overdue: true }),
+    todo({ id: 1, title: '기획서 초안', time: { start: '11:00', durationMinutes: 90 }, categoryId: 3 }),
+    todo({ id: 2, title: '장보기' }),
+    todo({ id: 3, title: '보고서 작성', type: 'PERIOD', startDate: '2026-09-21', endDate: '2026-09-30', categoryId: 3 }),
+    todo({ id: 7, title: '지난 보고서 검토', startDate: '2026-09-24', endDate: '2026-09-24', overdue: true }),
+    todo({ id: 4, title: '러닝 3회', type: 'WEEK', startDate: '2026-09-20', endDate: '2026-09-26', categoryId: 4 }),
+    todo({ id: 5, title: '책 1권 읽기', type: 'MONTH', startDate: '2026-09-01', endDate: '2026-09-30', categoryId: 2 }),
+    todo({ id: 6, title: '물 2L' }),
+    todo({ id: 9, title: '끝낸 일', completed: true, completedAt: '2026-09-25T08:00:00' }),
+  ];
+
+  const setupBox = async (todos = MANY, props: { collapseAfter?: number; date?: string } = { collapseAfter: 5 }) => {
+    const api = mockApi({
+      'GET /categories': () => json(200, CATEGORIES),
+      'GET /todos': () => json(200, todos),
+      'PUT /todos/:id/position': (req) => json(200, todos.find((t) => req.path === `/todos/${t.id}/position`)),
+      'PATCH /todos/:id': (req) => json(200, { ...todos.find((t) => `/todos/${t.id}` === req.path), ...(req.body as object) }),
+    });
+    const store = makeStore();
+    await store.dispatch(fetchCategories());
+    const ui = (date: string) => (
+      <TodoActionsContext.Provider value={{ openTodo: vi.fn(), scheduleTodo: vi.fn() }}>
+        <TodoBox date={date} collapseAfter={props.collapseAfter} />
+      </TodoActionsContext.Provider>
+    );
+    const view = renderWithStore(ui(props.date ?? '2026-09-25'), { store });
+    await screen.findByRole('button', { name: '장보기 수정' });
+    return { api, ...view, store, rerenderDate: (date: string) => view.rerender(ui(date)) };
+  };
+
+  const boxList = () => screen.getByRole('list', { name: /Todo$/ });
+  const shown = () => within(boxList()).getAllByRole('listitem').map((li) => within(li).getByRole('button', { name: /수정$/ }).textContent);
+
+  it('미완료 5개만, 우선순위로 고르고 순서는 서버 순서 그대로. 지난 미완료는 숨음 (D-067)', async () => {
+    await setupBox();
+    expect(shown()).toEqual(['기획서 초안', '장보기', '보고서 작성', '러닝 3회', '책 1권 읽기']);
+  });
+
+  it("아래 '더 보기 3개 · ! 지난 2개' — 숨은 것 중 지난 미완료 수 (D-067 Q3)", async () => {
+    await setupBox();
+    const more = screen.getByRole('button', { name: 'Todo 3개 더 보기, 지난 미완료 2개 포함' });
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(more).toHaveTextContent('더 보기 3개');
+    expect(more).toHaveTextContent('지난 2개');
+  });
+
+  it("누르면 모두 펼치고 '접기', 다시 누르면 5개 (D-067)", async () => {
+    const { user } = await setupBox();
+    await user.click(screen.getByRole('button', { name: /더 보기/ }));
+    expect(shown()).toEqual(['지난 빨래', '기획서 초안', '장보기', '보고서 작성', '지난 보고서 검토', '러닝 3회', '책 1권 읽기', '물 2L']);
+    const fold = screen.getByRole('button', { name: 'Todo 접기' });
+    expect(fold).toHaveAttribute('aria-expanded', 'true');
+    await user.click(fold);
+    expect(shown()).toHaveLength(5);
+  });
+
+  it("숨은 것에 지난 미완료가 없으면 '더 보기 n개'만", async () => {
+    await setupBox(MANY.filter((t) => !t.overdue));
+    expect(screen.getByRole('button', { name: 'Todo 1개 더 보기' })).not.toHaveTextContent('지난');
+  });
+
+  it('미완료가 5개 이하면 버튼이 없다', async () => {
+    await setupBox(MANY.slice(1, 6));
+    expect(shown()).toHaveLength(5);
+    expect(screen.queryByRole('button', { name: /더 보기|접기/ })).not.toBeInTheDocument();
+  });
+
+  it("머리 '완료/전체'는 숨긴 것까지 센다 (D-067)", async () => {
+    await setupBox();
+    expect(screen.getByText('1/9')).toBeInTheDocument();
+  });
+
+  it('하나를 체크하면 숨고 다음 우선순위가 채운다 (D-067, D-015)', async () => {
+    const { user } = await setupBox();
+    await user.click(screen.getByRole('checkbox', { name: '장보기 완료' }));
+    expect(shown()).toEqual(['기획서 초안', '보고서 작성', '러닝 3회', '책 1권 읽기', '물 2L']);
+  });
+
+  it('날짜를 바꾸면 다시 접힌다 (D-067 Q4)', async () => {
+    const { user, rerenderDate } = await setupBox();
+    await user.click(screen.getByRole('button', { name: /더 보기/ }));
+    expect(shown()).toHaveLength(8);
+    rerenderDate('2026-09-26');
+    await waitFor(() => expect(screen.getByRole('button', { name: /더 보기/ })).toHaveAttribute('aria-expanded', 'false'));
+  });
+
+  it('collapseAfter가 없으면(모바일 Todo 탭) 모두 보인다 (D-067)', async () => {
+    await setupBox(MANY, {});
+    expect(shown()).toHaveLength(8);
+    expect(screen.queryByRole('button', { name: /더 보기/ })).not.toBeInTheDocument();
+  });
+
+  it('접힌 채 Alt+↓: 보이는 다음 Todo 바로 뒤로 (D-067 Q2, US-14)', async () => {
+    const { api } = await setupBox();
+    const title = screen.getByRole('button', { name: '기획서 초안 수정' });
+    title.focus();
+    fireEvent.keyDown(title, { key: 'ArrowDown', altKey: true });
+    await waitFor(() => expect(api.calls('PUT /todos/:id/position')).toHaveLength(1));
+    expect(api.calls('PUT /todos/:id/position')[0]).toMatchObject({ path: '/todos/1/position', body: { afterId: 2 } });
+  });
+
+  it('접힌 채 맨 위 Todo를 Alt+↑: 움직이지 않는다', async () => {
+    const { api } = await setupBox();
+    const title = screen.getByRole('button', { name: '기획서 초안 수정' });
+    fireEvent.keyDown(title, { key: 'ArrowUp', altKey: true });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(api.calls('PUT /todos/:id/position')).toHaveLength(0);
+  });
+});
+
+describe('PC 사이드바·폴드 패널 Todo 섹션은 5개까지 (D-067, Q1)', () => {
+  it('TodoSection은 고른 날짜 박스를 5개까지 보인다', async () => {
+    mockApi({
+      'GET /categories': () => json(200, CATEGORIES),
+      'GET /todos': () => json(200, [1, 2, 3, 4, 5, 6, 7].map((id) => todo({ id, title: `할 일 ${id}` }))),
+    });
+    const store = makeStore();
+    await store.dispatch(fetchCategories());
+    renderWithStore(
+      <TodoActionsContext.Provider value={{ openTodo: vi.fn(), scheduleTodo: vi.fn() }}>
+        <TodoSection header={() => <h3>Todo</h3>} />
+      </TodoActionsContext.Provider>,
+      { store }
+    );
+    expect(await screen.findByRole('button', { name: 'Todo 2개 더 보기' })).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: /Todo$/ })).getAllByRole('listitem')).toHaveLength(5);
   });
 });
