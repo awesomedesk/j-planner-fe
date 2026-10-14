@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
+import { installCsrfCookie, resetCsrfCookie } from './csrfCookie';
 import { resetViewport, resizeHeight } from './viewport';
 
 afterEach(() => {
@@ -9,7 +10,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
   resetViewport();
+  resetCsrfCookie();
 });
+
+installCsrfCookie();
 
 // jsdom에 없는 브라우저 기능
 class ResizeObserverStub {
