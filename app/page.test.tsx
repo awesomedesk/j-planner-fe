@@ -21,7 +21,12 @@ const app = () => (
 
 describe('정적 빌드로 연 첫 화면 (US-01, US-06)', () => {
   it('빌드한 날이 아니라 여는 날을 오늘로 보여준다', async () => {
-    mockApi({ 'GET /schedules': () => json(200, SEED_SCHEDULES), 'GET /categories': () => json(200, CATEGORIES) });
+    mockApi({
+      'GET /auth/csrf': () => json(204),
+      'GET /me': () => json(200, { email: 'qa@example.com', name: '검수', hasPassword: true, loginMethods: ['EMAIL'] }), // 로그인 확인 (US-34)
+      'GET /schedules': () => json(200, SEED_SCHEDULES),
+      'GET /categories': () => json(200, CATEGORIES),
+    });
     vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
 
     vi.setSystemTime(new Date(2026, 8, 27, 1, 0)); // 빌드: 9/27(일)
