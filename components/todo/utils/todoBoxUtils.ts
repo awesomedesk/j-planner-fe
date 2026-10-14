@@ -29,5 +29,29 @@ export const todoRowTrailing = (todo: Todo) => {
 export const unscheduledOpenTodos = (todos: Todo[], date: LocalDate) =>
   todos.filter((t) => t.time === null && !t.completed && t.startDate <= date && date <= t.endDate);
 
+/**
+ * PC 사이드바 박스에서 먼저 보일 순서 단계 (D-067). 기준은 박스 날짜
+ * ① 그날 시간을 정한 Todo(종류 상관없음) → ② 시간 없는 하루 → ③ 시간 없는 진행 중 기간·주간·월간 → ④ 지난 미완료(시간이 있어도)
+ */
+export const todoShowTier = (todo: Todo, date: LocalDate): 1 | 2 | 3 | 4 => {
+  if (todo.endDate < date) return 4;
+  if (todo.time !== null) return 1;
+  return todo.type === 'DAY' ? 2 : 3;
+};
+
+/**
+ * 미완료 목록(서버 순서)에서 보일 것 `limit`개 고르기 (D-067)
+ * - 단계 순, ④는 마감일이 최근인 것부터, 같으면 서버(끌어서 정한) 순서
+ * - 고른 것은 서버 순서 그대로 보인다 (D-015·D-030). 우선순위는 '무엇을 보일지'만
+ */
+export const pickVisibleTodos = (open: Todo[], date: LocalDate, limit: number) => {
+  if (open.length <= limit) return { visible: open, hidden: [] as Todo[] };
+  const ranked = open
+    .map((todo, index) => ({ todo, index, tier: todoShowTier(todo, date) }))
+    .sort((a, b) => a.tier - b.tier || (a.tier === 4 ? b.todo.endDate.localeCompare(a.todo.endDate) : 0) || a.index - b.index);
+  const shown = new Set(ranked.slice(0, limit).map((r) => r.todo.id));
+  return { visible: open.filter((t) => shown.has(t.id)), hidden: open.filter((t) => !shown.has(t.id)) };
+};
+
 /** 끌어서 순서 바꾸기 계산 (US-14) — 목록 공통 규칙은 utils/list/reorder */
 export { getDropAfterId, getInsertIndex, moveAfter as moveTodoAfter } from '@utils/list/reorder';

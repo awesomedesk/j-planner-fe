@@ -15,12 +15,17 @@ import { useDragReorder } from '@utils/hooks/useDragReorder';
 
 import { useDayTodos } from '../hooks/useDayTodos';
 import { useTodoActions } from '../TodoActionsContext';
-import { getDropAfterId, isOverdueWarning, todoRowTag, todoRowTrailing } from '../utils/todoBoxUtils';
+import { getDropAfterId, isOverdueWarning, pickVisibleTodos, todoRowTag, todoRowTrailing } from '../utils/todoBoxUtils';
 
 interface TodoBoxProps {
   date: LocalDate;
   /** 섹션 머리를 바깥(사이드바)이 그릴 때: 오른쪽에 '완료/전체' 수를 넘긴다. 없으면 박스가 'Todo' 머리를 그린다 */
   header?: (actions: ReactNode) => ReactNode;
+  /**
+   * 미완료를 이만큼만 보이고 나머지는 '더 보기 n개'로 접는다 (D-067, PC 사이드바·폴드 패널 5).
+   * 없으면 모두 (모바일 Todo 탭). 펼친 상태는 저장하지 않고 날짜를 바꾸면 다시 접힌다
+   */
+  collapseAfter?: number;
 }
 
 /**
@@ -31,9 +36,11 @@ interface TodoBoxProps {
  * - 지난 미완료 (US-16, D-029): 원래 날짜 박스와 오늘 박스(서버가 함께 줌)에 빨간 ! + 'n/n 지남'. 순서는 제자리 (D-015)
  * - 끌어서 순서 바꾸기 (US-14, TODO-09): PC는 마우스로 끌기, 모바일은 길게 눌러 끌기, 키보드는 제목에서 Alt+↑/↓.
  *   미완료끼리만 옮긴다 (완료한 것은 숨겨지는 목록이라 끌지 않음)
+ * - PC 사이드바·폴드 패널은 미완료 5개까지 + '더 보기 n개' (D-067). 고르는 건 우선순위, 보이는 순서는 서버 순서.
+ *   접힌 채 끌기·Alt+↑/↓는 보이는 것끼리 (D-067 Q2)
  * PC 사이드바 Todo 섹션, 폴드 오른쪽 패널, 모바일 일간 Todo 탭(MO-10)이 같이 쓴다
  */
-export default function TodoBox({ date, header }: TodoBoxProps) {
+export default function TodoBox({ date, header, collapseAfter }: TodoBoxProps) {
   const { todos, isLoaded } = useDayTodos(date);
   const categoriesById = useAppSelector(selectCategoriesById);
   const [isDoneOpen, setIsDoneOpen] = useState(false);
@@ -41,7 +48,19 @@ export default function TodoBox({ date, header }: TodoBoxProps) {
   const open = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
   const dispatch = useAppDispatch();
-  const openIds = open.map((t) => t.id);
+
+  // 5개 + 더 보기 (D-067). 날짜가 바뀌면 다시 접는다 (Q4)
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [moreDate, setMoreDate] = useState(date);
+  if (moreDate !== date) {
+    setMoreDate(date);
+    setIsMoreOpen(false);
+  }
+  const picked = collapseAfter === undefined ? { visible: open, hidden: [] } : pickVisibleTodos(open, date, collapseAfter);
+  const isCollapsed = picked.hidden.length > 0 && !isMoreOpen;
+  const shownOpen = isCollapsed ? picked.visible : open;
+  const hiddenOverdue = picked.hidden.filter(isOverdueWarning).length;
+  const openIds = shownOpen.map((t) => t.id);
   /** 키보드로 옮긴 뒤 그 제목에 포커스를 되돌린다 */
   const [keyboardMoved, setKeyboardMoved] = useState<{ id: Id } | null>(null);
 
@@ -90,7 +109,7 @@ export default function TodoBox({ date, header }: TodoBoxProps) {
       )}
 
       <ul ref={listRef} aria-label={`${formatDayTitle(date)} Todo`} className="flex flex-col gap-1">
-        {open.map((todo) => (
+        {shownOpen.map((todo) => (
           <TodoRow
             key={todo.id}
             todo={todo}
@@ -101,6 +120,42 @@ export default function TodoBox({ date, header }: TodoBoxProps) {
           />
         ))}
       </ul>
+      {picked.hidden.length > 0 && (
+        <button
+          type="button"
+          aria-expanded={isMoreOpen}
+          aria-label={
+            isMoreOpen
+              ? 'Todo 접기'
+              : `Todo ${picked.hidden.length}개 더 보기${hiddenOverdue > 0 ? `, 지난 미완료 ${hiddenOverdue}개 포함` : ''}`
+          }
+          onClick={() => setIsMoreOpen((v) => !v)}
+          className="flex items-center gap-1.5 self-start px-0.5 py-1 text-xs font-semibold text-tp-primary"
+        >
+          {isMoreOpen ? (
+            '접기'
+          ) : (
+            <>
+              <span>{`더 보기 ${picked.hidden.length}개`}</span>
+              {hiddenOverdue > 0 && (
+                <span className="inline-flex items-center gap-1 text-danger">
+                  <span aria-hidden="true" className="text-tp-muted">
+                    ·
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex h-[13px] w-[13px] items-center justify-center rounded-full bg-danger text-[9px] font-extrabold leading-none text-white"
+                  >
+                    !
+                  </span>
+                  {`지난 ${hiddenOverdue}개`}
+                </span>
+              )}
+            </>
+          )}
+          <Icon name={isMoreOpen ? 'chevronUp' : 'chevronDown'} size={14} />
+        </button>
+      )}
       {isLoaded && todos.length === 0 && <p className="px-1 py-2 text-[13px] text-tp-muted">Todo가 없어요</p>}
 
       {done.length > 0 && (

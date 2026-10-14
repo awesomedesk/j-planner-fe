@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES, todo } from '@/test/fixtures';
@@ -417,7 +418,7 @@ describe('PC 사이드바 박스 5개 + 더 보기 (D-067, US-13 AC 보완)', ()
     );
     const view = renderWithStore(ui(props.date ?? '2026-09-25'), { store });
     await screen.findByRole('button', { name: '장보기 수정' });
-    return { api, ...view, store, rerenderDate: (date: string) => view.rerender(ui(date)) };
+    return { api, ...view, store, rerenderDate: (date: string) => view.rerender(<Provider store={store}>{ui(date)}</Provider>) };
   };
 
   const boxList = () => screen.getByRole('list', { name: /Todo$/ });
@@ -425,7 +426,8 @@ describe('PC 사이드바 박스 5개 + 더 보기 (D-067, US-13 AC 보완)', ()
 
   it('미완료 5개만, 우선순위로 고르고 순서는 서버 순서 그대로. 지난 미완료는 숨음 (D-067)', async () => {
     await setupBox();
-    expect(shown()).toEqual(['기획서 초안', '장보기', '보고서 작성', '러닝 3회', '책 1권 읽기']);
+    // ① 기획서 ② 장보기·물 2L ③ 보고서·러닝 (③의 책 1권은 6번째라 숨음)
+    expect(shown()).toEqual(['기획서 초안', '장보기', '보고서 작성', '러닝 3회', '물 2L']);
   });
 
   it("아래 '더 보기 3개 · ! 지난 2개' — 숨은 것 중 지난 미완료 수 (D-067 Q3)", async () => {
