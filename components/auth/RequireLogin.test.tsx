@@ -32,10 +32,13 @@ describe('로그인해야 앱 화면 (US-34, D-072)', () => {
     expect(goTo).not.toHaveBeenCalled();
   });
 
-  it('확인하는 동안에는 앱 화면을 그리지 않는다 (데이터 요청 401 방지)', () => {
-    mockApi({ 'GET /auth/csrf': () => new Promise(() => {}) });
+  it('확인하는 동안에는 앱 화면을 그리지 않는다 (데이터 요청 401 방지)', async () => {
+    let answer: (value: ReturnType<typeof json>) => void = () => {};
+    mockApi({ 'GET /auth/csrf': () => new Promise((resolve) => (answer = resolve)), 'GET /me': () => json(200, ME) });
     openApp();
     expect(screen.queryByText('달력 화면')).not.toBeInTheDocument();
+    answer(json(204));
+    expect(await screen.findByText('달력 화면')).toBeInTheDocument();
   });
 
   it('로그인 안 한 채 앱 화면을 열면 /login?next=<그 화면>', async () => {

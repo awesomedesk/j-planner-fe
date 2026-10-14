@@ -61,3 +61,10 @@ export type MemoRequest = Schemas['MemoRequest'];
 export type Settings = Schemas['Settings'];
 export type SettingsUpdateRequest = Schemas['SettingsUpdateRequest'];
 export type SidebarItem = Schemas['SidebarItem'];
+
+// ---------------------------------------------------------------- 로그인 (US-34, 08 13-3·13-4)
+export type LoginMethod = Schemas['LoginMethod'];
+/** `POST /auth/login` 본문 */
+export type LoginRequest = Schemas['LoginRequest'];
+/** 내 정보 `GET /me` (로그인 응답도 같은 모양) */
+export type Me = Schemas['Me'];

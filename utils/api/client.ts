@@ -138,7 +138,9 @@ export class ApiClient {
   fetchCsrfToken(): Promise<void> {
     if (!this.csrfRequest) {
       this.csrfRequest = this.send('GET', '/auth/csrf', {})
-        .then(() => undefined)
+        .then(async (response) => {
+          if (!response.ok) throw await this.toApiError(response);
+        })
         .finally(() => {
           this.csrfRequest = null;
         });

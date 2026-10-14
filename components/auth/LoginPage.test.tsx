@@ -134,7 +134,8 @@ describe('로그인 화면 /login (US-34, D-072)', () => {
     await act(async () => vi.advanceTimersByTime(1000));
     expect(screen.getByRole('alert')).toHaveTextContent('2초 뒤에 다시 시도할 수 있어요');
 
-    await act(async () => vi.advanceTimersByTime(2000));
+    await act(async () => vi.advanceTimersByTime(1000));
+    await act(async () => vi.advanceTimersByTime(1000));
     expect(screen.getByRole('button', { name: '로그인' })).toBeEnabled();
     expect(screen.getByRole('alert')).not.toHaveTextContent('초 뒤에');
   });
