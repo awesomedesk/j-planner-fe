@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NoticeCenter from '@components/notice/NoticeCenter';
 import { json, mockApi, problem } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
+import { passEmail, passLoginNotice } from '@utils/auth/handoff';
 import { goTo } from '@utils/navigation';
 
 import LoginPage from './LoginPage';
@@ -30,7 +31,10 @@ const fillAndSubmit = async (user: ReturnType<typeof openLogin>['user'], email =
   await user.click(screen.getByRole('button', { name: '로그인' }));
 };
 
-beforeEach(() => vi.mocked(goTo).mockClear());
+beforeEach(() => {
+  vi.mocked(goTo).mockClear();
+  sessionStorage.clear();
+});
 afterEach(() => window.history.replaceState(null, '', '/'));
 
 describe('로그인 화면 /login (US-34, D-072)', () => {
@@ -44,8 +48,11 @@ describe('로그인 화면 /login (US-34, D-072)', () => {
     expect(screen.getByLabelText('비밀번호')).toHaveAttribute('autocomplete', 'current-password');
     expect(screen.getByLabelText('비밀번호')).toHaveAttribute('type', 'password');
     expect(screen.getByRole('button', { name: '로그인' })).toBeInTheDocument();
-    for (const name of ['비밀번호 찾기', '가입하기', '이용약관', '개인정보처리방침']) {
+    for (const name of ['이용약관', '개인정보처리방침']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    for (const name of ['비밀번호 찾기', '가입하기']) {
+      expect(screen.getByRole('link', { name })).toBeInTheDocument();
     }
   });
 
@@ -61,7 +68,7 @@ describe('로그인 화면 /login (US-34, D-072)', () => {
     expect(screen.getByLabelText('비밀번호')).toHaveAttribute('type', 'password');
   });
 
-  it.each(['구글로 계속하기', '비밀번호 찾기', '가입하기', '이용약관', '개인정보처리방침'])(
+  it.each(['구글로 계속하기', '이용약관', '개인정보처리방침'])(
     '점선 자리 "%s"는 눌러도 오류 없이 "준비 중이에요" (D-008 방식)',
     async (name) => {
       const api = mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
@@ -161,5 +168,59 @@ describe('로그인 화면 /login (US-34, D-072)', () => {
     openLogin('?next=%2F%3Fview%3Dday');
     await waitFor(() => expect(goTo).toHaveBeenCalledWith('/'));
     expect(screen.queryByRole('button', { name: '로그인' })).not.toBeInTheDocument();
+  });
+});
+
+describe('로그인 화면 — 가입·비밀번호 찾기 연결 (US-33·35, D-079 · SITE-05a)', () => {
+  const notSignedIn = () => mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+
+  it("'가입하기'는 점선 해제 → /signup 링크", async () => {
+    notSignedIn();
+    openLogin();
+    expect(await screen.findByRole('link', { name: '가입하기' })).toHaveAttribute('href', '/signup');
+  });
+
+  it("'비밀번호 찾기' → /password/forgot, 입력한 이메일은 주소가 아니라 sessionStorage로 넘긴다", async () => {
+    notSignedIn();
+    const { user } = openLogin();
+    await user.type(await screen.findByRole('textbox', { name: '이메일' }), 'qa@example.com');
+    const link = screen.getByRole('link', { name: '비밀번호 찾기' });
+    expect(link).toHaveAttribute('href', '/password/forgot');
+    link.addEventListener('click', (e) => e.preventDefault());
+    await user.click(link);
+    expect(sessionStorage.getItem('jp.auth.email')).toBe('qa@example.com');
+    expect(link.getAttribute('href')).not.toContain('qa');
+  });
+
+  it('구글로 계속하기는 여전히 점선 자리 (US-36)', async () => {
+    notSignedIn();
+    openLogin();
+    expect(await screen.findByRole('button', { name: '구글로 계속하기' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['verified', '인증이 끝났어요. 로그인해 주세요'],
+    ['passwordReset', '비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요'],
+  ] as const)('다른 화면에서 넘어오면(%s) 카드 위 초록 안내 한 줄, 한 번만 보인다', async (kind, text) => {
+    notSignedIn();
+    passLoginNotice(kind);
+    openLogin();
+    expect(await screen.findByText(text)).toBeInTheDocument();
+    await waitFor(() => expect(sessionStorage.getItem('jp.auth.loginNotice')).toBeNull());
+  });
+
+  it('안내가 없으면 초록 줄도 없다', async () => {
+    notSignedIn();
+    openLogin();
+    await screen.findByRole('heading', { name: 'J의 계획' });
+    expect(screen.queryByText(/인증이 끝났어요|비밀번호를 바꿨어요/)).not.toBeInTheDocument();
+  });
+
+  it('가입 화면 [로그인]에서 넘긴 이메일을 채워서 연다', async () => {
+    notSignedIn();
+    passEmail('qa@example.com');
+    openLogin();
+    expect(await screen.findByRole('textbox', { name: '이메일' })).toHaveValue('qa@example.com');
+    await waitFor(() => expect(sessionStorage.getItem('jp.auth.email')).toBeNull());
   });
 });
