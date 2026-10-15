@@ -29,6 +29,10 @@ const SIZE_CLASS: Record<ThemeButtonSize, { text: string; icon: string }> = {
   md: { text: 'px-4 py-2 text-sm', icon: 'h-9 w-9' },
 };
 
+/** 버튼처럼 보이는 링크(<a>)에도 같은 모양을 쓰려고 (가입·비밀번호 화면, D-079) */
+export const themeButtonClass = (variant: ThemeButtonVariant = 'secondary', size: ThemeButtonSize = 'sm') =>
+  `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold transition-opacity hover:opacity-90 ${VARIANT_CLASS[variant]} ${SIZE_CLASS[size].text}`;
+
 export default function ThemeButton({
   variant = 'secondary',
   size = 'sm',

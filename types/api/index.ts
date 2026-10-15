@@ -68,3 +68,11 @@ export type LoginMethod = Schemas['LoginMethod'];
 export type LoginRequest = Schemas['LoginRequest'];
 /** 내 정보 `GET /me` (로그인 응답도 같은 모양) */
 export type Me = Schemas['Me'];
+/** `POST /auth/signup` 본문 (US-33) */
+export type SignupRequest = Schemas['SignupRequest'];
+/** 이메일만 보내는 본문 (가입 메일 다시 보내기, 비밀번호 찾기) */
+export type EmailRequest = Schemas['EmailRequest'];
+/** 메일 링크 토큰 (가입 인증) */
+export type TokenRequest = Schemas['TokenRequest'];
+/** `POST /auth/password/reset` 본문 (US-35) */
+export type PasswordResetRequest = Schemas['PasswordResetRequest'];

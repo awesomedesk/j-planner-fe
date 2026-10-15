@@ -12,6 +12,8 @@ interface LoginFormProps {
   initialEmail?: string;
   /** 로그인 성공 (내 정보). 여기서 던진 오류도 오류 한 줄로 보인다 */
   onSignedIn: (me: Me) => void | Promise<void>;
+  /** 이메일 칸이 바뀔 때 ('비밀번호 찾기'로 넘길 이메일, D-079) */
+  onEmailChange?: (email: string) => void;
 }
 
 /**
@@ -20,7 +22,7 @@ interface LoginFormProps {
  * - 실패 문구는 BE가 준 한 줄, 늦추기(429)면 'n초 뒤에 다시 시도할 수 있어요' + [로그인] 잠금(Retry-After)
  * - 보내는 중 잠금(두 번 눌러도 요청 한 번)
  */
-export default function LoginForm({ initialEmail = '', onSignedIn }: LoginFormProps) {
+export default function LoginForm({ initialEmail = '', onSignedIn, onEmailChange }: LoginFormProps) {
   const emailId = useId();
   const passwordId = useId();
   const errorId = useId();
@@ -73,7 +75,10 @@ export default function LoginForm({ initialEmail = '', onSignedIn }: LoginFormPr
           inputMode="email"
           autoComplete="username"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            onEmailChange?.(e.target.value);
+          }}
           aria-describedby={error ? errorId : undefined}
           className={INPUT_CLASS}
         />

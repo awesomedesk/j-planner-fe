@@ -66,6 +66,9 @@ const config: Config = {
         /** 요일 글자색: 일요일 빨강, 토요일 파랑 (월간·모바일 주간) */
         sunday: "#A6323F",
         saturday: "#2F62A8",
+        /** 잘 끝났다는 초록 안내 (로그인 화면 '인증이 끝났어요' 등, D-079) */
+        success: "#2F6B3F",
+        "success-bg": "#E3F0E4",
         /** 켜고 끄는 스위치의 꺼짐 색 */
         "switch-off": "#BDB79B",
       },

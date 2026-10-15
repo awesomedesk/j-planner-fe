@@ -34,6 +34,8 @@ export interface ProblemDetail {
   instance?: string;
   code: ApiErrorCode;
   errors: FieldErrorDetail[];
+  /** 409 EMAIL_ALREADY_REGISTERED일 때만 — 그 계정의 로그인 방법 (US-33, D-061) */
+  loginMethods?: ('EMAIL' | 'GOOGLE')[];
 }
 
 /** 쿼리 파라미터. 배열은 같은 이름으로 반복된다 (?categoryId=1&categoryId=3). null·undefined는 빠진다 */
