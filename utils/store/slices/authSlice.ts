@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { Me } from '@/types/api';
 import { authApi, isApiError } from '@utils/api';
@@ -38,7 +38,13 @@ export const checkSession = createAsyncThunk<Me | null, void, { state: RootState
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {},
+  reducers: {
+    /** 작성 중 세션이 끝나 같은 계정으로 다시 로그인했을 때 (D-072) */
+    sessionRenewed: (state, action: PayloadAction<Me>) => {
+      state.me = action.payload;
+      state.status = 'signedIn';
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(checkSession.pending, (state) => {
@@ -53,6 +59,8 @@ const authSlice = createSlice({
       });
   },
 });
+
+export const { sessionRenewed } = authSlice.actions;
 
 export const selectAuth = (state: RootState) => state.auth;
 

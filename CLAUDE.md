@@ -47,6 +47,13 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category` (`selectCategoriesById` for id lookups), `calendar` (viewMode · viewDate ·
   selectedDate · timetableTopMinutes), `schedule` (visible-range schedules; late responses for an old range are ignored; `refreshSchedules()` after
   save/delete). Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
+- **Login (US-34, D-072)**: same origin — `next.config.mjs` rewrites `/api/**` → BE, no CORS. `utils/api/client.ts` sends `X-XSRF-TOKEN`
+  (cookie `__Host-XSRF-TOKEN`, `utils/api/csrf.ts`) on every non-GET, refetches `GET /auth/csrf` and retries once on 403 `CSRF_INVALID`,
+  and on 401 asks the handler set by `components/auth/RequireLogin` (`setUnauthenticatedHandler`; true = retry once). `RequireLogin`
+  wraps app pages: `checkSession` (store `auth`) → not signed in → `/login?next=` (`utils/auth/nextPath` `safeNextPath` = same-site only).
+  GET 401 → `/login?next=`; save 401 → `ReloginDialog` over the open form (same account → new CSRF + same request again, other account
+  → reload page, cancel/Esc → that save fails). `/login` = `LoginPage` + shared `LoginForm` (429 wait lock). Page moves use
+  `utils/navigation` `goTo` (location.replace, mocked in tests). Account menu: `components/auth/account/` (PC header button, mobile ≡ menu bottom).
 - **App start** (`app/layout.tsx`): `ServerStatusCheck` (GET /api/v1/health) and `AppDataLoader` (categories).
 - **Dependency direction**: `types/`, `utils/` (date, theme, api, store, hooks) never import from `components/`. Features may import `utils/`,
   the store and shared modules (`components/sidebar`, `components/dialog`, …), but not another feature's screens or `layouts/`.
