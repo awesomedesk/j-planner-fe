@@ -23,12 +23,14 @@ interface PcHeaderProps {
   /** 카테고리 필터 드롭다운 (US-11) */
   categoryFilter: ReactNode;
   onClickSettings?: () => void;
+  /** 맨 끝(⚙ 다음) 계정 버튼 (US-34, D-072) */
+  account?: ReactNode;
   className?: string;
 }
 
 /**
  * PcHeader - PC·태블릿 헤더 한 줄 (D-017, 768px 이상)
- * 서비스명 · 이전/날짜/다음 · 오늘 · 카테고리 필터 · 월/주/일 · 추가 · 설정
+ * 서비스명 · 이전/날짜/다음 · 오늘 · 카테고리 필터 · 월/주/일 · 추가 · 설정 · 계정(US-34)
  *
  * 태블릿(768~1023px)은 줄여서 보여준다: 필터는 '전체', 추가는 아이콘만 (TAB-01).
  * 날짜 이동: ‹ ›는 보기 단위(월간 한 달, 주간 한 주, 일간 하루), '오늘'은 태블릿에도 둔다 (US-09, D-037).
@@ -43,6 +45,7 @@ export default function PcHeader({
   onSelectAdd,
   categoryFilter,
   onClickSettings,
+  account,
   className = '',
 }: PcHeaderProps) {
   return (
@@ -91,6 +94,8 @@ export default function PcHeader({
         <ThemeButton onClick={onClickSettings} iconOnly size="md" aria-label="설정">
           <Icon name="gear" size={18} />
         </ThemeButton>
+
+        {account}
       </div>
     </header>
   );

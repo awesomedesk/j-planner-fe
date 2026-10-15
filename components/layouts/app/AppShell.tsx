@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { LocalDate, Schedule, Todo } from '@/types/api';
 import type { CalendarViewMode } from '@/types/calendar';
@@ -47,6 +47,8 @@ import { useSwipe } from '@utils/hooks/useSwipe';
 import type { AddTarget } from './addMenuItems';
 import { formatViewTitle } from './appLayoutUtils';
 import MobileAddMenu from './MobileAddMenu';
+import AccountMenuButton from '@components/auth/account/AccountMenuButton';
+import MobileMenu from '@components/auth/account/MobileMenu';
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
@@ -101,6 +103,9 @@ function AppShellContent() {
   const [todoFormTarget, setTodoFormTarget] = useState<TodoFormTarget | null>(null);
   /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+  /** 모바일 ≡ 메뉴 (MO-02, 지금은 계정 항목만 — US-34) */
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
   /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
   const quickAdd = useQuickAddState();
   /** 필터에서 빠진 카테고리로 저장했을 때 알려 주기 (D-056) */
@@ -233,6 +238,7 @@ function AppShellContent() {
         onToday={backToToday}
         onSelectAdd={handleSelectAdd}
         categoryFilter={isTabletUp && <CategoryFilterDropdown {...categoryFilterProps} />}
+        account={isTabletUp && <AccountMenuButton />}
       />
       <MobileHeader
         className="flex tablet:hidden"
@@ -242,7 +248,9 @@ function AppShellContent() {
         onToday={backToToday}
         onMoveDay={tabBehavior.dateNav === 'arrows' ? move : undefined}
         categoryFilter={!isTabletUp && tabBehavior.categoryFilter && <CategoryFilterSheet {...categoryFilterProps} />}
+        onClickMenu={() => setMobileMenuOpen(true)}
       />
+      {!isTabletUp && mobileMenuOpen && <MobileMenu onClose={closeMobileMenu} />}
 
       <div className="relative flex min-h-0 flex-1">
         <main
