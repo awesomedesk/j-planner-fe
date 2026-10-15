@@ -115,7 +115,7 @@ export default function LoginForm({ initialEmail = '', onSignedIn }: LoginFormPr
         )}
       </div>
 
-      <ThemeButton type="submit" variant="primary" size="md" disabled={locked} className="w-full disabled:opacity-60">
+      <ThemeButton type="submit" variant="primary" size="md" disabled={locked} className="w-full justify-center disabled:opacity-60">
         로그인
       </ThemeButton>
     </form>
