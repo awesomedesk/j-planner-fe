@@ -10,13 +10,10 @@ export const metadata = {
 };
 
 /**
- * 글꼴: 화면기획서(캔버스)와 같은 IBM Plex Sans KR.
- * next/font/google은 빌드할 때 글꼴을 내려받아서 네트워크가 막힌 곳에서는 빌드가 실패한다.
- * 그래서 브라우저가 불러오게 두고, 못 불러오면 시스템 글꼴로 보인다 (globals.css).
+ * 맨 바깥 레이아웃 — 모든 화면 공통. 바깥 리소스(글꼴 등)를 부르지 않는다.
+ * 메일 링크 화면(/signup/verify, /password/reset)은 주소에 토큰이 있어서 바깥으로 아무것도 부르지 않게 한다 (US-33·35, D-079).
+ * 글꼴은 그 밖의 화면 묶음 `app/(site)/layout.tsx`에서 불러온다.
  */
-const FONT_STYLESHEET_URL =
-  "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,11 +21,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href={FONT_STYLESHEET_URL} />
-      </head>
       <body>
         <ReduxApp>
           <ThemeProvider>

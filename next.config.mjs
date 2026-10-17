@@ -6,11 +6,19 @@
  */
 const apiProxyTarget = () => (process.env.API_PROXY_TARGET || '').replace(/\/+$/, '');
 
+/**
+ * 메일 링크 화면 — 주소에 토큰이 있으므로 Referer로 새지 않게 (US-33·35, D-079 · 11 문서)
+ */
+const MAIL_LINK_PAGES = ['/signup/verify', '/password/reset'];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
     const target = apiProxyTarget();
     return target ? [{ source: '/api/:path*', destination: `${target}/api/:path*` }] : [];
+  },
+  async headers() {
+    return MAIL_LINK_PAGES.map((source) => ({ source, headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] }));
   },
 };
 
