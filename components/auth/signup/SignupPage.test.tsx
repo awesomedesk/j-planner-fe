@@ -82,6 +82,7 @@ describe('가입 화면 /signup (US-33, D-079 · SITE-05b)', () => {
   it('칸에 다시 쓰면 그 칸 오류만 지운다', async () => {
     signedOut();
     const { user } = openSignup();
+    await screen.findByRole('textbox', { name: '이메일' });
     await fill(user, { email: '', name: '', password: '', age: false });
     await submit(user);
     await user.type(screen.getByRole('textbox', { name: '이름' }), '검');
