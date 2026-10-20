@@ -12,6 +12,7 @@ import {
   peekHandoffEmail,
   peekLoginNotice,
 } from '@utils/auth/handoff';
+import { googleResultMessage, toGoogleResultCode, type GoogleResultCode } from '@utils/auth/googleLogin';
 import { safeNextPath } from '@utils/auth/nextPath';
 import { goTo } from '@utils/navigation';
 
@@ -50,11 +51,23 @@ function LoginCard() {
     clearHandoffEmail();
   }, []);
 
+  // 구글 결과 안내 (US-36, D-082): BE가 /login?error=코드로 보냄. 읽은 뒤 주소에서 error만 지운다 (제가 정한 부분)
+  const [googleResult] = useState(() => toGoogleResultCode(new URLSearchParams(window.location.search).get('error')));
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('error')) return;
+    params.delete('error');
+    const rest = params.toString();
+    window.history.replaceState(null, '', rest ? `${window.location.pathname}?${rest}` : window.location.pathname);
+  }, []);
+
   /** '비밀번호 찾기'로 넘길 지금 이메일 */
   const emailRef = useRef(initialEmail);
 
   return (
     <AuthFrame notice={notice && <AuthNotice>{LOGIN_NOTICE_TEXT[notice]}</AuthNotice>}>
+      {googleResult && <GoogleResultLine code={googleResult} />}
+
       <LaterButton label="구글로 계속하기" onClick={notReady} block />
 
       <OrDivider />
@@ -77,5 +90,19 @@ function LoginCard() {
         <LaterButton label="개인정보처리방침" onClick={notReady} />
       </div>
     </AuthFrame>
+  );
+}
+
+/** 구글 결과 안내 한 줄 (06 SITE-05a). 같은 이메일 계정이 있으면 [비밀번호 찾기]도 */
+function GoogleResultLine({ code }: { code: GoogleResultCode }) {
+  return (
+    <div role="alert" className="flex flex-col items-center gap-1 text-center text-[13px] text-danger">
+      <p>{googleResultMessage(code)}</p>
+      {code === 'GOOGLE_EMAIL_ACCOUNT_EXISTS' && (
+        <a href="/password/forgot" className="font-medium text-ink underline">
+          비밀번호 찾기
+        </a>
+      )}
+    </div>
   );
 }
