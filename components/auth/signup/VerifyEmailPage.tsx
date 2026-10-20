@@ -24,12 +24,14 @@ type Step = 'ready' | 'invalid' | 'doneSignedIn';
 export default function VerifyEmailPage() {
   const token = useMailLinkToken();
   const { status } = useSession();
-  const [step, setStep] = useState<Step>(token ? 'ready' : 'invalid');
+  const [stepAfterSend, setStep] = useState<Step | null>(null);
+  // token === null: 아직 hydration 중 — 화면을 정하지 않음 (서버·브라우저 첫 화면을 같게)
+  const step: Step | null = stepAfterSend ?? (token === null ? null : token ? 'ready' : 'invalid');
   const request = useAuthRequest();
 
   const verify = async () => {
     const result = await request.send(
-      () => authApi.verifySignup({ token }),
+      () => authApi.verifySignup({ token: token ?? '' }),
       (error) => {
         if (!isApiError(error) || error.code !== 'TOKEN_INVALID') return false;
         setStep('invalid');

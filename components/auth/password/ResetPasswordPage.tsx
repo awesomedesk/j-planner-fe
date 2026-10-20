@@ -23,9 +23,11 @@ import { useSession } from '../useSession';
  */
 export default function ResetPasswordPage() {
   const token = useMailLinkToken();
-  const [invalid, setInvalid] = useState(!token);
+  const [rejected, setRejected] = useState(false);
 
-  return <AuthFrame>{invalid ? <LinkInvalid /> : <ResetForm token={token} onInvalid={() => setInvalid(true)} />}</AuthFrame>;
+  // token === null: 아직 hydration 중 — 빈 카드 (서버·브라우저 첫 화면을 같게)
+  if (token === null) return <AuthFrame>{null}</AuthFrame>;
+  return <AuthFrame>{rejected || !token ? <LinkInvalid /> : <ResetForm token={token} onInvalid={() => setRejected(true)} />}</AuthFrame>;
 }
 
 function ResetForm({ token, onInvalid }: { token: string; onInvalid: () => void }) {
