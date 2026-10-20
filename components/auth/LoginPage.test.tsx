@@ -224,3 +224,39 @@ describe('로그인 화면 — 가입·비밀번호 찾기 연결 (US-33·35, D-
     await waitFor(() => expect(sessionStorage.getItem('jp.auth.email')).toBeNull());
   });
 });
+
+describe('로그인 화면 — 구글 결과 안내 (US-36, D-082 · 06 SITE-05a)', () => {
+  it.each([
+    ['GOOGLE_FAILED', '구글 로그인을 마치지 못했어요. 다시 시도해 주세요.'],
+    ['ACCOUNT_SUSPENDED', '이용이 제한된 계정이에요.'],
+  ])('?error=%s → 카드 오류 줄 "%s"', async (code, text) => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    openLogin(`?error=${code}`);
+    expect(await screen.findByRole('alert')).toHaveTextContent(text);
+  });
+
+  it('?error=GOOGLE_EMAIL_ACCOUNT_EXISTS → 안내 + [비밀번호 찾기]', async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    openLogin('?error=GOOGLE_EMAIL_ACCOUNT_EXISTS');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '이 이메일로 가입한 계정이 있어요. 이메일로 로그인한 뒤 내 계정에서 구글을 연결해 주세요.'
+    );
+    const links = screen.getAllByRole('link', { name: '비밀번호 찾기' });
+    expect(links.every((a) => a.getAttribute('href') === '/password/forgot')).toBe(true);
+    expect(links).toHaveLength(2); // 안내 줄 + 카드 아래 링크
+  });
+
+  it('안내를 읽은 뒤 주소창에서 error만 지우고 next는 남긴다 (새로고침하면 다시 안 뜸, 제가 정한 부분)', async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    openLogin('?error=GOOGLE_FAILED&next=%2F%3Fview%3Dday');
+    await screen.findByRole('alert');
+    expect(window.location.search).toBe('?next=%2F%3Fview%3Dday');
+  });
+
+  it('error가 없으면 안내 줄도 없다', async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    openLogin();
+    await screen.findByRole('textbox', { name: '이메일' });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
