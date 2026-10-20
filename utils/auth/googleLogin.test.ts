@@ -10,8 +10,12 @@ import {
   toGoogleResultCode,
 } from './googleLogin';
 
+/** jsdom의 window.opener는 값 속성이라 바꿔 끼운다 */
+const setOpener = (value: unknown) => Object.defineProperty(window, 'opener', { value, configurable: true, writable: true });
+
 afterEach(() => {
   vi.restoreAllMocks();
+  setOpener(null);
   vi.useRealTimers();
 });
 
@@ -102,20 +106,20 @@ describe('다시 로그인 창의 구글 팝업 (US-36 AC4)', () => {
 describe('팝업 끝 화면이 원래 창에 알리기 (US-36 AC4)', () => {
   it('원래 창(opener)이 있으면 같은 출처로만 알린다', () => {
     const postMessage = vi.fn();
-    vi.spyOn(window, 'opener', 'get').mockReturnValue({ closed: false, postMessage } as unknown as Window);
+    setOpener({ closed: false, postMessage } as unknown as Window);
     expect(postGoogleDone(null)).toBe(true);
     expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: null }, window.location.origin);
   });
 
   it('오류 코드는 아는 코드로 바꿔 알린다', () => {
     const postMessage = vi.fn();
-    vi.spyOn(window, 'opener', 'get').mockReturnValue({ closed: false, postMessage } as unknown as Window);
+    setOpener({ closed: false, postMessage } as unknown as Window);
     postGoogleDone('weird');
     expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: 'GOOGLE_FAILED' }, window.location.origin);
   });
 
   it('원래 창이 없으면 false', () => {
-    vi.spyOn(window, 'opener', 'get').mockReturnValue(null);
+    setOpener(null);
     expect(postGoogleDone(null)).toBe(false);
   });
 });
