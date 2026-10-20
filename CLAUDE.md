@@ -15,6 +15,10 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
      If you had to pick something to keep going, mark it "제가 정한 부분 (확인 부탁)".
    - Want an API change → ask the BE window. Follow `08-api-design.md` (it wins over `08-openapi.yaml` if they differ).
 4. When a story is done, report "US-xx 완료, 검수 요청" with what was built and how to check it (screenshots at 1440 / 820 / 390px).
+   **Requests and questions for 대표님 go to the dashboard, not the chat** (user request 2026-10-20): write a message with
+   `to: "대표님"` (00-working-rules.md §0 — kind `question` with options + recommendation, or `info` for a 부탁 like
+   "delete these QA accounts"). They show up in 대표님 데스크. In the chat, only say that it was sent (message id).
+   Exception: secrets (login passwords etc.) are still asked/received in the chat and never written to the dashboard.
 5. Write user-facing text and comments in Korean, plain words, 해요체 for UI messages.
 6. **TDD (user request 2026-09-28)**: every story is test-first. Turn the story's acceptance criteria and the decisions it
    cites (D-xxx, screen ids like MO-01) into failing tests, then implement until green, then refactor. See "Testing" below.
