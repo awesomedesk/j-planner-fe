@@ -13,6 +13,8 @@ const MAIL_LINK_PAGES = ['/signup/verify', '/password/reset'];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // next dev가 CLAUDE.md·AGENTS.md에 안내 블록을 자동으로 붙이지 않게 (대표님 결정 2026-10-31, 우리 CLAUDE.md에 Next 16 주의사항이 있음)
+  agentRules: false,
   async rewrites() {
     const target = apiProxyTarget();
     return target ? [{ source: '/api/:path*', destination: `${target}/api/:path*` }] : [];
