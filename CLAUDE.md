@@ -26,8 +26,11 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
      (`gh project item-edit 2 --owner awesomedesk --url <#2 issue url> --field '지금 하는 일' --text '…'`, same for `'다음 일'`) and update the
      story's work card (Status · 담당 창 · related issues). Don't add a card per message; never guess item/field IDs (`gh project item-list`).
      "작업판 확인" means doing the FE work found there, not only summarizing it (#319).
-   - **Role inbox** (D-092, view 4): for each issue you receive, keep its card's `수신 상태` (미확인 / 읽음 / 처리 중 / 처리 완료) and
-     `확인 근거` in step with the issue (read label, comment, close).
+   - **Role inbox** (D-092, view 4, #323): every message issue has **its own card** (one per issue — "no card per message" is only about
+     story cards, view 2). Sender links it (`구분=메시지`, `담당 창`=receiver, `수신 상태=미확인`); as receiver, compare your open `to:FE`
+     issues with view 4 and link any missing one yourself. Keep `수신 상태` (미확인 → 읽음 with the read label → 처리 중 when you start →
+     처리 완료 + `Status=완료` when closed) and `확인 근거` (what/when) in step. A new request or receiver change resets it to 미확인.
+     Another window's or 대표님's comment is not FE's receipt.
    - When a story is done, open `[검수 요청] US-xx …` (`to:PO`, `kind:review`) with the commit, what was built and how to check it
      (screenshots at 1440 / 820 / 390px).
    - **Requests and questions for 대표님 go to an issue `to:대표님`, not the chat** (D-084): `kind:question` with options + recommendation
