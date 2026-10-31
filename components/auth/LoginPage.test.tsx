@@ -210,6 +210,8 @@ describe('로그인 화면 — 가입·비밀번호 찾기 연결 (US-33·35, D-
   it.each([
     ['verified', '인증이 끝났어요. 로그인해 주세요'],
     ['passwordReset', '비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요'],
+    ['emailChanged', '이메일을 바꿨어요. 새 이메일로 로그인해 주세요'],
+    ['accountDeleted', '탈퇴가 끝났어요. 이용해 주셔서 고마워요.'],
   ] as const)('다른 화면에서 넘어오면(%s) 카드 위 초록 안내 한 줄, 한 번만 보인다', async (kind, text) => {
     notSignedIn();
     passLoginNotice(kind);

@@ -12,6 +12,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 const MAIL_LINK_PAGES = [
   { url: '/signup/verify', file: 'app/signup/verify/page.tsx' },
   { url: '/password/reset', file: 'app/password/reset/page.tsx' },
+  { url: '/email/verify', file: 'app/email/verify/page.tsx' }, // US-37 SITE-09a
 ];
 
 /** 바깥 주소(http·https·//)를 부르는 코드 */
@@ -43,6 +44,7 @@ describe('메일 링크 화면 — 토큰이 새지 않게 (US-33·35, D-079 · 
     'components/auth/password/ResetPasswordPage.tsx',
     'components/auth/common/AuthFrame.tsx',
     'components/auth/common/NewPasswordField.tsx',
+    'components/account/EmailChangeVerifyPage.tsx',
   ])('%s 도 바깥 주소를 부르지 않는다', (file) => {
     expect(read(file)).not.toMatch(EXTERNAL_URL);
   });

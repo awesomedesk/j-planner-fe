@@ -22,6 +22,8 @@ describe('화면 사이에 넘기는 값 (D-079)', () => {
   it('로그인 화면 초록 안내: 인증 끝 / 재설정 끝 (SITE-05a)', () => {
     expect(LOGIN_NOTICE_TEXT.verified).toBe('인증이 끝났어요. 로그인해 주세요');
     expect(LOGIN_NOTICE_TEXT.passwordReset).toBe('비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요');
+    expect(LOGIN_NOTICE_TEXT.emailChanged).toBe('이메일을 바꿨어요. 새 이메일로 로그인해 주세요'); // US-37 SITE-09a
+    expect(LOGIN_NOTICE_TEXT.accountDeleted).toBe('탈퇴가 끝났어요. 이용해 주셔서 고마워요.'); // US-37 SITE-09
     passLoginNotice('passwordReset');
     expect(peekLoginNotice()).toBe('passwordReset');
     clearLoginNotice();

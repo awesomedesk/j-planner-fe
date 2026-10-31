@@ -46,17 +46,16 @@ describe('PC·태블릿 계정 메뉴 (US-34, D-072)', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(within(menu).getByText('검수')).toBeInTheDocument();
     expect(within(menu).getByText('qa@example.com')).toBeInTheDocument();
-    for (const name of ['내 계정', '로그아웃', '모든 기기에서 로그아웃']) {
+    expect(within(menu).getByRole('link', { name: '내 계정' })).toHaveAttribute('href', '/me');
+    for (const name of ['로그아웃', '모든 기기에서 로그아웃']) {
       expect(within(menu).getByRole('button', { name })).toBeInTheDocument();
     }
   });
 
-  it("'내 계정'은 점선 자리 — '준비 중이에요' (US-37)", async () => {
-    const api = mockApi({});
-    const { user, menu } = await openPcMenu();
-    await user.click(within(menu).getByRole('button', { name: '내 계정' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('준비 중이에요');
-    expect(api.all()).toHaveLength(0);
+  it("'내 계정'은 점선 해제 → /me 링크 (US-37, SITE-09)", async () => {
+    const { menu } = await openPcMenu();
+    expect(within(menu).getByRole('link', { name: '내 계정' })).toHaveAttribute('href', '/me');
+    expect(screen.queryByText('준비 중이에요')).not.toBeInTheDocument();
   });
 
   it('Esc로 닫힌다', async () => {
@@ -113,7 +112,8 @@ describe('모바일 ≡ 메뉴 맨 아래 (US-34, D-072 · US-28 틀)', () => {
     const { user } = renderWithStore(<MobileMenu onClose={onClose} />, { store: signedInStore() });
     const menu = screen.getByRole('dialog', { name: '메뉴' });
     expect(within(menu).getByText('qa@example.com')).toBeInTheDocument();
-    for (const name of ['내 계정', '로그아웃', '모든 기기에서 로그아웃']) {
+    expect(within(menu).getByRole('link', { name: '내 계정' })).toHaveAttribute('href', '/me');
+    for (const name of ['로그아웃', '모든 기기에서 로그아웃']) {
       expect(within(menu).getByRole('button', { name })).toBeInTheDocument();
     }
     await user.click(within(menu).getByRole('button', { name: '메뉴 닫기' }));
