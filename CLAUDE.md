@@ -14,11 +14,19 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
    - Something the planning doesn't cover → don't decide it; collect questions (options + recommendation) for the PO window.
      If you had to pick something to keep going, mark it "제가 정한 부분 (확인 부탁)".
    - Want an API change → ask the BE window. Follow `08-api-design.md` (it wins over `08-openapi.yaml` if they differ).
-4. When a story is done, report "US-xx 완료, 검수 요청" with what was built and how to check it (screenshots at 1440 / 820 / 390px).
-   **Requests and questions for 대표님 go to the dashboard, not the chat** (user request 2026-10-20): write a message with
-   `to: "대표님"` (00-working-rules.md §0 — kind `question` with options + recommendation, or `info` for a 부탁 like
-   "delete these QA accounts"). They show up in 대표님 데스크. In the chat, only say that it was sent (message id).
-   Exception: secrets (login passwords etc.) are still asked/received in the chat and never written to the dashboard.
+4. **Messages between windows = GitHub issues** on `awesomedesk/j-planner-product` (D-087, 00-working-rules.md §0; the old
+   artifact dashboard is a read-only record). Use `gh` with `-R awesomedesk/j-planner-product`:
+   - Inbox: `gh issue list -R awesomedesk/j-planner-product --label "to:FE" --state open` — at the start and end of work and at each step.
+     Read → `gh issue edit <n> --add-label read`; done → `gh issue close <n> --comment "<한 줄 결과>"`; reply on the same topic → `gh issue comment`.
+   - New issue: title `[종류] 한 줄 요약`, labels `to:…` + `from:FE` + `kind:info|question|answer|review|result|ask`, body first line `ref: US-xx · D-xxx · 커밋`.
+   - Status card: edit only the body of the pinned issue `[창 현황] FE` (지금 하는 일 · 다음 일 · 마지막 커밋).
+   - When a story is done, open `[검수 요청] US-xx …` (`to:PO`, `kind:review`) with the commit, what was built and how to check it
+     (screenshots at 1440 / 820 / 390px).
+   - **Requests and questions for 대표님 go to an issue `to:대표님`, not the chat** (D-084): `kind:question` with options + recommendation
+     and how to answer ('댓글에 ①/② 중 하나만'), or `kind:ask` with exact steps. DB work = SQL for Beekeeper Studio (`USE jp;` first,
+     children before `users`, a checking `SELECT` last). In the chat, only say the issue number and a one-line summary.
+   - Exception: secrets (passwords, tokens, keys) are never written in issues — ask/receive them in the chat. QA e-mails are `qa-…@example.com`.
+   - QA accounts you create are deleted by you with the withdraw API (log in → `POST /api/v1/me/reauth` → `DELETE /api/v1/me`, 00 §6).
 5. Write user-facing text and comments in Korean, plain words, 해요체 for UI messages.
 6. **TDD (user request 2026-09-28)**: every story is test-first. Turn the story's acceptance criteria and the decisions it
    cites (D-xxx, screen ids like MO-01) into failing tests, then implement until green, then refactor. See "Testing" below.
