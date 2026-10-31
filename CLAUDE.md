@@ -19,7 +19,12 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
    - Inbox: `gh issue list -R awesomedesk/j-planner-product --label "to:FE" --state open` — at the start and end of work and at each step.
      Read → `gh issue edit <n> --add-label read`; done → `gh issue close <n> --comment "<한 줄 결과>"`; reply on the same topic → `gh issue comment`.
    - New issue: title `[종류] 한 줄 요약`, labels `to:…` + `from:FE` + `kind:info|question|answer|review|result|ask`, body first line `ref: US-xx · D-xxx · 커밋`.
-   - Status card: edit only the body of the pinned issue `[창 현황] FE` (지금 하는 일 · 다음 일 · 마지막 커밋).
+   - Status card: edit only the body of `[창 현황] FE` (#2, labels `kind:status` + `from:FE`, never closed, no `to:`/`read`):
+     지금 하는 일 · 다음 일 · 마지막 커밋.
+   - **Projects board** (D-089, `../j-planner-product/17-project-board.md`): https://github.com/orgs/awesomedesk/projects/2. At the start/end of
+     work and between steps, check it with the inbox. When you edit #2, also set its card fields
+     (`gh project item-edit 2 --owner awesomedesk --url <#2 issue url> --field '지금 하는 일' --text '…'`, same for `'다음 일'`) and update the
+     story's work card (Status · 담당 창 · related issues). Don't add a card per message; never guess item/field IDs (`gh project item-list`).
    - When a story is done, open `[검수 요청] US-xx …` (`to:PO`, `kind:review`) with the commit, what was built and how to check it
      (screenshots at 1440 / 820 / 390px).
    - **Requests and questions for 대표님 go to an issue `to:대표님`, not the chat** (D-084): `kind:question` with options + recommendation
