@@ -17,6 +17,7 @@ import { safeNextPath } from '@utils/auth/nextPath';
 import { goTo } from '@utils/navigation';
 
 import { AuthFrame, AuthLinks, AuthNotice, LaterButton, OrDivider } from './common/AuthFrame';
+import GoogleStartButton from './common/GoogleStartButton';
 import LoginForm from './LoginForm';
 import { useSession } from './useSession';
 
@@ -61,6 +62,9 @@ function LoginCard() {
     window.history.replaceState(null, '', rest ? `${window.location.pathname}?${rest}` : window.location.pathname);
   }, []);
 
+  /** 구글로 로그인해도 같은 화면으로 돌아가게 (D-082 6) */
+  const [next] = useState(() => new URLSearchParams(window.location.search).get('next'));
+
   /** '비밀번호 찾기'로 넘길 지금 이메일 */
   const emailRef = useRef(initialEmail);
 
@@ -68,7 +72,7 @@ function LoginCard() {
     <AuthFrame notice={notice && <AuthNotice>{LOGIN_NOTICE_TEXT[notice]}</AuthNotice>}>
       {googleResult && <GoogleResultLine code={googleResult} />}
 
-      <LaterButton label="구글로 계속하기" onClick={notReady} block />
+      <GoogleStartButton next={next} />
 
       <OrDivider />
 

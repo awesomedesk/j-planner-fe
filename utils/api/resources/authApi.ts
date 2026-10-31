@@ -1,8 +1,17 @@
-import type { EmailRequest, LoginRequest, Me, PasswordResetRequest, SignupRequest, TokenRequest } from '@/types/api';
+import type {
+  EmailRequest,
+  GoogleSignupInfo,
+  GoogleSignupRequest,
+  LoginRequest,
+  Me,
+  PasswordResetRequest,
+  SignupRequest,
+  TokenRequest,
+} from '@/types/api';
 
 import apiClient from '../client';
 
-/** 로그인·로그아웃·내 정보 (US-34), 가입·인증 (US-33), 비밀번호 찾기·재설정 (US-35) — 08 13-3·13-4 */
+/** 로그인·로그아웃·내 정보 (US-34), 가입·인증 (US-33), 비밀번호 찾기·재설정 (US-35), 구글 가입 확인 (US-36) — 08 13-3·13-4 */
 export const authApi = {
   /** CSRF 쿠키 받기 (`GET /auth/csrf` 204). 앱을 열 때 */
   csrf: () => apiClient.fetchCsrfToken(),
@@ -25,4 +34,9 @@ export const authApi = {
   forgotPassword: (body: EmailRequest) => apiClient.post<void, EmailRequest>('/auth/password/forgot', body),
   /** 새 비밀번호 → 204(모든 기기 로그아웃, 로그인 안 됨) / 400 TOKEN_INVALID·PASSWORD_REJECTED(newPassword) / 429 */
   resetPassword: (body: PasswordResetRequest) => apiClient.post<void, PasswordResetRequest>('/auth/password/reset', body),
+
+  /** 구글 가입 대기 정보 (D-083) → 200 {email, name, next?} / 400 GOOGLE_SIGNUP_EXPIRED */
+  googleSignupInfo: () => apiClient.get<GoogleSignupInfo>('/auth/google/signup'),
+  /** 구글 가입 확인 → 201 내 정보 + 로그인 / 400 GOOGLE_SIGNUP_EXPIRED·VALIDATION_FAILED / 409 EMAIL_ALREADY_REGISTERED(loginMethods) */
+  completeGoogleSignup: (body: GoogleSignupRequest) => apiClient.post<Me, GoogleSignupRequest>('/auth/google/signup', body),
 };

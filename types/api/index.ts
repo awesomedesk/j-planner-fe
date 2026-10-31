@@ -76,3 +76,7 @@ export type EmailRequest = Schemas['EmailRequest'];
 export type TokenRequest = Schemas['TokenRequest'];
 /** `POST /auth/password/reset` 본문 (US-35) */
 export type PasswordResetRequest = Schemas['PasswordResetRequest'];
+/** 구글 가입 대기 정보 `GET /auth/google/signup` (US-36, D-083) */
+export type GoogleSignupInfo = Schemas['GoogleSignupInfo'];
+/** `POST /auth/google/signup` 본문 (D-083) */
+export type GoogleSignupRequest = Schemas['GoogleSignupRequest'];

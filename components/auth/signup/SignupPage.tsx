@@ -7,12 +7,14 @@ import ThemeButton from '@components/button/ThemeButton';
 import { showNotice } from '@store/slices/noticeSlice';
 import { authApi, isApiError } from '@utils/api';
 import { checkSignup, fieldErrorsOf, firstErrorField, type FieldErrors } from '@utils/auth/authRules';
+import { startGoogleLogin } from '@utils/auth/googleLogin';
 import { passEmail } from '@utils/auth/handoff';
 import { useCountdown } from '@utils/hooks/useCountdown';
 import { goTo } from '@utils/navigation';
 
 import AuthField, { describedBy } from '../common/AuthField';
 import { AuthFrame, AuthHeading, AuthText, CardError, LaterButton, OrDivider } from '../common/AuthFrame';
+import GoogleStartButton from '../common/GoogleStartButton';
 import NewPasswordField from '../common/NewPasswordField';
 import { useAuthRequest } from '../common/useAuthRequest';
 import { NOT_READY_MESSAGE } from '../LoginPage';
@@ -73,7 +75,7 @@ function SignupForm({ onSent }: { onSent: (email: string) => void }) {
   const [password, setPassword] = useState('');
   const [ageOver14, setAgeOver14] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-  /** 409 이미 가입: 그 계정의 로그인 방법 (EMAIL → [로그인]/[비밀번호 찾기]) */
+  /** 409 이미 가입: 그 계정의 로그인 방법 (EMAIL → [로그인]/[비밀번호 찾기], GOOGLE → [구글로 로그인]) */
   const [registered, setRegistered] = useState<('EMAIL' | 'GOOGLE')[] | null>(null);
   const request = useAuthRequest();
 
@@ -138,7 +140,7 @@ function SignupForm({ onSent }: { onSent: (email: string) => void }) {
 
   return (
     <>
-      <LaterButton label="구글로 계속하기" onClick={notReady} block />
+      <GoogleStartButton />
       <OrDivider />
 
       <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
@@ -158,16 +160,7 @@ function SignupForm({ onSent }: { onSent: (email: string) => void }) {
             error={errors.email}
             inputRef={emailRef}
           />
-          {registered?.includes('EMAIL') && (
-            <div className="flex gap-2">
-              <ThemeButton type="button" onClick={() => goWithEmail('/login')}>
-                로그인
-              </ThemeButton>
-              <ThemeButton type="button" onClick={() => goWithEmail('/password/forgot')}>
-                비밀번호 찾기
-              </ThemeButton>
-            </div>
-          )}
+          {registered && <RegisteredActions methods={registered} onEmailPath={goWithEmail} />}
         </div>
 
         <AuthField
@@ -244,6 +237,32 @@ function SignupForm({ onSent }: { onSent: (email: string) => void }) {
         </a>
       </p>
     </>
+  );
+}
+
+/**
+ * 409 이미 가입 아래 버튼 (SITE-05b 3): EMAIL → [로그인]·[비밀번호 찾기](이메일 넘김), GOOGLE → [구글로 로그인].
+ * 구글 가입 확인 화면(SITE-05g)도 같은 안내를 쓴다.
+ */
+export function RegisteredActions({ methods, onEmailPath }: { methods: readonly string[]; onEmailPath: (path: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {methods.includes('EMAIL') && (
+        <>
+          <ThemeButton type="button" onClick={() => onEmailPath('/login')}>
+            로그인
+          </ThemeButton>
+          <ThemeButton type="button" onClick={() => onEmailPath('/password/forgot')}>
+            비밀번호 찾기
+          </ThemeButton>
+        </>
+      )}
+      {methods.includes('GOOGLE') && (
+        <ThemeButton type="button" onClick={() => startGoogleLogin()}>
+          구글로 로그인
+        </ThemeButton>
+      )}
+    </div>
   );
 }
 

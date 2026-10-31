@@ -68,7 +68,7 @@ describe('로그인 화면 /login (US-34, D-072)', () => {
     expect(screen.getByLabelText('비밀번호')).toHaveAttribute('type', 'password');
   });
 
-  it.each(['구글로 계속하기', '이용약관', '개인정보처리방침'])(
+  it.each(['이용약관', '개인정보처리방침'])(
     '점선 자리 "%s"는 눌러도 오류 없이 "준비 중이에요" (D-008 방식)',
     async (name) => {
       const api = mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });

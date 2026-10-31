@@ -429,7 +429,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 이메일 로그인 → 세션 쿠키 (__Host-JP_SID) */
+        /**
+         * 이메일 로그인 → 세션 쿠키 (__Host-JP_SID)
+         * @description 휴면 회원(US-38)도 휴면 전 이메일로 로그인한다. 비밀번호가 맞으면 = 재인증 → 바로 복원하고 로그인, 응답 restored true + 복원 알림 메일.
+         *     틀리면 보통 회원과 같은 401 (휴면인지 드러내지 않음). 정지된 휴면 회원은 비밀번호가 맞아도 403 ACCOUNT_SUSPENDED이고 복원하지 않는다.
+         */
         post: operations["login"];
         delete?: never;
         options?: never;
@@ -495,10 +499,40 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 구글 로그인 시작 → 302 구글 */
+        /**
+         * 구글 로그인·가입 시작 → 302 구글 (state·nonce·PKCE S256, scope openid email profile)
+         * @description 브라우저가 이 주소로 이동한다 (fetch 아님). 구글을 거쳐 콜백이 결과를 FE 주소로 302 (08 13-5).
+         *     구글 설정이 없는 서버(로컬에서 비워 둠)는 바로 /login?error=GOOGLE_FAILED로 302.
+         */
         get: operations["startGoogleLogin"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 구글 가입 확인 화면에 채울 값 (D-083, 06 SITE-05g)
+         * @description 처음 보는 구글로 돌아오면 콜백이 이 브라우저 세션에 '구글 가입 대기'(10분)를 두고 FE /signup/google로 보낸다. 대기가 없거나 10분이 지났으면 400 GOOGLE_SIGNUP_EXPIRED
+         */
+        get: operations["getGoogleSignup"];
+        put?: never;
+        /**
+         * 구글 가입 확인 화면의 [가입하기] → 201 새 회원 + 구글 연결 + 기본 데이터 + 로그인
+         * @description 검사 순서: 400 GOOGLE_SIGNUP_EXPIRED(대기 없음·10분 지남·같은 구글이 다른 창에서 먼저 가입) → 400 VALIDATION_FAILED(errors name·ageOver14)
+         *     → 409 EMAIL_ALREADY_REGISTERED(기다리는 사이 같은 이메일 회원이 생김, loginMethods) → 201 + 세션 쿠키(새 세션 ID).
+         *     구글이 본인 확인을 했으므로 이메일 가입과 달리 바로 로그인한다 (D-083). FE는 GET의 next 또는 /로.
+         */
+        post: operations["completeGoogleSignup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -512,7 +546,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 구글에서 돌아옴 → 302 FE (08 문서 13-5 표) */
+        /**
+         * 구글에서 돌아옴 → 302 FE (08 문서 13-5 표)
+         * @description 구글 콘솔에 등록하는 redirect URI = <FE 주소>/api/v1/auth/google/callback (정확히 일치).
+         *     로그인: 성공 → next 또는 / (팝업이면 /login/google-done), 처음 보는 구글 → /signup/google (D-083, 팝업이면 /login/google-done?error=GOOGLE_NOT_REGISTERED), 실패 → /login?error=GOOGLE_FAILED · GOOGLE_EMAIL_ACCOUNT_EXISTS · ACCOUNT_SUSPENDED (&next=…, 팝업이면 /login/google-done?error=…).
+         *     연결: 성공 → /me?linked=google, 실패 → /me?error=GOOGLE_ALREADY_LINKED · GOOGLE_FAILED.
+         */
         get: operations["googleCallback"];
         put?: never;
         post?: never;
@@ -533,7 +572,10 @@ export interface paths {
         get: operations["getMe"];
         put?: never;
         post?: never;
-        /** 탈퇴 (재인증) — 모든 세션 삭제 + 데이터 즉시 삭제 */
+        /**
+         * 탈퇴 (재인증) — 모든 세션 삭제 + 데이터 즉시 삭제
+         * @description 회원·작성 데이터(일정·Todo·D-Day·일기·메모·카테고리·설정)·비밀번호·메일 링크·구글 연결을 바로 지운다. 감사 기록은 user_id만 남김. 탈퇴 완료 메일. 같은 이메일·구글로 다시 가입할 수 있다
+         */
         delete: operations["deleteMe"];
         options?: never;
         head?: never;
@@ -550,7 +592,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 비밀번호로 재인증 (5분 유효) */
+        /**
+         * 비밀번호로 재인증 (5분 유효)
+         * @description 이 기기(세션)에서 5분 동안 민감 작업 가능. 틀리면 400 REAUTH_FAILED(errors password) — 로그인 만료 401과 구별, 로그인은 그대로 (D-085). 로그인 실패와 같은 계정별 대기에 셈, 대기 중이면 429. 비밀번호 없는 회원(구글만)도 같은 400 (구글 재인증은 /me/reauth/google)
+         */
         post: operations["reauth"];
         delete?: never;
         options?: never;
@@ -565,7 +610,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 구글로 재인증 (prompt=login) → 302 */
+        /**
+         * 구글로 재인증 (prompt=login, max_age=0) → 302 구글 → 콜백 → 302 FE
+         * @description 브라우저가 이 주소로 이동한다 (비밀번호 없는 구글 회원의 재인증, US-37). 콜백은 이 회원에 연결된 구글이고 방금(5분 안) 다시 로그인했을 때만
+         *     이 기기를 5분 재인증 → /me?reauth=google. 다른 구글 → /me?error=GOOGLE_ACCOUNT_MISMATCH, 그 밖의 실패 → /me?error=GOOGLE_FAILED.
+         *     구글이 연결돼 있지 않으면 404 (POST /me/reauth를 쓴다). 구글 설정이 없는 서버는 /me?error=GOOGLE_FAILED로 302.
+         */
         get: operations["reauthGoogle"];
         put?: never;
         post?: never;
@@ -583,7 +633,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** 이메일 변경 요청 (재인증) → 새 주소 인증 메일 + 기존 주소 알림 */
+        /**
+         * 이메일 변경 요청 (재인증) → 새 주소 인증 메일 + 기존 주소 알림
+         * @description 검사 순서: 403 재인증 → 400 형식·지금과 같음(errors email) → 429 회원별 하루 5회 → 409 이미 회원(loginMethods) → 202. 인증 전까지 이메일·로그인은 그대로, 새 요청을 하면 이전 링크 무효
+         */
         put: operations["changeEmail"];
         post?: never;
         delete?: never;
@@ -601,7 +654,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 새 이메일 인증 → 이메일 바뀜 + 모든 기기 로그아웃 */
+        /**
+         * 새 이메일 인증 → 이메일 바뀜 + 모든 기기 로그아웃
+         * @description 로그인 없이 (메일을 다른 기기에서 열 수 있음). 메일 링크 = <FE 주소>/email/verify?token=… (24시간·1회용). 토큰 없음·만료·사용됨·그 사이 같은 이메일 회원이 생김 → 400 TOKEN_INVALID. IP별 분당 10회(429). 자동 로그인 안 함
+         */
         post: operations["verifyEmailChange"];
         delete?: never;
         options?: never;
@@ -617,7 +673,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** 비밀번호 변경·추가 (재인증) → 다른 기기 로그아웃 */
+        /**
+         * 비밀번호 변경·추가 (재인증) → 다른 기기 로그아웃
+         * @description 이 기기는 그대로, 다른 기기 로그아웃, 알림 메일. 새 비밀번호는 가입과 같은 규칙(400 PASSWORD_REJECTED, errors newPassword). 비밀번호 없던 회원(구글만)은 GET /me/reauth/google로 재인증한 뒤 추가
+         */
         put: operations["changePassword"];
         post?: never;
         delete?: never;
@@ -650,7 +709,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 구글 연결 시작 (재인증) → 302 구글 → 콜백 → 302 FE */
+        /**
+         * 구글 연결 시작 (재인증) → 302 구글 → 콜백 → 302 FE
+         * @description 브라우저가 이 주소로 이동한다. 먼저 POST /me/reauth (5분 유효). 구글에서 계정을 고르게 prompt=select_account.
+         *     검사 순서: 401 로그인 → 409 IDENTITY_ALREADY_CONNECTED(이미 구글 있음, 계정당 하나) → 403 REAUTH_REQUIRED.
+         *     구글 설정이 없는 서버는 /me?error=GOOGLE_FAILED로 302.
+         */
         get: operations["connectGoogle"];
         put?: never;
         post?: never;
@@ -670,7 +734,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** 구글 연결 해제 (재인증). 마지막 로그인 수단이면 409 LAST_IDENTITY */
+        /**
+         * 구글 연결 해제 (재인증). 마지막 로그인 수단이면 409 LAST_IDENTITY
+         * @description 검사 순서: 404 연결 없음 → 409 LAST_IDENTITY(비밀번호 없음) → 403 REAUTH_REQUIRED → 204 + 알림 메일
+         */
         delete: operations["disconnectGoogle"];
         options?: never;
         head?: never;
@@ -684,7 +751,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 로그인된 기기 목록 */
+        /**
+         * 로그인된 기기 목록 (최근에 쓴 기기부터)
+         * @description id는 세션 ID(쿠키 값)가 아니라 기기를 지울 때 쓰는 번호. loggedInAt = 로그인한 시각, lastUsedAt = 마지막 사용
+         */
         get: operations["listSessions"];
         put?: never;
         post?: never;
@@ -707,7 +777,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** 그 기기 로그아웃 */
+        /**
+         * 그 기기 로그아웃 (지금 기기면 이 기기 로그아웃)
+         * @description 내 기기가 아니거나 없는 id → 404
+         */
         delete: operations["deleteSession"];
         options?: never;
         head?: never;
@@ -751,7 +824,7 @@ export interface components {
             detail?: string;
             instance?: string;
             /** @enum {string} */
-            code: "VALIDATION_FAILED" | "INVALID_QUERY" | "NOT_FOUND" | "CATEGORY_NAME_DUPLICATED" | "DEFAULT_CATEGORY_LOCKED" | "CONFLICT" | "UNSUPPORTED_REQUEST" | "INTERNAL_ERROR" | "UNAUTHENTICATED" | "CSRF_INVALID" | "REAUTH_REQUIRED" | "ACCOUNT_SUSPENDED" | "PASSWORD_REJECTED" | "TOKEN_INVALID" | "EMAIL_ALREADY_REGISTERED" | "LAST_IDENTITY" | "TOO_MANY_REQUESTS";
+            code: "VALIDATION_FAILED" | "INVALID_QUERY" | "NOT_FOUND" | "CATEGORY_NAME_DUPLICATED" | "DEFAULT_CATEGORY_LOCKED" | "CONFLICT" | "UNSUPPORTED_REQUEST" | "INTERNAL_ERROR" | "UNAUTHENTICATED" | "CSRF_INVALID" | "REAUTH_REQUIRED" | "REAUTH_FAILED" | "ACCOUNT_SUSPENDED" | "PASSWORD_REJECTED" | "TOKEN_INVALID" | "GOOGLE_SIGNUP_EXPIRED" | "EMAIL_ALREADY_REGISTERED" | "LAST_IDENTITY" | "IDENTITY_ALREADY_CONNECTED" | "TOO_MANY_REQUESTS";
             errors?: {
                 field: string;
                 message: string;
@@ -1072,12 +1145,38 @@ export interface components {
             token: string;
             newPassword: components["schemas"]["Password"];
         };
+        GoogleSignupInfo: {
+            /** @description 구글 이메일 (고칠 수 없음) */
+            email: string;
+            /** @description 채워 둘 이름: 구글 이름, 없으면 이메일 @ 앞부분, 50자까지 (D-082 1번) */
+            name: string;
+            /** @description 구글 시작 때의 next (가입 뒤 갈 곳). 없으면 이 속성이 없다 */
+            next?: string;
+        };
+        GoogleSignupRequest: {
+            name: string;
+            /**
+             * @description 만 14세 이상 확인 (false·없으면 400)
+             * @constant
+             */
+            ageOver14: true;
+        };
         Me: {
             email: string;
             name: string;
             /** @description false = 비밀번호 없음 (구글만 */
             hasPassword: boolean;
             loginMethods: components["schemas"]["LoginMethod"][];
+        };
+        /** @description 이메일 로그인 응답 = Me + restored */
+        LoginResult: {
+            email: string;
+            name: string;
+            /** @description false = 비밀번호 없음 (구글만 */
+            hasPassword: boolean;
+            loginMethods: components["schemas"]["LoginMethod"][];
+            /** @description (US-38) 이번 로그인으로 휴면에서 복원됐으면 true — FE가 '휴면에서 돌아왔어요' 안내 */
+            restored: boolean;
         };
         MeUpdateRequest: {
             name?: string;
@@ -1129,7 +1228,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description 규칙 충돌 (CATEGORY_NAME_DUPLICATED, DEFAULT_CATEGORY_LOCKED) 또는 동시 저장 충돌 (CONFLICT) */
+        /** @description 규칙 충돌 (CATEGORY_NAME_DUPLICATED, DEFAULT_CATEGORY_LOCKED, M5 LAST_IDENTITY·IDENTITY_ALREADY_CONNECTED) 또는 동시 저장 충돌 (CONFLICT) */
         Conflict: {
             headers: {
                 [name: string]: unknown;
@@ -2263,13 +2362,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK (내 정보) */
+            /** @description OK (내 정보 + restored) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Me"];
+                    "application/json": components["schemas"]["LoginResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -2349,7 +2448,12 @@ export interface operations {
     };
     startGoogleLogin: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 로그인 뒤 갈 FE 경로. 사이트 안 경로('/'로 시작, '//'·'\'·ASCII 밖 글자 없음, 512자까지)만 — 아니면 무시하고 '/' */
+                next?: string;
+                /** @description true = 작성 중 "다시 로그인" 창(US-36 AC4)의 팝업. 결과를 /login/google-done(실패면 ?error=코드)으로 보낸다. next는 무시 */
+                popup?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2365,6 +2469,54 @@ export interface operations {
             };
         };
     };
+    getGoogleSignup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleSignupInfo"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    completeGoogleSignup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleSignupRequest"];
+            };
+        };
+        responses: {
+            /** @description 가입하고 로그인됨 (내 정보) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["EmailAlreadyRegistered"];
+        };
+    };
     googleCallback: {
         parameters: {
             query?: never;
@@ -2374,7 +2526,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description FE 주소로 (/, /login?error=…, /me?linked=google, /me?error=…) */
+            /** @description FE 주소로 (/, next, /login?error=…, /login/google-done[?error=…], /me?linked=google, /me?error=…) */
             302: {
                 headers: {
                     [name: string]: unknown;
@@ -2471,6 +2623,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description 비밀번호가 틀림·비밀번호 없는 회원 (REAUTH_FAILED, errors password) 또는 입력값 오류 (VALIDATION_FAILED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
@@ -2492,6 +2653,8 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     changeEmail: {
@@ -2543,6 +2706,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     changePassword: {
@@ -2609,6 +2773,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     disconnectGoogle: {

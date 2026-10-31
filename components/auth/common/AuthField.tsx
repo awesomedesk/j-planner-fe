@@ -45,7 +45,7 @@ export default function AuthField({ id, label, value, onChange, error, hint, hin
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(!!error && errorId, !!hint && hintId)}
-          className={`${error ? ERROR_INPUT_CLASS : INPUT_CLASS} ${trailing ? 'pr-16' : ''}`}
+          className={`${error ? ERROR_INPUT_CLASS : INPUT_CLASS} read-only:text-tp-muted ${trailing ? 'pr-16' : ''}`}
         />
         {trailing}
       </div>
