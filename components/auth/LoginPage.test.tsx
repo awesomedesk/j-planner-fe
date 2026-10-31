@@ -89,6 +89,13 @@ describe('로그인 화면 /login (US-34, D-072)', () => {
     expect(api.calls('POST /auth/login')[0].headers['x-xsrf-token']).toBe('test-csrf');
   });
 
+  it('휴면에서 복원됐으면(restored: true) 갈 화면에 restored=1을 붙여 안내하게 한다 (US-38)', async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN, 'POST /auth/login': () => json(200, { ...ME, restored: true }) });
+    const { user } = openLogin('?next=%2F%3Fview%3Dweek');
+    await fillAndSubmit(user);
+    await waitFor(() => expect(goTo).toHaveBeenCalledWith('/?view=week&restored=1'));
+  });
+
   it('?next=가 바깥 주소면 무시하고 달력(/)으로', async () => {
     mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN, 'POST /auth/login': () => json(200, ME) });
     const { user } = openLogin('?next=https%3A%2F%2Fevil.example.com');

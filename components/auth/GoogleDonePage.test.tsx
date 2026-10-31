@@ -29,7 +29,7 @@ describe('구글 팝업 끝 화면 /login/google-done (US-36 AC4, D-072·D-077)'
     setOpener({ closed: false, postMessage } as unknown as Window);
     const close = vi.spyOn(window, 'close').mockImplementation(() => {});
     open();
-    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: null }, window.location.origin);
+    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: null, restored: false }, window.location.origin);
     expect(close).toHaveBeenCalled();
     expect(goTo).not.toHaveBeenCalled();
   });
@@ -39,7 +39,7 @@ describe('구글 팝업 끝 화면 /login/google-done (US-36 AC4, D-072·D-077)'
     setOpener({ closed: false, postMessage } as unknown as Window);
     vi.spyOn(window, 'close').mockImplementation(() => {});
     open('?error=GOOGLE_FAILED');
-    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: 'GOOGLE_FAILED' }, window.location.origin);
+    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: 'GOOGLE_FAILED', restored: false }, window.location.origin);
   });
 
   it('닫히지 않을 때를 위해 안내 한 줄', () => {
@@ -56,5 +56,17 @@ describe('구글 팝업 끝 화면 /login/google-done (US-36 AC4, D-072·D-077)'
     vi.mocked(goTo).mockClear();
     open('?error=ACCOUNT_SUSPENDED');
     expect(goTo).toHaveBeenCalledWith('/login?error=ACCOUNT_SUSPENDED');
+  });
+
+  it('?restored=1(휴면 복원): 원래 창에 restored도 알린다, 원래 창이 없으면 /?restored=1 (US-38)', () => {
+    const postMessage = vi.fn();
+    setOpener({ closed: false, postMessage } as unknown as Window);
+    vi.spyOn(window, 'close').mockImplementation(() => {});
+    open('?restored=1');
+    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: null, restored: true }, window.location.origin);
+
+    setOpener(null);
+    open('?restored=1');
+    expect(goTo).toHaveBeenCalledWith('/?restored=1');
   });
 });

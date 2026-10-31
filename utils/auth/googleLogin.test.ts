@@ -64,7 +64,15 @@ describe('다시 로그인 창의 구글 팝업 (US-36 AC4)', () => {
     const result = signInWithGooglePopup();
     expect(open).toHaveBeenCalledWith(GOOGLE_POPUP_PATH, 'jp-google-login', expect.stringContaining('popup'));
     sendFrom(popup, { type: GOOGLE_DONE_MESSAGE, error: null });
-    await expect(result).resolves.toEqual({ ok: true });
+    await expect(result).resolves.toEqual({ ok: true, restored: false });
+  });
+
+  it('끝 화면이 restored: true를 알리면 성공 + restored (US-38)', async () => {
+    const popup = fakePopup();
+    vi.spyOn(window, 'open').mockReturnValue(popup);
+    const result = signInWithGooglePopup();
+    sendFrom(popup, { type: GOOGLE_DONE_MESSAGE, error: null, restored: true });
+    await expect(result).resolves.toEqual({ ok: true, restored: true });
   });
 
   it('끝 화면이 오류 코드를 알리면 그 코드', async () => {
@@ -109,14 +117,14 @@ describe('팝업 끝 화면이 원래 창에 알리기 (US-36 AC4)', () => {
     const postMessage = vi.fn();
     setOpener({ closed: false, postMessage } as unknown as Window);
     expect(postGoogleDone(null)).toBe(true);
-    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: null }, window.location.origin);
+    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: null, restored: false }, window.location.origin);
   });
 
   it('오류 코드는 아는 코드로 바꿔 알린다', () => {
     const postMessage = vi.fn();
     setOpener({ closed: false, postMessage } as unknown as Window);
     postGoogleDone('weird');
-    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: 'GOOGLE_FAILED' }, window.location.origin);
+    expect(postMessage).toHaveBeenCalledWith({ type: GOOGLE_DONE_MESSAGE, error: 'GOOGLE_FAILED', restored: false }, window.location.origin);
   });
 
   it('원래 창이 없으면 false', () => {
