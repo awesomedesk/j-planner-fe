@@ -14,6 +14,7 @@ import {
 } from '@utils/auth/handoff';
 import { googleResultMessage, toGoogleResultCode, type GoogleResultCode } from '@utils/auth/googleLogin';
 import { safeNextPath } from '@utils/auth/nextPath';
+import { withRestored } from '@utils/auth/restored';
 import { goTo } from '@utils/navigation';
 
 import { AuthFrame, AuthLinks, AuthNotice, LaterButton, OrDivider } from './common/AuthFrame';
@@ -79,7 +80,10 @@ function LoginCard() {
       <LoginForm
         initialEmail={initialEmail}
         onEmailChange={(email) => (emailRef.current = email)}
-        onSignedIn={() => goTo(safeNextPath(new URLSearchParams(window.location.search).get('next')))}
+        onSignedIn={(_, restored) => {
+          const target = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+          goTo(restored ? withRestored(target) : target);
+        }}
       />
 
       <AuthLinks

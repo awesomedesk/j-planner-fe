@@ -59,7 +59,7 @@ export function googleResultMessage(code: GoogleResultCode | 'POPUP_BLOCKED'): s
 }
 
 /** 팝업 결과: 성공 / 실패(코드) / null = 알리지 않고 닫음 */
-export type GooglePopupResult = { ok: true } | { ok: false; code: GoogleResultCode | 'POPUP_BLOCKED' } | null;
+export type GooglePopupResult = { ok: true; restored: boolean } | { ok: false; code: GoogleResultCode | 'POPUP_BLOCKED' } | null;
 
 /**
  * 다시 로그인 창의 [Google로 계속하기] (AC4) — 팝업을 열고 끝 화면이 알릴 때까지 기다린다.
@@ -77,10 +77,10 @@ export function signInWithGooglePopup(): Promise<GooglePopupResult> {
     };
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== popup) return;
-      const data = event.data as { type?: unknown; error?: unknown } | null;
+      const data = event.data as { type?: unknown; error?: unknown; restored?: unknown } | null;
       if (!data || data.type !== GOOGLE_DONE_MESSAGE) return;
       const code = toGoogleResultCode(typeof data.error === 'string' ? data.error : null);
-      finish(code ? { ok: false, code } : { ok: true });
+      finish(code ? { ok: false, code } : { ok: true, restored: data.restored === true });
     };
     const closedCheck = setInterval(() => {
       if (popup.closed) finish(null);
@@ -89,10 +89,10 @@ export function signInWithGooglePopup(): Promise<GooglePopupResult> {
   });
 }
 
-/** 팝업 끝 화면: 원래 창에 결과를 알린다(같은 출처로만). 원래 창이 없으면 false */
-export function postGoogleDone(rawError: string | null): boolean {
+/** 팝업 끝 화면: 원래 창에 결과를 알린다(같은 출처로만). restored = 휴면 복원(US-38). 원래 창이 없으면 false */
+export function postGoogleDone(rawError: string | null, restored = false): boolean {
   const opener = window.opener as Window | null;
   if (!opener || opener.closed) return false;
-  opener.postMessage({ type: GOOGLE_DONE_MESSAGE, error: toGoogleResultCode(rawError) }, window.location.origin);
+  opener.postMessage({ type: GOOGLE_DONE_MESSAGE, error: toGoogleResultCode(rawError), restored }, window.location.origin);
   return true;
 }

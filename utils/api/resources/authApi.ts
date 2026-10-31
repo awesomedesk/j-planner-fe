@@ -3,6 +3,7 @@ import type {
   GoogleSignupInfo,
   GoogleSignupRequest,
   LoginRequest,
+  LoginResult,
   Me,
   PasswordResetRequest,
   SignupRequest,
@@ -17,8 +18,8 @@ export const authApi = {
   csrf: () => apiClient.fetchCsrfToken(),
   /** 내 정보. 로그인 안 했으면 401 */
   me: () => apiClient.get<Me>('/me'),
-  /** 로그인 → 내 정보 + 세션 쿠키. 실패 401 / 정지 403 / 늦추기 429(Retry-After) */
-  login: (body: LoginRequest) => apiClient.post<Me, LoginRequest>('/auth/login', body),
+  /** 로그인 → 내 정보 + restored(휴면 복원, US-38) + 세션 쿠키. 실패 401 / 정지 403 / 늦추기 429(Retry-After) */
+  login: (body: LoginRequest) => apiClient.post<LoginResult, LoginRequest>('/auth/login', body),
   /** 이 기기 로그아웃 (204) */
   logout: () => apiClient.post<void>('/auth/logout'),
   /** 이 기기 빼고 모두 로그아웃 (204). '모든 기기 로그아웃' = 이것 + logout */

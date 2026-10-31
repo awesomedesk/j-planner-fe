@@ -19,7 +19,8 @@ export const RELOGIN_TEXT = {
 interface ReloginDialogProps {
   /** 지금 계정 이메일 (채워 둔다) */
   email: string;
-  onSignedIn: (me: Me) => void | Promise<void>;
+  /** 다시 로그인함 (휴면 복원이면 restored, US-38) */
+  onSignedIn: (me: Me, restored: boolean) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -88,7 +89,7 @@ export default function ReloginDialog({ email, onSignedIn, onCancel }: ReloginDi
 }
 
 /** 팝업 구글 로그인 → 내 정보 → onSignedIn. 결과 문구는 06 SITE-05a */
-function useGoogleRelogin(onSignedIn: (me: Me) => void | Promise<void>) {
+function useGoogleRelogin(onSignedIn: (me: Me, restored: boolean) => void | Promise<void>) {
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const waitingRef = useRef(false);
@@ -112,7 +113,7 @@ function useGoogleRelogin(onSignedIn: (me: Me) => void | Promise<void>) {
         setError(googleResultMessage('GOOGLE_FAILED')); // 끝났다는데 세션이 없음
         return;
       }
-      await onSignedIn(me);
+      await onSignedIn(me, result.restored);
     } finally {
       waitingRef.current = false;
       setWaiting(false);

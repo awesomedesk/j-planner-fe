@@ -6,9 +6,11 @@ import { useAppDispatch } from '@/app/hooks';
 import type { Me } from '@/types/api';
 import ThemeButton from '@components/button/ThemeButton';
 import { sessionRenewed } from '@store/slices/authSlice';
+import { showNotice } from '@store/slices/noticeSlice';
 import { authApi, setUnauthenticatedHandler } from '@utils/api';
 import { isSameAccount } from '@utils/auth/account';
 import { loginPathFor } from '@utils/auth/nextPath';
+import { RESTORED_TEXT, takeRestoredFromUrl } from '@utils/auth/restored';
 import { currentPath, goTo } from '@utils/navigation';
 
 import ReloginDialog from './ReloginDialog';
@@ -55,7 +57,12 @@ export default function RequireLogin({ children }: { children: ReactNode }) {
     return () => setUnauthenticatedHandler(null);
   }, [status]);
 
-  const onSignedIn = async (next: Me) => {
+  // 휴면 복원 안내 (US-38): 로그인 뒤 화면 주소의 restored=1 → 한 번 안내하고 주소에서 지운다
+  useEffect(() => {
+    if (status === 'signedIn' && takeRestoredFromUrl()) dispatch(showNotice(RESTORED_TEXT, 'info'));
+  }, [status, dispatch]);
+
+  const onSignedIn = async (next: Me, restored: boolean) => {
     if (!prompt) return;
     if (!me || !isSameAccount(me, next)) {
       // 다른 계정: 쓰던 것을 그 계정에 저장하지 않는다. store에 남은 이전 계정 데이터도 버린다
@@ -66,6 +73,8 @@ export default function RequireLogin({ children }: { children: ReactNode }) {
     dispatch(sessionRenewed(next));
     setPrompt(null);
     prompt.resolve(true);
+    // 같은 계정을 확인한 뒤에만 안내 (US-38, D-072)
+    if (restored) dispatch(showNotice(RESTORED_TEXT, 'info'));
   };
 
   /** [취소]·Esc: 창만 닫고 그 저장은 실패로 끝낸다 — 쓰던 창은 그대로 (제가 정한 부분) */

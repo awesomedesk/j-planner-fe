@@ -10,8 +10,8 @@ import { authApi, isApiError, toErrorMessage } from '@utils/api';
 interface LoginFormProps {
   /** 처음 채울 이메일 (다시 로그인 창은 지금 계정, D-072) */
   initialEmail?: string;
-  /** 로그인 성공 (내 정보). 여기서 던진 오류도 오류 한 줄로 보인다 */
-  onSignedIn: (me: Me) => void | Promise<void>;
+  /** 로그인 성공 (내 정보, 휴면에서 복원됐는지 — US-38). 여기서 던진 오류도 오류 한 줄로 보인다 */
+  onSignedIn: (me: Me, restored: boolean) => void | Promise<void>;
   /** 이메일 칸이 바뀔 때 ('비밀번호 찾기'로 넘길 이메일, D-079) */
   onEmailChange?: (email: string) => void;
 }
@@ -51,8 +51,8 @@ export default function LoginForm({ initialEmail = '', onSignedIn, onEmailChange
     setSending(true);
     setError(null);
     try {
-      const me = await authApi.login({ email, password });
-      await onSignedIn(me);
+      const { restored, ...me } = await authApi.login({ email, password });
+      await onSignedIn(me, restored === true);
     } catch (e) {
       setError(toErrorMessage(e));
       if (isApiError(e) && e.status === 429 && e.retryAfterSeconds) setWaitSeconds(e.retryAfterSeconds);
