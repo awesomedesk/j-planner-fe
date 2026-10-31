@@ -177,7 +177,7 @@ describe('내 계정 — 기본 정보: 이메일 바꾸기 (US-37 AC4, D-066 ·
     const dialog = await reauthDialog();
     await user.type(dialog.getByLabelText('현재 비밀번호'), 'current-password-1');
     await user.click(dialog.getByRole('button', { name: '확인' }));
-    await waitFor(() => expect(basic.getByRole('textbox', { name: '새 이메일' })).toHaveAccessibleDescription('이미 가입된 이메일이에요'));
+    await waitFor(() => expect(basic.getByRole('textbox', { name: '새 이메일' })).toHaveAccessibleDescription(/^이미 가입된 이메일이에요/));
     expect(screen.queryByRole('button', { name: '구글로 로그인' })).not.toBeInTheDocument();
   });
 

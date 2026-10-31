@@ -2,12 +2,10 @@
 
 import { useEffect, useId, useState } from 'react';
 
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import ThemeButton from '@components/button/ThemeButton';
+import { useAppSelector } from '@/app/hooks';
+import ThemeButton, { themeButtonClass } from '@components/button/ThemeButton';
 import { selectAuth } from '@store/slices/authSlice';
-import { showNotice } from '@store/slices/noticeSlice';
 
-import { NOT_READY_MESSAGE } from '../LoginPage';
 import { useLogout } from './useLogout';
 
 export const LOGOUT_EVERYWHERE_CONFIRM = {
@@ -19,10 +17,9 @@ export const LOGOUT_EVERYWHERE_CONFIRM = {
 
 /**
  * 계정 메뉴 내용 (US-34, D-072) — PC·태블릿 헤더 계정 메뉴와 모바일 ≡ 메뉴 맨 아래가 같이 쓴다.
- * 이름·이메일, '내 계정'(점선 자리, US-37), [로그아웃], [모든 기기에서 로그아웃](확인 창)
+ * 이름·이메일, [내 계정](/me, US-37), [로그아웃], [모든 기기에서 로그아웃](확인 창)
  */
 export default function AccountMenuItems() {
-  const dispatch = useAppDispatch();
   const { me } = useAppSelector(selectAuth);
   const { busy, logout, logoutEverywhere } = useLogout();
   const [confirming, setConfirming] = useState(false);
@@ -35,13 +32,9 @@ export default function AccountMenuItems() {
           <span className="break-all text-[13px] text-tp-muted">{me.email}</span>
         </div>
       )}
-      <button
-        type="button"
-        onClick={() => dispatch(showNotice(NOT_READY_MESSAGE, 'info'))}
-        className="rounded-lg border border-dashed border-tp-line px-3 py-2 text-left text-[13px] text-tp-muted"
-      >
+      <a href="/me" className={`${themeButtonClass('secondary', 'md')} w-full`}>
         내 계정
-      </button>
+      </a>
       <ThemeButton size="md" className="w-full justify-center" disabled={busy} onClick={logout}>
         로그아웃
       </ThemeButton>

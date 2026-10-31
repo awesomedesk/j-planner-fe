@@ -80,3 +80,15 @@ export type PasswordResetRequest = Schemas['PasswordResetRequest'];
 export type GoogleSignupInfo = Schemas['GoogleSignupInfo'];
 /** `POST /auth/google/signup` 본문 (D-083) */
 export type GoogleSignupRequest = Schemas['GoogleSignupRequest'];
+
+// ---------------------------------------------------------------- 내 계정 (US-37, 08 13-4)
+/** `PATCH /me` 본문 */
+export type MeUpdateRequest = Schemas['MeUpdateRequest'];
+/** `POST /me/reauth` 본문 (지금 비밀번호) */
+export type PasswordRequest = Schemas['PasswordRequest'];
+/** `PUT /me/password` 본문 */
+export type NewPasswordRequest = Schemas['NewPasswordRequest'];
+/** 연결된 로그인 수단 `GET /me/identities` */
+export type Identity = Schemas['Identity'];
+/** 로그인한 기기 `GET /me/sessions` */
+export type DeviceSession = Schemas['DeviceSession'];

@@ -44,6 +44,10 @@ const authSlice = createSlice({
       state.me = action.payload;
       state.status = 'signedIn';
     },
+    /** 내 계정에서 이름·로그인 수단이 바뀌었을 때 서버 응답으로 (US-37) — 헤더 이름도 같이 바뀐다 */
+    meUpdated: (state, action: PayloadAction<Me>) => {
+      if (state.status === 'signedIn') state.me = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -60,7 +64,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { sessionRenewed } = authSlice.actions;
+export const { sessionRenewed, meUpdated } = authSlice.actions;
 
 export const selectAuth = (state: RootState) => state.auth;
 

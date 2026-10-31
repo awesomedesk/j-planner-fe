@@ -9,11 +9,14 @@ const EMAIL_KEY = 'jp.auth.email';
 const NOTICE_KEY = 'jp.auth.loginNotice';
 
 /** 로그인 화면 카드 위 초록 안내 (SITE-05a) */
-export type LoginNotice = 'verified' | 'passwordReset';
+export type LoginNotice = 'verified' | 'passwordReset' | 'emailChanged' | 'accountDeleted';
 
 export const LOGIN_NOTICE_TEXT: Record<LoginNotice, string> = {
   verified: '인증이 끝났어요. 로그인해 주세요',
   passwordReset: '비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요',
+  // 내 계정 (US-37, 06 SITE-09·09a)
+  emailChanged: '이메일을 바꿨어요. 새 이메일로 로그인해 주세요',
+  accountDeleted: '탈퇴가 끝났어요. 이용해 주셔서 고마워요.',
 };
 
 function write(key: string, value: string | null) {
@@ -42,6 +45,6 @@ export const clearHandoffEmail = () => write(EMAIL_KEY, null);
 export const passLoginNotice = (notice: LoginNotice) => write(NOTICE_KEY, notice);
 export function peekLoginNotice(): LoginNotice | null {
   const value = read(NOTICE_KEY);
-  return value === 'verified' || value === 'passwordReset' ? value : null;
+  return value !== null && value in LOGIN_NOTICE_TEXT ? (value as LoginNotice) : null;
 }
 export const clearLoginNotice = () => write(NOTICE_KEY, null);

@@ -7,9 +7,9 @@
 const apiProxyTarget = () => (process.env.API_PROXY_TARGET || '').replace(/\/+$/, '');
 
 /**
- * 메일 링크 화면 — 주소에 토큰이 있으므로 Referer로 새지 않게 (US-33·35, D-079 · 11 문서)
+ * 메일 링크 화면 — 주소에 토큰이 있으므로 Referer로 새지 않게 (US-33·35·37, D-079 · 11 문서)
  */
-const MAIL_LINK_PAGES = ['/signup/verify', '/password/reset'];
+const MAIL_LINK_PAGES = ['/signup/verify', '/password/reset', '/email/verify'];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

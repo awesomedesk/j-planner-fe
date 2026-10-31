@@ -824,7 +824,7 @@ export interface components {
             detail?: string;
             instance?: string;
             /** @enum {string} */
-            code: "VALIDATION_FAILED" | "INVALID_QUERY" | "NOT_FOUND" | "CATEGORY_NAME_DUPLICATED" | "DEFAULT_CATEGORY_LOCKED" | "CONFLICT" | "UNSUPPORTED_REQUEST" | "INTERNAL_ERROR" | "UNAUTHENTICATED" | "CSRF_INVALID" | "REAUTH_REQUIRED" | "REAUTH_FAILED" | "ACCOUNT_SUSPENDED" | "PASSWORD_REJECTED" | "TOKEN_INVALID" | "GOOGLE_SIGNUP_EXPIRED" | "EMAIL_ALREADY_REGISTERED" | "LAST_IDENTITY" | "IDENTITY_ALREADY_CONNECTED" | "TOO_MANY_REQUESTS";
+            code: "VALIDATION_FAILED" | "INVALID_QUERY" | "NOT_FOUND" | "CATEGORY_NAME_DUPLICATED" | "DEFAULT_CATEGORY_LOCKED" | "CONFLICT" | "UNSUPPORTED_REQUEST" | "INTERNAL_ERROR" | "UNAUTHENTICATED" | "CSRF_INVALID" | "REAUTH_REQUIRED" | "REAUTH_FAILED" | "ACCOUNT_SUSPENDED" | "PASSWORD_REJECTED" | "TOKEN_INVALID" | "GOOGLE_SIGNUP_EXPIRED" | "EMAIL_ALREADY_REGISTERED" | "LAST_IDENTITY" | "IDENTITY_ALREADY_CONNECTED" | "TOO_MANY_REQUESTS" | "CONTENT_TOO_LARGE";
             errors?: {
                 field: string;
                 message: string;
@@ -1264,7 +1264,16 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description (M5) 요청 횟수 제한 (TOO_MANY_REQUESTS) */
+        /** @description (US-41) 요청 본문이 1MB를 넘음 (CONTENT_TOO_LARGE) — 본문을 읽지 않는다 */
+        ContentTooLarge: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description (M5) 요청 횟수 제한 (TOO_MANY_REQUESTS). 로그인한 회원의 일반 API는 분당 300번(api-user, US-41) */
         TooManyRequests: {
             headers: {
                 /** @description 다시 시도할 수 있을 때까지 초 */
@@ -1358,6 +1367,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createCategory: {
@@ -1387,6 +1397,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteCategory: {
@@ -1411,6 +1423,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateCategory: {
@@ -1443,6 +1456,8 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     moveCategory: {
@@ -1474,6 +1489,8 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listSchedules: {
@@ -1503,6 +1520,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createSchedule: {
@@ -1531,6 +1549,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getSchedule: {
@@ -1555,6 +1575,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteSchedule: {
@@ -1578,6 +1599,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateSchedule: {
@@ -1609,6 +1631,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listTodos: {
@@ -1639,6 +1663,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createTodo: {
@@ -1667,6 +1692,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getTodo: {
@@ -1691,6 +1718,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteTodo: {
@@ -1714,6 +1742,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateTodo: {
@@ -1745,6 +1774,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     moveTodo: {
@@ -1775,6 +1806,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listDdays: {
@@ -1796,6 +1829,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createDday: {
@@ -1824,6 +1858,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getDday: {
@@ -1848,6 +1884,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteDday: {
@@ -1871,6 +1908,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateDday: {
@@ -1902,6 +1940,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     moveDday: {
@@ -1932,6 +1972,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listDdayMarks: {
@@ -1959,6 +2001,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listDiaries: {
@@ -1986,6 +2029,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getDiary: {
@@ -2012,6 +2056,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     putDiary: {
@@ -2052,6 +2097,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteDiary: {
@@ -2077,6 +2124,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listMemos: {
@@ -2098,6 +2146,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createMemo: {
@@ -2126,6 +2175,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getMemo: {
@@ -2150,6 +2201,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteMemo: {
@@ -2173,6 +2225,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateMemo: {
@@ -2204,6 +2257,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getSettings: {
@@ -2225,6 +2280,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateSettings: {
@@ -2253,6 +2309,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getCsrf: {
@@ -2296,6 +2354,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["EmailAlreadyRegistered"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2321,6 +2380,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2346,6 +2406,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2374,6 +2435,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2418,6 +2480,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2443,6 +2506,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2515,6 +2579,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["EmailAlreadyRegistered"];
+            413: components["responses"]["ContentTooLarge"];
         };
     };
     googleCallback: {
@@ -2554,6 +2619,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteMe: {
@@ -2574,6 +2640,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateMe: {
@@ -2601,6 +2668,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     reauth: {
@@ -2634,6 +2703,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2655,6 +2725,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     changeEmail: {
@@ -2681,6 +2752,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["EmailAlreadyRegistered"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2706,6 +2778,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -2732,6 +2805,8 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["ContentTooLarge"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listIdentities: {
@@ -2753,6 +2828,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     connectGoogle: {
@@ -2774,6 +2850,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     disconnectGoogle: {
@@ -2796,6 +2873,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listSessions: {
@@ -2817,6 +2895,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteOtherSessions: {
@@ -2837,6 +2916,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteSession: {
@@ -2860,6 +2940,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
 }
