@@ -127,6 +127,17 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     expect(screen.getByRole('dialog', { name: '다시 로그인해 주세요' })).toBeInTheDocument();
   });
 
+  it('팝업이 GOOGLE_NOT_REGISTERED(처음 보는 구글)를 알리면 "이 구글 계정으로 가입된 계정이 없어요" (D-085 · SITE-05a)', async () => {
+    expiredServer();
+    const popup = fakePopup();
+    vi.spyOn(window, 'open').mockReturnValue(popup);
+    const { user, dialog } = await openAndExpire();
+    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    popupSays(popup, 'GOOGLE_NOT_REGISTERED');
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('이 구글 계정으로 가입된 계정이 없어요');
+  });
+
   it('팝업이 막히면 안내 줄', async () => {
     expiredServer();
     vi.spyOn(window, 'open').mockReturnValue(null);

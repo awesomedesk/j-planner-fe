@@ -192,10 +192,19 @@ describe('로그인 화면 — 가입·비밀번호 찾기 연결 (US-33·35, D-
     expect(link.getAttribute('href')).not.toContain('qa');
   });
 
-  it('구글로 계속하기는 여전히 점선 자리 (US-36)', async () => {
+  it('[구글로 계속하기]는 점선 해제 → 브라우저 이동 /api/v1/auth/google ("준비 중이에요" 없음, US-36 · D-083)', async () => {
     notSignedIn();
-    openLogin();
-    expect(await screen.findByRole('button', { name: '구글로 계속하기' })).toBeInTheDocument();
+    const { user } = openLogin();
+    await user.click(await screen.findByRole('button', { name: '구글로 계속하기' }));
+    expect(goTo).toHaveBeenCalledWith('/api/v1/auth/google');
+    expect(screen.queryByText('준비 중이에요')).not.toBeInTheDocument();
+  });
+
+  it('[구글로 계속하기]는 ?next=(사이트 안 경로)를 그대로 넘긴다 (D-082 6)', async () => {
+    notSignedIn();
+    const { user } = openLogin('?next=%2F%3Fview%3Dday');
+    await user.click(await screen.findByRole('button', { name: '구글로 계속하기' }));
+    expect(goTo).toHaveBeenCalledWith('/api/v1/auth/google?next=%2F%3Fview%3Dday');
   });
 
   it.each([

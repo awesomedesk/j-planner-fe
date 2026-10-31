@@ -42,7 +42,7 @@ beforeEach(() => {
 afterEach(() => window.history.replaceState(null, '', '/'));
 
 describe('가입 화면 /signup (US-33, D-079 · SITE-05b)', () => {
-  it('카드: J의 계획 · 구글로 계속하기(점선) · 또는 · 이메일 · 이름 · 비밀번호 · 만 14세 · 가입하기 · 약관 안내 · 로그인 링크', async () => {
+  it('카드: J의 계획 · 구글로 계속하기 · 또는 · 이메일 · 이름 · 비밀번호 · 만 14세 · 가입하기 · 약관 안내 · 로그인 링크', async () => {
     signedOut();
     openSignup();
     expect(await screen.findByRole('heading', { name: 'J의 계획' })).toBeInTheDocument();
@@ -142,6 +142,29 @@ describe('가입 화면 /signup (US-33, D-079 · SITE-05b)', () => {
     await user.click(screen.getByRole('button', { name: '로그인' }));
     expect(goTo).toHaveBeenLastCalledWith('/login');
     expect(sessionStorage.getItem('jp.auth.email')).toBe('qa-fe-01@example.com');
+  });
+
+  it('409 loginMethods에 GOOGLE이 있으면 [구글로 로그인] → 구글 로그인 시작 (SITE-05b 3, US-36)', async () => {
+    signedOut({
+      'POST /auth/signup': () => ({
+        ...problem(409, 'EMAIL_ALREADY_REGISTERED', '이미 가입된 이메일이에요'),
+        body: { title: 'Conflict', status: 409, code: 'EMAIL_ALREADY_REGISTERED', detail: '이미 가입된 이메일이에요', errors: [], loginMethods: ['EMAIL', 'GOOGLE'] },
+      }),
+    });
+    const { user } = openSignup();
+    await fill(user);
+    await submit(user);
+    await user.click(await screen.findByRole('button', { name: '구글로 로그인' }));
+    expect(goTo).toHaveBeenCalledWith('/api/v1/auth/google');
+    expect(screen.getByRole('button', { name: '비밀번호 찾기' })).toBeInTheDocument();
+  });
+
+  it('[구글로 계속하기]는 점선 해제 → 브라우저 이동 /api/v1/auth/google (US-36 · D-083)', async () => {
+    signedOut();
+    const { user } = openSignup();
+    await user.click(await screen.findByRole('button', { name: '구글로 계속하기' }));
+    expect(goTo).toHaveBeenCalledWith('/api/v1/auth/google');
+    expect(screen.queryByText('준비 중이에요')).not.toBeInTheDocument();
   });
 
   it('429 → 카드 오류 줄 "요청이 너무 많아요. n초 뒤에…" + [가입하기] 잠금, 초가 줄어든다', async () => {

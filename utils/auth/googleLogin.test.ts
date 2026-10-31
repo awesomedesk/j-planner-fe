@@ -40,7 +40,8 @@ describe('구글 결과 안내 문구 (US-36, D-082 · 06 SITE-05a)', () => {
     ['GOOGLE_FAILED', '구글 로그인을 마치지 못했어요. 다시 시도해 주세요.'],
     ['GOOGLE_EMAIL_ACCOUNT_EXISTS', '이 이메일로 가입한 계정이 있어요. 이메일로 로그인한 뒤 내 계정에서 구글을 연결해 주세요.'],
     ['ACCOUNT_SUSPENDED', '이용이 제한된 계정이에요.'],
-  ])('%s → "%s"', (code, text) => {
+    ['GOOGLE_NOT_REGISTERED', '이 구글 계정으로 가입된 계정이 없어요'],
+  ])('%s → "%s" (GOOGLE_NOT_REGISTERED = 팝업에서 처음 보는 구글, D-085)', (code, text) => {
     expect(googleResultMessage(toGoogleResultCode(code)!)).toBe(text);
   });
 
