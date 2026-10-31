@@ -25,11 +25,17 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
      work and between steps, check it with the inbox. When you edit #2, also set its card fields
      (`gh project item-edit 2 --owner awesomedesk --url <#2 issue url> --field '지금 하는 일' --text '…'`, same for `'다음 일'`) and update the
      story's work card (Status · 담당 창 · related issues). Don't add a card per message; never guess item/field IDs (`gh project item-list`).
+     "작업판 확인" means doing the FE work found there, not only summarizing it (#319).
+   - **Role inbox** (D-092, view 4): for each issue you receive, keep its card's `수신 상태` (미확인 / 읽음 / 처리 중 / 처리 완료) and
+     `확인 근거` in step with the issue (read label, comment, close).
    - When a story is done, open `[검수 요청] US-xx …` (`to:PO`, `kind:review`) with the commit, what was built and how to check it
      (screenshots at 1440 / 820 / 390px).
    - **Requests and questions for 대표님 go to an issue `to:대표님`, not the chat** (D-084): `kind:question` with options + recommendation
      and how to answer ('댓글에 ①/② 중 하나만'), or `kind:ask` with exact steps. DB work = SQL for Beekeeper Studio (`USE jp;` first,
      children before `users`, a checking `SELECT` last). In the chat, only say the issue number and a one-line summary.
+     **Every `to:대표님` issue (any kind) is added to Projects when you open it** (D-092, #319): `gh project item-add 2 --owner awesomedesk
+     --url <issue url>`, then `구분=결정` (+ `PO 추천`·`필요 시점`) for important decisions or `구분=메시지` otherwise, plus Status · `담당 창=대표님`.
+     Never add a new request as a comment on an issue 대표님 already closed — open a new issue with the original link.
    - Exception: secrets (passwords, tokens, keys) are never written in issues — ask/receive them in the chat. QA e-mails are `qa-…@example.com`.
    - QA accounts you create are deleted by you with the withdraw API (log in → `POST /api/v1/me/reauth` → `DELETE /api/v1/me`, 00 §6).
 5. Write user-facing text and comments in Korean, plain words, 해요체 for UI messages.
