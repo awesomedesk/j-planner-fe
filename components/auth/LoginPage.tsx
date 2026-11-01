@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useAppDispatch } from '@/app/hooks';
-import { showNotice } from '@store/slices/noticeSlice';
 import {
   clearHandoffEmail,
   clearLoginNotice,
@@ -17,13 +15,13 @@ import { safeNextPath } from '@utils/auth/nextPath';
 import { withRestored } from '@utils/auth/restored';
 import { goTo } from '@utils/navigation';
 
-import { AuthFrame, AuthLinks, AuthNotice, LaterButton, OrDivider } from './common/AuthFrame';
+import { AuthFrame, AuthLinks, AuthNotice, OrDivider } from './common/AuthFrame';
 import GoogleStartButton from './common/GoogleStartButton';
 import LoginForm from './LoginForm';
+import PolicyLinks from '@components/public/PolicyLinks';
 import { useSession } from './useSession';
 
-/** 아직 없는 기능 자리를 눌렀을 때 (D-008 방식, D-072) */
-export const NOT_READY_MESSAGE = '준비 중이에요';
+export { NOT_READY_MESSAGE } from './common/AuthFrame';
 
 /**
  * LoginPage - 로그인 화면 `/login` (US-34, D-072 · 06 SITE-05a, D-079)
@@ -42,8 +40,6 @@ export default function LoginPage() {
 }
 
 function LoginCard() {
-  const dispatch = useAppDispatch();
-  const notReady = () => dispatch(showNotice(NOT_READY_MESSAGE, 'info'));
 
   // 다른 화면에서 넘겨준 것: 초록 안내(인증 끝·재설정 끝), 이메일(가입 화면 409 [로그인]) — D-079
   const [notice] = useState(peekLoginNotice);
@@ -94,8 +90,7 @@ function LoginCard() {
       />
 
       <div className="flex justify-center gap-2 pt-2">
-        <LaterButton label="이용약관" onClick={notReady} />
-        <LaterButton label="개인정보처리방침" onClick={notReady} />
+        <PolicyLinks />
       </div>
     </AuthFrame>
   );

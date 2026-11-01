@@ -6,6 +6,8 @@ import { useAppSelector } from '@/app/hooks';
 import ThemeButton, { themeButtonClass } from '@components/button/ThemeButton';
 import { selectAuth } from '@store/slices/authSlice';
 
+import PolicyLinks from '@components/public/PolicyLinks';
+
 import { useLogout } from './useLogout';
 
 export const LOGOUT_EVERYWHERE_CONFIRM = {
@@ -41,6 +43,13 @@ export default function AccountMenuItems() {
       <ThemeButton size="md" className="w-full justify-center" disabled={busy} onClick={() => setConfirming(true)}>
         모든 기기에서 로그아웃
       </ThemeButton>
+      {/* 설정 화면이 생기기 전까지 약관·처리방침·문의는 여기서 (US-39 AC2, #340 ④) */}
+      <nav aria-label="약관과 문의" className="flex flex-wrap items-center justify-center gap-1 pt-1">
+        <PolicyLinks />
+        <a href="/contact" className="rounded-lg px-3 py-2 text-[13px] text-tp-muted underline-offset-2 hover:underline">
+          문의
+        </a>
+      </nav>
 
       {confirming && (
         <LogoutEverywhereConfirm

@@ -3,9 +3,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import type { GoogleSignupInfo } from '@/types/api';
-import { useAppDispatch } from '@/app/hooks';
 import ThemeButton from '@components/button/ThemeButton';
-import { showNotice } from '@store/slices/noticeSlice';
 import { authApi, isApiError } from '@utils/api';
 import { cardErrorOf, fieldErrorsOf, firstErrorField, type FieldErrors } from '@utils/auth/authRules';
 import { passEmail } from '@utils/auth/handoff';
@@ -13,10 +11,10 @@ import { safeNextPath } from '@utils/auth/nextPath';
 import { goTo } from '@utils/navigation';
 
 import AuthField, { describedBy } from '../common/AuthField';
-import { AuthFrame, AuthHeading, AuthText, CardError, LaterButton } from '../common/AuthFrame';
+import { AuthFrame, AuthHeading, AuthText, CardError } from '../common/AuthFrame';
 import GoogleStartButton from '../common/GoogleStartButton';
 import { useAuthRequest } from '../common/useAuthRequest';
-import { NOT_READY_MESSAGE } from '../LoginPage';
+import PolicyLinks from '@components/public/PolicyLinks';
 import { useSession } from '../useSession';
 import { RegisteredActions } from './SignupPage';
 
@@ -86,8 +84,6 @@ function GoogleSignupFlow() {
 }
 
 function GoogleSignupForm({ info, onExpired }: { info: GoogleSignupInfo; onExpired: () => void }) {
-  const dispatch = useAppDispatch();
-  const notReady = () => dispatch(showNotice(NOT_READY_MESSAGE, 'info'));
   const baseId = useId();
   const ids = { email: `${baseId}-email`, name: `${baseId}-name`, ageOver14: `${baseId}-age` };
 
@@ -227,8 +223,7 @@ function GoogleSignupForm({ info, onExpired }: { info: GoogleSignupInfo; onExpir
       {/* 약관 문구·링크는 가입 화면(SITE-05b)과 같음 — US-39 전까지 점선 자리 */}
       <AuthText small>가입하면 이용약관과 개인정보처리방침에 동의하는 것으로 봐요</AuthText>
       <div className="flex justify-center gap-2">
-        <LaterButton label="이용약관" onClick={notReady} />
-        <LaterButton label="개인정보처리방침" onClick={notReady} />
+        <PolicyLinks />
       </div>
 
       <p className="text-center text-[13px] text-tp-muted">

@@ -2,9 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
-import { useAppDispatch } from '@/app/hooks';
 import ThemeButton from '@components/button/ThemeButton';
-import { showNotice } from '@store/slices/noticeSlice';
 import { authApi, isApiError } from '@utils/api';
 import { checkSignup, fieldErrorsOf, firstErrorField, type FieldErrors } from '@utils/auth/authRules';
 import { startGoogleLogin } from '@utils/auth/googleLogin';
@@ -13,11 +11,11 @@ import { useCountdown } from '@utils/hooks/useCountdown';
 import { goTo } from '@utils/navigation';
 
 import AuthField, { describedBy } from '../common/AuthField';
-import { AuthFrame, AuthHeading, AuthText, CardError, LaterButton, OrDivider } from '../common/AuthFrame';
+import { AuthFrame, AuthHeading, AuthText, CardError, OrDivider } from '../common/AuthFrame';
 import GoogleStartButton from '../common/GoogleStartButton';
 import NewPasswordField from '../common/NewPasswordField';
 import { useAuthRequest } from '../common/useAuthRequest';
-import { NOT_READY_MESSAGE } from '../LoginPage';
+import PolicyLinks from '@components/public/PolicyLinks';
 import { useSession } from '../useSession';
 
 /** 인증 메일 다시 보내기 간격 (BE 60초, D-061) */
@@ -65,8 +63,6 @@ function SignupFlow() {
 }
 
 function SignupForm({ onSent }: { onSent: (email: string) => void }) {
-  const dispatch = useAppDispatch();
-  const notReady = () => dispatch(showNotice(NOT_READY_MESSAGE, 'info'));
   const baseId = useId();
   const ids = { email: `${baseId}-email`, name: `${baseId}-name`, password: `${baseId}-password`, ageOver14: `${baseId}-age` };
 
@@ -226,8 +222,7 @@ function SignupForm({ onSent }: { onSent: (email: string) => void }) {
       {/* 약관 문구는 US-39 법 검토 때 확정, 링크는 그때까지 점선 자리 (D-079) */}
       <AuthText small>가입하면 이용약관과 개인정보처리방침에 동의하는 것으로 봐요</AuthText>
       <div className="flex justify-center gap-2">
-        <LaterButton label="이용약관" onClick={notReady} />
-        <LaterButton label="개인정보처리방침" onClick={notReady} />
+        <PolicyLinks />
       </div>
 
       <p className="text-center text-[13px] text-tp-muted">

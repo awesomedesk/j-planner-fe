@@ -8,6 +8,7 @@ import { authApi } from '@utils/api';
 import { googleResultMessage, signInWithGooglePopup } from '@utils/auth/googleLogin';
 
 import { OrDivider } from './common/AuthFrame';
+import GoogleButton from './common/GoogleButton';
 import LoginForm from './LoginForm';
 
 export const RELOGIN_TEXT = {
@@ -63,16 +64,9 @@ export default function ReloginDialog({ email, onSignedIn, onCancel }: ReloginDi
         <p id={descriptionId} className="text-sm text-tp-muted">
           {RELOGIN_TEXT.description}
         </p>
-        <ThemeButton
-          type="button"
-          variant="secondary"
-          size="md"
-          onClick={google.start}
-          disabled={google.waiting}
-          className="w-full justify-center disabled:opacity-60"
-        >
+        <GoogleButton onClick={google.start} disabled={google.waiting}>
           Google로 계속하기
-        </ThemeButton>
+        </GoogleButton>
         {google.error && (
           <p role="alert" className="text-center text-[13px] text-danger">
             {google.error}

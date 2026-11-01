@@ -69,6 +69,9 @@ const config: Config = {
         /** 잘 끝났다는 초록 안내 (로그인 화면 '인증이 끝났어요' 등, D-079) */
         success: "#2F6B3F",
         "success-bg": "#E3F0E4",
+        /** 구글 로그인 버튼 — 구글 브랜드 가이드 '중립' 모양 (US-39, D-022 예외 #340 ③) */
+        "google-neutral": "#F2F2F2",
+        "google-ink": "#1F1F1F",
         /** 켜고 끄는 스위치의 꺼짐 색 */
         "switch-off": "#BDB79B",
       },

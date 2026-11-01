@@ -41,6 +41,9 @@ export function AuthText({ children, small = false }: { children: ReactNode; sma
   return <p className={`text-center ${small ? 'text-xs text-tp-muted' : 'text-sm'} leading-relaxed`}>{children}</p>;
 }
 
+/** 아직 없는 기능 자리를 눌렀을 때 (D-008 방식, D-072) */
+export const NOT_READY_MESSAGE = '준비 중이에요';
+
 /** 아직 없는 기능 자리 — 점선 (D-008 방식). 눌러도 '준비 중이에요' */
 export function LaterButton({ label, onClick, block = false }: { label: string; onClick: () => void; block?: boolean }) {
   return (
