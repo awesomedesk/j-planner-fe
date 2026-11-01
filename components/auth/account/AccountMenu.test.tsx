@@ -52,6 +52,13 @@ describe('PC·태블릿 계정 메뉴 (US-34, D-072)', () => {
     }
   });
 
+  it('맨 아래 이용약관·개인정보처리방침(승인 전 점선)·문의 링크 (US-39 AC2, #340 ④ 설정 화면 생기기 전)', async () => {
+    const { menu } = await openPcMenu();
+    expect(within(menu).getByRole('button', { name: '이용약관' })).toBeInTheDocument();
+    expect(within(menu).getByRole('button', { name: '개인정보처리방침' })).toBeInTheDocument();
+    expect(within(menu).getByRole('link', { name: '문의' })).toHaveAttribute('href', '/contact');
+  });
+
   it("'내 계정'은 점선 해제 → /me 링크 (US-37, SITE-09)", async () => {
     const { menu } = await openPcMenu();
     expect(within(menu).getByRole('link', { name: '내 계정' })).toHaveAttribute('href', '/me');

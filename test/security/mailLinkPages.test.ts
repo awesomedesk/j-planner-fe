@@ -50,7 +50,10 @@ describe('메일 링크 화면 — 토큰이 새지 않게 (US-33·35, D-079 · 
   });
 
   it('메일 링크가 아닌 화면(달력·로그인·가입·비밀번호 찾기)은 (site) 묶음에 있다', () => {
-    for (const file of ['app/(site)/page.tsx', 'app/(site)/login/page.tsx', 'app/(site)/signup/page.tsx', 'app/(site)/password/forgot/page.tsx']) {
+    const pages = ['app/(site)/page.tsx', 'app/(site)/login/page.tsx', 'app/(site)/signup/page.tsx', 'app/(site)/password/forgot/page.tsx'];
+    // 공개 화면 (US-39 SITE-01/02/04/06/07)
+    pages.push('app/(site)/about/page.tsx', 'app/(site)/contact/page.tsx', 'app/(site)/terms/page.tsx', 'app/(site)/privacy/page.tsx');
+    for (const file of pages) {
       expect(existsSync(join(root, file))).toBe(true);
     }
   });

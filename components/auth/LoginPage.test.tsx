@@ -207,6 +207,15 @@ describe('로그인 화면 — 가입·비밀번호 찾기 연결 (US-33·35, D-
     expect(screen.queryByText('준비 중이에요')).not.toBeInTheDocument();
   });
 
+  it('[구글로 계속하기]는 구글 가이드 모양 — 공식 G 로고(읽지 않음)와 문구 (US-39 AC1, #340 ③)', async () => {
+    notSignedIn();
+    openLogin();
+    const button = await screen.findByRole('button', { name: '구글로 계속하기' });
+    const logo = button.querySelector('svg[data-google-logo]');
+    expect(logo).not.toBeNull();
+    expect(logo).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('[구글로 계속하기]는 ?next=(사이트 안 경로)를 그대로 넘긴다 (D-082 6)', async () => {
     notSignedIn();
     const { user } = openLogin('?next=%2F%3Fview%3Dday');
