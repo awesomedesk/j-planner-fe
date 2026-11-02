@@ -31,6 +31,12 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
      issues with view 4 and link any missing one yourself. Keep `수신 상태` (미확인 → 읽음 with the read label → 처리 중 when you start →
      처리 완료 + `Status=완료` when closed) and `확인 근거` (what/when) in step. A new request or receiver change resets it to 미확인.
      Another window's or 대표님's comment is not FE's receipt.
+   - **What to write on cards** (D-100, #346) — update the source issue, its message card, the story card and #2 together at every
+     receive / start / review result / wait-reason change / close: `지금 하는 일` = what is done + what is really in progress or waiting
+     (partial pass ≠ done); `다음 일` = what is left + who/what we wait for + next owner + when it resumes (never just "검수 중");
+     `확인 근거` = date · role · issue/commit · what was checked (don't reuse an old read or an old server state). Don't mark something
+     done to hide what is left. When 대표님 answers, release the 대표님 wait right away and don't ask an already decided question again.
+     If a permission/API call fails, write the exact failure in the source issue and fix the cards when it works again.
    - When a story is done, open `[검수 요청] US-xx …` (`to:PO`, `kind:review`) with the commit, what was built and how to check it
      (screenshots at 1440 / 820 / 390px).
    - **Requests and questions for 대표님 go to an issue `to:대표님`, not the chat** (D-084): `kind:question` with options + recommendation
