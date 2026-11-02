@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 
 import type { LocalDate, Schedule, Todo } from '@/types/api';
 import type { CalendarViewMode } from '@/types/calendar';
@@ -69,16 +69,17 @@ import { getDayTabSlots } from './dayTabSlots';
  * | 600~767px | 모바일 헤더 + 월간(색 점) + 오른쪽 날짜 패널 + 오른쪽 아래 + 버튼 |
  * | 600px 미만 | 모바일 헤더 + 월간(색 점) + 날짜를 누르면 아래 시트 + 오른쪽 아래 + 버튼 |
  */
-export default function AppShell() {
+export default function AppShell({ topBanner }: { topBanner?: ReactNode } = {}) {
   // 날짜('오늘')에 따라 달라지는 화면이라 브라우저에서만 그린다 (빌드 시각이 남지 않게)
   return (
     <ClientOnly fallback={<div className="h-dvh bg-tp-bg" />}>
-      <AppShellContent />
+      <AppShellContent topBanner={topBanner} />
     </ClientOnly>
   );
 }
 
-function AppShellContent() {
+/** @param topBanner 헤더 위 띠 (둘러보기 안내, US-40) — 화면 높이 안에 함께 들어간다 */
+function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const dispatch = useAppDispatch();
   const isPc = useMediaQuery(`(min-width: ${BREAKPOINT.pc}px)`, true);
   const isTabletUp = useMediaQuery(`(min-width: ${BREAKPOINT.tablet}px)`, true);
@@ -229,6 +230,7 @@ function AppShellContent() {
   return (
     <TodoActionsContext.Provider value={todoActions}>
     <div className="flex h-dvh flex-col overflow-hidden bg-tp-bg text-tp-text">
+      {topBanner}
       <PcHeader
         className="hidden tablet:flex"
         title={formatViewTitle(viewMode, viewDate)}

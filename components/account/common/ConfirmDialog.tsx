@@ -5,7 +5,7 @@ import { useRef, type ReactNode } from 'react';
 import ThemeButton, { themeButtonClass } from '@components/button/ThemeButton';
 import { CardError } from '@components/auth/common/AuthFrame';
 
-import ModalShell from './ModalShell';
+import ModalShell from '@components/dialog/ModalShell';
 
 interface ConfirmDialogProps {
   title: string;

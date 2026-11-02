@@ -16,7 +16,8 @@ import type { components } from '@/types/api/schema';
 export type ApiErrorCode = components['schemas']['Problem']['code'];
 
 /** 서버 응답을 받지 못했거나 Problem Details가 아닌 응답일 때 FE가 붙이는 코드 */
-export type ClientErrorCode = 'TIMEOUT' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR';
+/** DEMO_READ_ONLY: 둘러보기에서 바꾸는 요청을 막음 (US-40) */
+export type ClientErrorCode = 'TIMEOUT' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR' | 'DEMO_READ_ONLY';
 
 /** 입력값 오류의 필드별 내용 */
 export interface FieldErrorDetail {

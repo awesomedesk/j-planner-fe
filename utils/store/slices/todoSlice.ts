@@ -4,6 +4,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Id, LocalDate, Todo } from '@/types/api';
 
 import { todoApi, toErrorMessage } from '@utils/api';
+import { allowWrite } from '@utils/api/demo/demoBackend';
 
 import { moveAfter } from '@utils/list/reorder';
 
@@ -92,7 +93,9 @@ export const setTodoCompleted = createAsyncThunk<Todo, { id: Id; completed: bool
       dispatch(showNotice(toErrorMessage(error), 'error'));
       return rejectWithValue(null);
     }
-  }
+  },
+  // 둘러보기(US-40): 화면을 바꾸기 전에 '가입하면 저장돼요' — 체크도 예시도 그대로
+  { condition: () => allowWrite() }
 );
 
 const todoSlice = createSlice({
@@ -174,7 +177,9 @@ export const moveTodo = createAsyncThunk<void, { id: Id; afterId: Id | null }, {
       dispatch(showNotice(toErrorMessage(error), 'error'));
       return rejectWithValue(null);
     }
-  }
+  },
+  // 둘러보기(US-40): 순서를 바꾸기 전에 안내 — 박스 순서 그대로
+  { condition: () => allowWrite() }
 );
 
 export const selectDayTodos = (state: { todo: TodoState }) => state.todo.items;

@@ -8,6 +8,7 @@ import { useAppDispatch } from '@/app/hooks';
 import { showNotice } from '@store/slices/noticeSlice';
 
 import { memoApi } from '@utils/api';
+import { isDemoBlocked } from '@utils/api/demo/demoBackend';
 
 import {
   MEMO_AUTOSAVE_DELAY_MS,
@@ -93,8 +94,9 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
       setErrorMessage(null);
       callbacksRef.current.onSaved(saved);
       return true;
-    } catch {
-      reportFailure(AUTOSAVE_FAILED_MESSAGE);
+    } catch (error) {
+      // 둘러보기(US-40): '가입하면 저장돼요' 안내가 따로 뜨므로 실패 문구 없음
+      if (!isDemoBlocked(error)) reportFailure(AUTOSAVE_FAILED_MESSAGE);
       return false;
     }
   }, [reportFailure, callbacksRef]);
@@ -109,8 +111,8 @@ export const useMemoAutosave = ({ memo, onSaved, onDeleted }: UseMemoAutosaveOpt
       isDeletedRef.current = true;
       callbacksRef.current.onDeleted(id);
       return true;
-    } catch {
-      reportFailure(AUTODELETE_FAILED_MESSAGE);
+    } catch (error) {
+      if (!isDemoBlocked(error)) reportFailure(AUTODELETE_FAILED_MESSAGE);
       return false;
     }
   }, [reportFailure, saveInQueue, callbacksRef]);

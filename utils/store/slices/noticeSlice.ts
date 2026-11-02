@@ -27,6 +27,8 @@ const noticeSlice = createSlice({
   reducers: {
     showNotice: {
       reducer(state, action: PayloadAction<Notice>) {
+        // 빈 문구는 띄우지 않는다 (둘러보기에서 막은 저장 — 따로 안내 창이 뜸, US-40)
+        if (!action.payload.message) return;
         // 같은 문구가 이미 떠 있으면 다시 띄우지 않는다 (연속 실패 시 안내가 쌓이지 않게)
         if (state.items.some((n) => n.message === action.payload.message)) return;
         state.items.push(action.payload);

@@ -9,7 +9,7 @@ import { useAuthRequest } from '@components/auth/common/useAuthRequest';
 import { isApiError, meApi, REAUTH_GOOGLE_PATH } from '@utils/api';
 import { goTo } from '@utils/navigation';
 
-import ModalShell from '../common/ModalShell';
+import ModalShell from '@components/dialog/ModalShell';
 import { markGoogleFlow } from '../utils/googleFlow';
 
 export const REAUTH_TITLE = '본인 확인이 필요해요';

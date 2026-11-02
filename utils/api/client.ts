@@ -91,6 +91,21 @@ export type UnauthenticatedHandler = (request: { method: HttpMethod; path: strin
 
 let unauthenticatedHandler: UnauthenticatedHandler | null = null;
 
+/**
+ * 요청 가로채기 — 설치돼 있으면 서버에 보내지 않고 이 함수가 답한다 (둘러보기 /demo, US-40).
+ * 값을 돌려주면 응답 본문, 던지면 그 오류.
+ */
+export type RequestInterceptor = (request: { method: HttpMethod; path: string; params?: QueryParams; body?: unknown }) => Promise<unknown>;
+
+let requestInterceptor: RequestInterceptor | null = null;
+
+export function setRequestInterceptor(interceptor: RequestInterceptor | null) {
+  requestInterceptor = interceptor;
+}
+
+/** 가로채기가 설치돼 있는지 (바꾸는 요청을 미리 막을 때) */
+export const isRequestIntercepted = () => requestInterceptor !== null;
+
 export function setUnauthenticatedHandler(handler: UnauthenticatedHandler | null) {
   unauthenticatedHandler = handler;
 }
@@ -136,6 +151,7 @@ export class ApiClient {
    * 동시에 불러도 요청은 한 번만 나간다.
    */
   fetchCsrfToken(): Promise<void> {
+    if (requestInterceptor) return Promise.resolve(); // 둘러보기: 서버에 가지 않음
     if (!this.csrfRequest) {
       this.csrfRequest = this.send('GET', '/auth/csrf', {})
         .then(async (response) => {
@@ -153,6 +169,7 @@ export class ApiClient {
     path: string,
     options: { params?: QueryParams; body?: unknown } = {}
   ): Promise<T> {
+    if (requestInterceptor) return (await requestInterceptor({ method, path, ...options })) as T;
     let response = await this.send(method, path, options);
 
     // CSRF 토큰이 틀렸으면 새로 받아 한 번만 다시 (08 13-2)
