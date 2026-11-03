@@ -1,0 +1,2 @@
+# 공식 글꼴 배포본은 바이트 그대로 저장 (SHA256SUMS와 같게, #342)
+public/fonts/** -text
