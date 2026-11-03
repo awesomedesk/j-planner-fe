@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockApi } from '@/test/mockApi';
-import { apiClient, isApiError, scheduleApi, todoApi } from '@utils/api';
+import { apiClient, authApi, categoryApi, isApiError, memoApi, meApi, scheduleApi, todoApi } from '@utils/api';
 
 import { buildDemoData } from './demoData';
 import { createDemoBackend, isDemoBlocked, installDemoMode } from './demoBackend';
@@ -85,5 +85,37 @@ describe('둘러보기 가짜 백엔드 — 실제 서버에 보내지 않음 (U
     const api = mockApi({ 'GET /categories': () => ({ status: 200, body: [] }) });
     await apiClient.get('/categories');
     expect(api.calls('GET /categories')).toHaveLength(1);
+  });
+});
+
+describe('둘러보기 — 모든 쓰기 API가 보내기 전에 막힌다 (US-40 AC4, #351 후속 3)', () => {
+  const WRITES: [string, () => Promise<unknown>][] = [
+    ['일정 만들기', () => scheduleApi.create({ title: 'x', start: '2026-11-04T10:00:00', end: '2026-11-04T11:00:00', allDay: false, categoryId: 1 } as never)],
+    ['일정 고치기', () => scheduleApi.update(1, { title: 'y' })],
+    ['일정 지우기', () => scheduleApi.remove(1)],
+    ['Todo 만들기', () => todoApi.create({ title: 'x' } as never)],
+    ['Todo 고치기', () => todoApi.update(1, { title: 'y' })],
+    ['Todo 완료', () => todoApi.setCompleted(1, true)],
+    ['Todo 지우기', () => todoApi.remove(1)],
+    ['Todo 순서', () => todoApi.move(1, { afterId: null })],
+    ['카테고리 만들기', () => categoryApi.create({ name: 'x' } as never)],
+    ['카테고리 고치기', () => categoryApi.update(2, { name: 'y' } as never)],
+    ['카테고리 지우기', () => categoryApi.remove(2)],
+    ['카테고리 순서', () => categoryApi.move(2, { afterId: null })],
+    ['메모 만들기', () => memoApi.create({ title: 'x' })],
+    ['메모 고치기(자동 저장)', () => memoApi.update(1, { content: 'y' })],
+    ['메모 지우기', () => memoApi.remove(1)],
+    ['로그아웃', () => authApi.logout()],
+    ['이름 바꾸기', () => meApi.updateName({ name: 'x' })],
+  ];
+
+  it.each(WRITES)('%s → 요청 0회 · 안내 1번 · DEMO_READ_ONLY', async (_name, write) => {
+    const api = mockApi({});
+    const onBlocked = vi.fn();
+    installDemoMode(createDemoBackend(buildDemoData(TODAY), onBlocked));
+    const error = await write().catch((e: unknown) => e);
+    expect(isDemoBlocked(error)).toBe(true);
+    expect(onBlocked).toHaveBeenCalledTimes(1);
+    expect(api.all()).toHaveLength(0);
   });
 });
