@@ -30,9 +30,10 @@ describe('메일 링크 화면 — 토큰이 새지 않게 (US-33·35, D-079 · 
     expect(read(file)).toMatch(/referrer:\s*['"]no-referrer['"]/);
   });
 
-  it('맨 바깥 레이아웃(모든 화면 공통)은 바깥 리소스를 부르지 않는다 — 글꼴은 메일 링크가 아닌 화면 묶음 (site) 레이아웃에서만', () => {
+  it('맨 바깥 레이아웃(모든 화면 공통)은 바깥 리소스를 부르지 않는다 — 글꼴은 메일 링크가 아닌 화면 묶음 (site) 레이아웃에서만 (같은 출처, #342)', () => {
     expect(read('app/layout.tsx')).not.toMatch(EXTERNAL_URL);
-    expect(read('app/(site)/layout.tsx')).toContain('fonts.googleapis.com');
+    expect(read('app/(site)/layout.tsx')).toContain('/fonts/ibm-plex-sans-kr/');
+    expect(read('app/(site)/layout.tsx')).not.toMatch(EXTERNAL_URL);
     for (const { file } of MAIL_LINK_PAGES) {
       expect(file.startsWith('app/(site)/')).toBe(false);
       expect(read(file)).not.toMatch(EXTERNAL_URL);

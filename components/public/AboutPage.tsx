@@ -48,6 +48,19 @@ export default function AboutPage() {
           둘러보기
         </a>
       </div>
+
+      {/* 오픈소스 라이선스 — 글꼴 OFL 전문 (#342) */}
+      <section aria-labelledby="about-licenses" className="flex flex-col gap-1 text-[13px] text-tp-muted">
+        <h2 id="about-licenses" className="text-sm font-semibold text-tp-text">
+          오픈소스 라이선스
+        </h2>
+        <p>
+          글꼴: IBM Plex Sans KR 1.1.0 (© IBM Corp.) —{' '}
+          <a href="/fonts/ibm-plex-sans-kr/1.1.0/LICENSE.txt" className="underline underline-offset-2">
+            SIL Open Font License 1.1
+          </a>
+        </p>
+      </section>
     </PublicShell>
   );
 }

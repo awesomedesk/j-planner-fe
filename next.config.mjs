@@ -20,7 +20,11 @@ const nextConfig = {
     return target ? [{ source: '/api/:path*', destination: `${target}/api/:path*` }] : [];
   },
   async headers() {
-    return MAIL_LINK_PAGES.map((source) => ({ source, headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] }));
+    return [
+      ...MAIL_LINK_PAGES.map((source) => ({ source, headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] })),
+      // 글꼴은 버전이 주소에 들어 있어 바뀌지 않는다 (#342) — 오래 캐시
+      { source: '/fonts/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+    ];
   },
 };
 
