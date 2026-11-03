@@ -17,6 +17,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 4. **Messages between windows = GitHub issues** on `awesomedesk/j-planner-product` (D-087, 00-working-rules.md §0; the old
    artifact dashboard is a read-only record). Use `gh` with `-R awesomedesk/j-planner-product`:
    - Inbox: `gh issue list -R awesomedesk/j-planner-product --label "to:FE" --state open` — at the start and end of work and at each step.
+     **Regular (scheduled) board checks are done by the main project thread (CTO)**, not by FE (대표님 2026-11-03) — FE has no scheduled
+     task; check when 대표님/CTO asks and at work steps.
      Read → `gh issue edit <n> --add-label read`; done → `gh issue close <n> --comment "<한 줄 결과>"`; reply on the same topic → `gh issue comment`.
    - New issue: title `[종류] 한 줄 요약`, labels `to:…` + `from:FE` + `kind:info|question|answer|review|result|ask`, body first line `ref: US-xx · D-xxx · 커밋`.
    - Status card: edit only the body of `[창 현황] FE` (#2, labels `kind:status` + `from:FE`, never closed, no `to:`/`read`):
