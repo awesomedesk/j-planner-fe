@@ -75,6 +75,10 @@ const config: Config = {
         /** 켜고 끄는 스위치의 꺼짐 색 */
         "switch-off": "#BDB79B",
       },
+      fontFamily: {
+        /** 구글 로그인 버튼 — 가이드 글꼴 Google Sans Medium, 한글은 서비스 글꼴 (#341, D-097) */
+        "google-button": ['"Google Sans"', '"IBM Plex Sans KR"', "system-ui", "sans-serif"],
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":

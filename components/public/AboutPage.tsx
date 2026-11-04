@@ -60,6 +60,12 @@ export default function AboutPage() {
             SIL Open Font License 1.1
           </a>
         </p>
+        <p>
+          구글 로그인 버튼 글꼴: Google Sans 14.000 (© The Google Sans Project Authors) —{' '}
+          <a href="/fonts/google-sans/14.000/OFL.txt" className="underline underline-offset-2">
+            SIL Open Font License 1.1
+          </a>
+        </p>
       </section>
     </PublicShell>
   );

@@ -54,10 +54,12 @@ describe('구글 버튼 글꼴 — 공식 Google Sans Medium 자체 호스팅 (#
     expect(face).toContain('format("truetype")');
   });
 
-  it('unicode-range = 파일에 실제로 있는 글자 그대로 → 한글만 있는 버튼 문구는 글꼴 파일을 받지 않는다', () => {
+  it('unicode-range = 파일에 있는 글자에서 공백만 뺀 것 → 한글·공백만 있는 버튼 문구(구글로 계속하기)는 글꼴 파일을 받지 않는다', () => {
     const range = faces()[0].match(/unicode-range:\s*([^;]+);/)?.[1] ?? '';
     const declared = parseUnicodeRange(range);
-    const inFont = fontCodepoints(ttf());
+    const isSpace = (c: number) => /\s/u.test(String.fromCodePoint(c));
+    const inFont = new Set([...fontCodepoints(ttf())].filter((c) => !isSpace(c)));
+    expect([...declared].some(isSpace)).toBe(false);
     expect(declared.size).toBe(inFont.size);
     expect([...inFont].every((c) => declared.has(c))).toBe(true);
     expect([...declared].some((c) => (c >= 0xac00 && c <= 0xd7a3) || (c >= 0x1100 && c <= 0x11ff) || (c >= 0x3130 && c <= 0x318f))).toBe(false);
