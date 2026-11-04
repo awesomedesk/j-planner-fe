@@ -1,6 +1,6 @@
 /**
  * 서버를 켜기 전에 PATH의 node 버전을 확인한다 (#343).
- * Turbopack은 CSS(PostCSS) 자식 프로세스를 PATH의 `node`로 띄운다 — next를 Node 22로 실행해도
+ * Turbopack은 CSS(PostCSS) 자식 프로세스를 PATH의 `node`로 띄운다 — next를 Node 26으로 실행해도
  * PATH 앞쪽에 오래된 node(예: /usr/local/bin/node 14)가 있으면 그 node로 떠서 500이 나고,
  * 실패 결과가 .next/cache/turbopack에 남아 PATH를 고쳐도 계속 실패한다.
  */
@@ -20,7 +20,7 @@ const atLeast = (version, min) => {
 };
 
 /**
- * @param {string} version PATH의 `node -v` (예: v22.19.0, 없으면 '')
+ * @param {string} version PATH의 `node -v` (예: v26.13.0, 없으면 '')
  * @param {string} [where] 그 node의 위치 (안내용)
  * @returns {{ ok: boolean, message: string }}
  */
@@ -32,7 +32,7 @@ export function checkNodeOnPath(version, where = 'node') {
     message: [
       `PATH의 node가 ${found} — Next 16은 Node ${MIN_NODE.join('.')} 이상이 필요해요.`,
       'Turbopack이 CSS 처리 프로세스를 이 node로 띄워서 500이 나요.',
-      '고치는 법: `nvm use 22` (또는 PATH 맨 앞에 Node 22 폴더)로 바꾼 뒤 다시 켜 주세요.',
+      '고치는 법: `nvm use 26` (또는 PATH 맨 앞에 Node 26 폴더)로 바꾼 뒤 다시 켜 주세요.',
       '이미 500을 본 적이 있으면 실패 결과가 남아 있으니 .next/cache/turbopack 폴더를 지우고 켜 주세요.',
     ].join('\n'),
   };

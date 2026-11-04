@@ -55,6 +55,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 ## Commands
 
+- Node: `.nvmrc` = 26 (현재 LTS, 2026-11-04~; Node 22도 동작). Run `nvm use` first — `/usr/local/bin/node` is 14 and `scripts/checkNode.mjs` stops dev/build on it (#343)
 - `npm run dev` (test env) / `npm run dev:local` — http://localhost:3000
 - `npm test` (Vitest, once) / `npm run test:watch` — run with lint before every commit
 - `npm run lint` (= `eslint .`, flat config `eslint.config.mjs`; Next 16 has no `next lint`), `npx tsc --noEmit`, `npm run build`
