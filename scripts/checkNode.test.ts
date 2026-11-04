@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { checkNodeOnPath, MIN_NODE } from './checkNode.mjs';
 
 describe('서버를 켜기 전 PATH의 node 버전 확인 (#343 Turbopack CSS 자식 프로세스)', () => {
-  it('Next 16은 Node 20.9 이상 — 22.19.0·20.9.0은 통과', () => {
+  it('Next 16은 Node 20.9 이상 — 26.13.0(.nvmrc 기본)·22.19.0·20.9.0은 통과', () => {
     expect(MIN_NODE).toEqual([20, 9, 0]);
+    expect(checkNodeOnPath('v26.13.0').ok).toBe(true);
     expect(checkNodeOnPath('v22.19.0').ok).toBe(true);
     expect(checkNodeOnPath('v20.9.0').ok).toBe(true);
   });
@@ -15,9 +19,13 @@ describe('서버를 켜기 전 PATH의 node 버전 확인 (#343 Turbopack CSS �
       expect(result.ok).toBe(false);
       expect(result.message).toContain(version);
       expect(result.message).toContain('/usr/local/bin/node');
-      expect(result.message).toMatch(/nvm use 22/);
+      expect(result.message).toMatch(/nvm use 26/);
       expect(result.message).toMatch(/\.next\/cache\/turbopack/);
     }
+  });
+
+  it('.nvmrc는 현재 LTS Node 26 (2026-10-28 LTS 시작, 대표님 11-04 검토 요청)', () => {
+    expect(readFileSync(join(__dirname, '..', '.nvmrc'), 'utf8').trim()).toBe('26');
   });
 
   it('node를 못 찾으면(빈 값) 멈춘다', () => {
