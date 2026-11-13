@@ -76,13 +76,13 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 
-describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-077)', () => {
-  it('창에 [Google로 계속하기]가 있고, 누르면 팝업으로 연다 (?popup=true)', async () => {
+describe('다시 로그인 창의 [구글로 계속하기] (US-36 AC4, D-072·D-077)', () => {
+  it('창에 [구글로 계속하기]가 있고, 누르면 팝업으로 연다 (?popup=true)', async () => {
     expiredServer();
     const popup = fakePopup();
     const open = vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     expect(open).toHaveBeenCalledWith(GOOGLE_POPUP_PATH, expect.any(String), expect.any(String));
   });
 
@@ -91,7 +91,7 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     const popup = fakePopup();
     vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     googleDone();
     popupSays(popup);
 
@@ -107,7 +107,7 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     const popup = fakePopup();
     vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     googleDone();
     popupSays(popup);
 
@@ -120,7 +120,7 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     const popup = fakePopup();
     vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     popupSays(popup, 'GOOGLE_FAILED');
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('구글 로그인을 마치지 못했어요. 다시 시도해 주세요.');
@@ -132,7 +132,7 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     const popup = fakePopup();
     vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     popupSays(popup, 'GOOGLE_NOT_REGISTERED');
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('이 구글 계정으로 가입된 계정이 없어요');
@@ -142,7 +142,7 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     expiredServer();
     vi.spyOn(window, 'open').mockReturnValue(null);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('팝업이 막혀 있어요');
   });
 
@@ -151,7 +151,7 @@ describe('다시 로그인 창의 [Google로 계속하기] (US-36 AC4, D-072·D-
     const popup = fakePopup();
     vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(within(dialog).getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(within(dialog).getByRole('button', { name: '구글로 계속하기' }));
     popupSays(popup); // googleDone() 없이
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('구글 로그인을 마치지 못했어요');

@@ -145,7 +145,7 @@ describe('휴면 복원 안내 — 다시 로그인 창 (US-38, D-072 같은 계
     const popup = { closed: false, close: vi.fn() } as unknown as Window;
     vi.spyOn(window, 'open').mockReturnValue(popup);
     const { user, dialog } = await openAndExpire();
-    await user.click(dialog.getByRole('button', { name: 'Google로 계속하기' }));
+    await user.click(dialog.getByRole('button', { name: '구글로 계속하기' }));
     googleDone();
     window.dispatchEvent(
       new MessageEvent('message', { data: { type: GOOGLE_DONE_MESSAGE, error: null, restored: true }, origin: window.location.origin, source: popup })

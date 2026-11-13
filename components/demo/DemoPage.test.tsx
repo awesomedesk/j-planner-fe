@@ -68,7 +68,8 @@ describe('둘러보기 /demo — 예시 화면 (US-40 AC1·AC2, 06 SITE-08)', ()
 });
 
 describe('둘러보기 — 저장하려 하면 (US-40 AC4, 06 SITE-08 저장하려 할 때)', () => {
-  it('Todo 완료 체크 → 바꾸기 전에 "가입하면 저장돼요" 안내, 체크는 그대로, 요청 0회', async () => {
+  it('Todo 완료 체크 → 바꾸기 전에 "가입하면 저장돼요" 안내, 체크는 그대로, 요청 0회, 콘솔 오류 없음 (#351 PO 답 11-14)', async () => {
+    const consoleError = vi.spyOn(console, 'error');
     const api = realServer();
     const { user } = openDemo();
     const box = (await screen.findAllByRole('checkbox', { name: '주간 계획 세우기 완료' }))[0];
@@ -81,9 +82,12 @@ describe('둘러보기 — 저장하려 하면 (US-40 AC4, 06 SITE-08 저장하�
     await user.click(dialog.getByRole('button', { name: '계속 둘러보기' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(api.all()).toHaveLength(0);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
-  it('일정 추가 창에서 [저장] → 안내, [계속 둘러보기]면 쓰던 창과 입력이 그대로 · 오류 문구 없음 · 요청 0회', async () => {
+  it('일정 추가 창에서 [저장] → 안내, [계속 둘러보기]면 쓰던 창과 입력이 그대로 · 오류 문구 없음 · 요청 0회 · 콘솔 오류 없음 (#351)', async () => {
+    const consoleError = vi.spyOn(console, 'error');
     const api = realServer();
     const { user } = openDemo();
     await user.click((await screen.findAllByRole('button', { name: '추가' }))[0]);
@@ -97,6 +101,8 @@ describe('둘러보기 — 저장하려 하면 (US-40 AC4, 06 SITE-08 저장하�
     expect(screen.getAllByRole('textbox', { name: '제목' })[0]).toHaveValue('둘러보기 일정');
     expect(screen.queryByText(/저장하지 못했어요|오류/)).not.toBeInTheDocument();
     expect(api.all()).toHaveLength(0);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it('브라우저 저장소(localStorage·sessionStorage)에 예시·입력을 남기지 않는다', async () => {
