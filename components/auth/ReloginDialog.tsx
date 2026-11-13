@@ -29,7 +29,7 @@ interface ReloginDialogProps {
  * ReloginDialog - 작성 중 로그인이 끝났을 때 쓰던 창 위에 뜨는 로그인 창 (US-34, D-072)
  * 화면 맨 위(z-90). Esc는 [취소]와 같고 아래 창에는 전하지 않는다 (아래 창의 '작성을 취소할까요?'가 뜨지 않게).
  * 가입·약관 자리는 넣지 않는다 — 같은 계정으로 다시 들어오는 창이라서 (제가 정한 부분).
- * [Google로 계속하기] (US-36 AC4): 팝업으로 구글 로그인 → 끝 화면이 알리면 GET /me → onSignedIn
+ * [구글로 계속하기] (US-36 AC4, 문구는 로그인·가입과 같게 #341): 팝업으로 구글 로그인 → 끝 화면이 알리면 GET /me → onSignedIn
  * (같은 계정인지는 RequireLogin이 본다). 순서는 /login과 같게 구글 → 또는 → 이메일 (제가 정한 부분).
  */
 export default function ReloginDialog({ email, onSignedIn, onCancel }: ReloginDialogProps) {
@@ -65,7 +65,7 @@ export default function ReloginDialog({ email, onSignedIn, onCancel }: ReloginDi
           {RELOGIN_TEXT.description}
         </p>
         <GoogleButton onClick={google.start} disabled={google.waiting}>
-          Google로 계속하기
+          구글로 계속하기
         </GoogleButton>
         {google.error && (
           <p role="alert" className="text-center text-[13px] text-danger">

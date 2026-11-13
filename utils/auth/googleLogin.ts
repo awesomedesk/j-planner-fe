@@ -62,7 +62,7 @@ export function googleResultMessage(code: GoogleResultCode | 'POPUP_BLOCKED'): s
 export type GooglePopupResult = { ok: true; restored: boolean } | { ok: false; code: GoogleResultCode | 'POPUP_BLOCKED' } | null;
 
 /**
- * 다시 로그인 창의 [Google로 계속하기] (AC4) — 팝업을 열고 끝 화면이 알릴 때까지 기다린다.
+ * 다시 로그인 창의 [구글로 계속하기] (AC4) — 팝업을 열고 끝 화면이 알릴 때까지 기다린다.
  * **같은 출처(origin)이면서 그 팝업에서 온** 메시지만 받는다.
  */
 export function signInWithGooglePopup(): Promise<GooglePopupResult> {
