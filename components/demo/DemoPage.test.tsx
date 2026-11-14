@@ -126,3 +126,17 @@ describe('둘러보기 경계 (US-40 AC3)', () => {
     await waitFor(() => expect(api.calls('GET /categories')).toHaveLength(1));
   });
 });
+
+describe('둘러보기의 ⚙ 설정 및 계정 (D-109 · D-093 실계정 메뉴 노출 금지)', () => {
+  it('⚙를 열어도 계정·이메일·내 계정·로그아웃이 없고, 실제 서버 요청 0회', async () => {
+    const api = realServer();
+    const { user } = openDemo();
+    const header = await screen.findByRole('banner', { name: '달력 도구' });
+    await user.click(within(header).getByRole('button', { name: '설정 및 계정' }));
+    const menu = screen.getByRole('dialog', { name: '설정 및 계정' });
+    expect(within(menu).queryByRole('link', { name: '내 계정' })).not.toBeInTheDocument();
+    expect(within(menu).queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
+    expect(within(menu).queryByText(/@/)).not.toBeInTheDocument();
+    expect(api.all()).toHaveLength(0);
+  });
+});

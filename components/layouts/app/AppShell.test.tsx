@@ -680,22 +680,34 @@ describe('계정 메뉴 자리 (US-34, D-072)', () => {
     return renderWithStore(<AppShell />, { store });
   };
 
-  it('PC·태블릿 헤더 맨 끝(⚙ 다음)에 계정 버튼', async () => {
-    await setupSignedIn(1440);
-    const header = screen.getByRole('banner', { name: '달력 도구' });
-    const buttons = within(header).getAllByRole('button');
-    expect(buttons.at(-2)).toHaveAccessibleName('설정');
-    expect(buttons.at(-1)).toHaveAccessibleName('계정 메뉴');
+  it('PC·태블릿 헤더 맨 끝은 ⚙ "설정 및 계정" 하나 — 이름 첫 글자·따로 노는 ⚙ 없음 (D-109)', async () => {
+    for (const width of [1440, 820]) {
+      const view = await setupSignedIn(width);
+      const header = screen.getByRole('banner', { name: '달력 도구' });
+      const buttons = within(header).getAllByRole('button');
+      expect(buttons.at(-1)).toHaveAccessibleName('설정 및 계정');
+      expect(within(header).queryByRole('button', { name: '설정' })).not.toBeInTheDocument();
+      expect(within(header).queryByRole('button', { name: '계정 메뉴' })).not.toBeInTheDocument();
+      view.unmount();
+    }
   });
 
-  it('모바일: 머리 3칸 그대로, ≡ 메뉴를 열면 맨 아래에 로그아웃', async () => {
+  it('모바일: 머리 ⚙ "설정 및 계정" → 전체 화면, ≡ 메뉴의 [설정 및 계정]도 같은 화면 (창 두 개 동시 없음)', async () => {
     const { user } = await setupSignedIn(390);
     const header = screen.getByRole('banner', { name: '모바일 머리' });
     expect(within(header).queryByRole('button', { name: '계정 메뉴' })).not.toBeInTheDocument();
+    await user.click(within(header).getByRole('button', { name: '설정 및 계정' }));
+    let settings = screen.getByRole('dialog', { name: '설정 및 계정' });
+    expect(within(settings).getByRole('button', { name: '로그아웃' })).toBeInTheDocument();
+    await user.click(within(settings).getByRole('button', { name: '닫기' }));
+    expect(screen.queryByRole('dialog', { name: '설정 및 계정' })).not.toBeInTheDocument();
+
     await user.click(within(header).getByRole('button', { name: '메뉴' }));
     const menu = screen.getByRole('dialog', { name: '메뉴' });
-    expect(within(menu).getByRole('button', { name: '로그아웃' })).toBeInTheDocument();
-    await user.click(within(menu).getByRole('button', { name: '메뉴 닫기' }));
+    expect(within(menu).queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
+    await user.click(within(menu).getByRole('button', { name: '설정 및 계정' }));
     expect(screen.queryByRole('dialog', { name: '메뉴' })).not.toBeInTheDocument();
+    settings = screen.getByRole('dialog', { name: '설정 및 계정' });
+    expect(within(settings).getByText('qa@example.com')).toBeInTheDocument();
   });
 });
