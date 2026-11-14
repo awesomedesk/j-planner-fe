@@ -46,7 +46,7 @@ function SignupFlow() {
   const [formKey, setFormKey] = useState(0);
 
   return (
-    <AuthFrame>
+    <AuthFrame homeLink>
       {sentTo === null ? (
         <SignupForm key={formKey} onSent={setSentTo} />
       ) : (

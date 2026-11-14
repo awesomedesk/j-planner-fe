@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { themeButtonClass, type ThemeButtonVariant } from '@components/button/ThemeButton';
@@ -7,13 +8,23 @@ import { themeButtonClass, type ThemeButtonVariant } from '@components/button/Th
  * - 서비스 이름 'J의 계획' 위, 모바일은 전체 폭. 헤더·사이드바 없음.
  * - `notice`는 카드 위 초록 안내 한 줄 (SITE-05a).
  * - 메일 링크 화면(/signup/verify, /password/reset)도 쓰므로 바깥 리소스를 부르지 않는다.
+ * - `homeLink`: 서비스명 위 왼쪽 [홈으로] → `/` 고정 (로그인·가입, D-106). 뒤로 가기·next는 쓰지 않고, 누르기만 해서는 아무 요청도 안 보낸다.
  */
-export function AuthFrame({ notice, children }: { notice?: ReactNode; children: ReactNode }) {
+export function AuthFrame({ notice, homeLink = false, children }: { notice?: ReactNode; homeLink?: boolean; children: ReactNode }) {
   return (
     <main className="flex min-h-dvh items-start justify-center bg-white fold:items-center fold:bg-tp-bg fold:px-4 fold:py-10">
       <div className="flex w-full flex-col gap-3 fold:max-w-[400px]">
         {notice}
         <section className="flex w-full flex-col gap-4 bg-white px-5 py-8 text-ink fold:rounded-2xl fold:border fold:border-tp-line fold:px-8 fold:shadow-sm">
+          {homeLink && (
+            <Link
+              href="/"
+              className="-mb-2 -ml-2 inline-flex min-h-11 items-center gap-1 self-start rounded-lg px-2 text-[13px] text-tp-muted underline-offset-2 hover:underline"
+            >
+              <span aria-hidden="true">←</span>
+              홈으로
+            </Link>
+          )}
           <h1 className="text-center text-xl font-bold">J의 계획</h1>
           {children}
         </section>

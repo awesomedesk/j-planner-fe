@@ -66,7 +66,7 @@ function LoginCard() {
   const emailRef = useRef(initialEmail);
 
   return (
-    <AuthFrame notice={notice && <AuthNotice>{LOGIN_NOTICE_TEXT[notice]}</AuthNotice>}>
+    <AuthFrame homeLink notice={notice && <AuthNotice>{LOGIN_NOTICE_TEXT[notice]}</AuthNotice>}>
       {googleResult && <GoogleResultLine code={googleResult} />}
 
       <GoogleStartButton next={next} />
