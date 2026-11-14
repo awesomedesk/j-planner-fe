@@ -245,3 +245,34 @@ describe('메일 확인 안내 (US-33, D-079 · SITE-05c)', () => {
     expect(JSON.stringify({ ...sessionStorage })).not.toContain('qa-fe-01');
   });
 });
+
+describe('가입 화면 [홈으로] (D-106, #360 · 06 SITE-05b·05c)', () => {
+  it('가입 폼: 서비스명 위 [홈으로] → /, 입력 중 눌러도 가입 요청 없음', async () => {
+    const api = signedOut({ 'POST /auth/signup': () => json(202) });
+    const { user } = openSignup();
+    const home = await screen.findByRole('link', { name: '홈으로' });
+    expect(home).toHaveAttribute('href', '/');
+    expect(home.compareDocumentPosition(screen.getByRole('heading', { name: 'J의 계획' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await fill(user);
+    await user.click(home);
+    expect(api.calls('POST /auth/signup')).toHaveLength(0);
+  });
+
+  it('"메일을 확인해 주세요" 화면에서도 [홈으로] 유지', async () => {
+    signedOut({ 'POST /auth/signup': () => json(202) });
+    const { user } = openSignup();
+    await fill(user);
+    await submit(user);
+    expect(await screen.findByRole('heading', { name: '메일을 확인해 주세요' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '홈으로' })).toHaveAttribute('href', '/');
+  });
+
+  it('429 잠금 상태에서도 [홈으로] 유지', async () => {
+    signedOut({ 'POST /auth/signup': () => ({ ...problem(429, 'TOO_MANY_REQUESTS', '요청이 너무 많아요'), headers: { 'Retry-After': '2' } }) });
+    const { user } = openSignup();
+    await fill(user);
+    await submit(user);
+    expect(await screen.findByRole('alert')).toHaveTextContent('요청이 너무 많아요');
+    expect(screen.getByRole('link', { name: '홈으로' })).toHaveAttribute('href', '/');
+  });
+});

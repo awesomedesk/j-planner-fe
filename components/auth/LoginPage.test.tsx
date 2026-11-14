@@ -287,3 +287,30 @@ describe('로그인 화면 — 구글 결과 안내 (US-36, D-082 · 06 SITE-05a
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
+
+describe('로그인 화면 [홈으로] (D-106, #360 · 06 SITE-05a)', () => {
+  it('서비스명 위에 [홈으로] → / (직접 진입)', async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    openLogin();
+    const home = await screen.findByRole('link', { name: '홈으로' });
+    expect(home).toHaveAttribute('href', '/');
+    // 서비스명보다 앞(위)에 있다
+    const title = screen.getByRole('heading', { name: 'J의 계획' });
+    expect(home.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('?next=가 있어도 [홈으로]는 / 고정 (next·history.back 안 씀)', async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    openLogin('?next=%2Fme');
+    expect(await screen.findByRole('link', { name: '홈으로' })).toHaveAttribute('href', '/');
+  });
+
+  it('입력 중에 [홈으로]를 눌러도 로그인 요청을 보내지 않는다', async () => {
+    const api = mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN, 'POST /auth/login': () => json(204) });
+    const { user } = openLogin();
+    await user.type(await screen.findByRole('textbox', { name: '이메일' }), 'qa@example.com');
+    await user.type(screen.getByLabelText('비밀번호'), 'pw-123456789012');
+    await user.click(screen.getByRole('link', { name: '홈으로' }));
+    expect(api.calls('POST /auth/login')).toHaveLength(0);
+  });
+});

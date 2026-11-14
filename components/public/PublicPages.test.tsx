@@ -170,3 +170,24 @@ describe('소개 /about (US-39, 06 SITE-04)', () => {
     expect(api.all()).toHaveLength(0);
   });
 });
+
+describe("공개 공통 헤더 로고 J's Planner (D-107, #361 · 06 공개 공통 헤더)", () => {
+  it("메인·소개·문의 위 로고는 J's Planner → / (J의 계획 아님)", async () => {
+    mockApi({ 'GET /auth/csrf': () => json(204), 'GET /me': NOT_LOGGED_IN });
+    window.history.replaceState(null, '', '/');
+    const home = renderWithStore(
+      <HomeGate>
+        <p>달력 화면</p>
+      </HomeGate>
+    );
+    expect(await screen.findByRole('link', { name: "J's Planner" })).toHaveAttribute('href', '/');
+    expect(screen.queryByRole('link', { name: 'J의 계획' })).not.toBeInTheDocument();
+    home.unmount();
+    for (const Page of [AboutPage, ContactPage]) {
+      const view = renderWithStore(<Page />);
+      expect(screen.getByRole('link', { name: "J's Planner" })).toHaveAttribute('href', '/');
+      expect(screen.queryByRole('link', { name: 'J의 계획' })).not.toBeInTheDocument();
+      view.unmount();
+    }
+  });
+});
