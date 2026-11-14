@@ -2,9 +2,11 @@
 
 import { useEffect, useId, useState } from 'react';
 
-import { useAppSelector } from '@/app/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { LaterButton, NOT_READY_MESSAGE } from '@components/auth/common/AuthFrame';
 import ThemeButton, { themeButtonClass } from '@components/button/ThemeButton';
 import { selectAuth } from '@store/slices/authSlice';
+import { showNotice } from '@store/slices/noticeSlice';
 
 import PolicyLinks from '@components/public/PolicyLinks';
 
@@ -17,32 +19,47 @@ export const LOGOUT_EVERYWHERE_CONFIRM = {
   cancel: '취소',
 } as const;
 
+const SECTION_TITLE = 'px-1 text-[13px] font-semibold text-tp-muted';
+
 /**
- * 계정 메뉴 내용 (US-34, D-072) — PC·태블릿 헤더 계정 메뉴와 모바일 ≡ 메뉴 맨 아래가 같이 쓴다.
- * 이름·이메일, [내 계정](/me, US-37), [로그아웃], [모든 기기에서 로그아웃](확인 창)
+ * '설정 및 계정' 내용 (D-109, US-34 D-072) — PC·태블릿 ⚙ 메뉴와 모바일 전체 화면이 같이 쓴다.
+ * 계정(이름·이메일·[내 계정] /me) → 달력 설정(US-26 전 점선) → [로그아웃]·[모든 기기에서 로그아웃](확인 창) → 약관·처리방침·문의.
+ * 로그인 정보가 없으면(둘러보기, D-093) 계정·로그아웃은 빼고 달력 설정·약관만.
  */
 export default function AccountMenuItems() {
   const { me } = useAppSelector(selectAuth);
+  const dispatch = useAppDispatch();
   const { busy, logout, logoutEverywhere } = useLogout();
   const [confirming, setConfirming] = useState(false);
 
   return (
     <div className="flex flex-col gap-2 text-tp-text">
       {me && (
-        <div className="flex flex-col px-1 pb-1">
-          <span className="text-sm font-bold">{me.name}</span>
-          <span className="break-all text-[13px] text-tp-muted">{me.email}</span>
+        <section className="flex flex-col gap-2">
+          <h3 className={SECTION_TITLE}>계정</h3>
+          <div className="flex flex-col px-1">
+            <span className="text-sm font-bold">{me.name}</span>
+            <span className="break-all text-[13px] text-tp-muted">{me.email}</span>
+          </div>
+          <a href="/me" className={`${themeButtonClass('secondary', 'md')} w-full`}>
+            내 계정
+          </a>
+        </section>
+      )}
+      <section className="flex flex-col gap-2 pt-1">
+        <h3 className={SECTION_TITLE}>달력 설정</h3>
+        <LaterButton block label="달력 설정" onClick={() => dispatch(showNotice(NOT_READY_MESSAGE, 'info'))} />
+      </section>
+      {me && (
+        <div className="flex flex-col gap-2 border-t border-tp-line pt-3">
+          <ThemeButton size="md" className="w-full justify-center" disabled={busy} onClick={logout}>
+            로그아웃
+          </ThemeButton>
+          <ThemeButton size="md" className="w-full justify-center" disabled={busy} onClick={() => setConfirming(true)}>
+            모든 기기에서 로그아웃
+          </ThemeButton>
         </div>
       )}
-      <a href="/me" className={`${themeButtonClass('secondary', 'md')} w-full`}>
-        내 계정
-      </a>
-      <ThemeButton size="md" className="w-full justify-center" disabled={busy} onClick={logout}>
-        로그아웃
-      </ThemeButton>
-      <ThemeButton size="md" className="w-full justify-center" disabled={busy} onClick={() => setConfirming(true)}>
-        모든 기기에서 로그아웃
-      </ThemeButton>
       {/* 설정 화면이 생기기 전까지 약관·처리방침·문의는 여기서 (US-39 AC2, #340 ④) */}
       <nav aria-label="약관과 문의" className="flex flex-wrap items-center justify-center gap-1 pt-1">
         <PolicyLinks />

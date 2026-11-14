@@ -26,7 +26,7 @@ interface MobileHeaderProps {
 
 /**
  * MobileHeader - 모바일 헤더 (768px 미만, MO-01·FOLD-01)
- * 위 줄: 메뉴 · 제목(날짜) · 설정
+ * 위 줄: 메뉴 · 제목(날짜) · ⚙ 설정 및 계정 (D-109)
  * 아래 줄(화면 선택 줄): 화면 선택 드롭다운 · 오늘 | 카테고리 필터
  * 날짜를 옮기는 것은 달력을 좌우로 밀어서 한다 (D-025). 필터는 아래 시트(US-11). 메뉴(US-28)·설정(US-26)은 각 스토리에서.
  */
@@ -60,7 +60,13 @@ export default function MobileHeader({
             </button>
           )}
         </div>
-        <button type="button" aria-label="설정" onClick={onClickSettings} className="inline-flex h-11 w-11 items-center justify-center">
+        <button
+          type="button"
+          aria-label="설정 및 계정"
+          aria-haspopup="dialog"
+          onClick={onClickSettings}
+          className="inline-flex h-11 w-11 items-center justify-center"
+        >
           <Icon name="gear" size={20} />
         </button>
       </div>

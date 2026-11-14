@@ -49,6 +49,7 @@ import { formatViewTitle } from './appLayoutUtils';
 import MobileAddMenu from './MobileAddMenu';
 import AccountMenuButton from '@components/auth/account/AccountMenuButton';
 import MobileMenu from '@components/auth/account/MobileMenu';
+import SettingsAccountScreen from '@components/auth/account/SettingsAccountScreen';
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
@@ -107,6 +108,13 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   /** 모바일 ≡ 메뉴 (MO-02, 지금은 계정 항목만 — US-34) */
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+  // 모바일 '설정 및 계정' 전체 화면 (D-109) — ≡ 메뉴와 동시에 열지 않는다
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  const openSettingsFromMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    setSettingsOpen(true);
+  }, []);
   /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
   const quickAdd = useQuickAddState();
   /** 필터에서 빠진 카테고리로 저장했을 때 알려 주기 (D-056) */
@@ -251,8 +259,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         onMoveDay={tabBehavior.dateNav === 'arrows' ? move : undefined}
         categoryFilter={!isTabletUp && tabBehavior.categoryFilter && <CategoryFilterSheet {...categoryFilterProps} />}
         onClickMenu={() => setMobileMenuOpen(true)}
+        onClickSettings={() => setSettingsOpen(true)}
       />
-      {!isTabletUp && mobileMenuOpen && <MobileMenu onClose={closeMobileMenu} />}
+      {!isTabletUp && mobileMenuOpen && <MobileMenu onClose={closeMobileMenu} onOpenSettings={openSettingsFromMenu} />}
+      {!isTabletUp && settingsOpen && <SettingsAccountScreen onClose={closeSettings} />}
 
       <div className="relative flex min-h-0 flex-1">
         <main

@@ -2,18 +2,20 @@
 
 import { useEffect } from 'react';
 
+import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
 
-import AccountMenuItems from './AccountMenuItems';
+import { SETTINGS_ACCOUNT_LABEL } from './AccountMenuButton';
 
 /**
  * MobileMenu - 모바일 ≡ 메뉴 (MO-02). 머리: 왼쪽 <, 가운데 '메뉴' (D-022).
- * 지금은 맨 아래 계정 항목만 (US-34, D-072). Todo·D-Day·일기·메모·카테고리·설정 항목은 US-28에서 위에 더한다.
+ * 계정 기능은 겹쳐 두지 않고 [설정 및 계정] 하나로 같은 전체 화면을 연다 (D-109).
+ * Todo·D-Day·일기·메모·카테고리 항목은 US-28에서 위에 더한다.
  */
-export default function MobileMenu({ onClose }: { onClose: () => void }) {
+export default function MobileMenu({ onClose, onOpenSettings }: { onClose: () => void; onOpenSettings: () => void }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('[role="alertdialog"]')) onClose();
+      if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -35,7 +37,10 @@ export default function MobileMenu({ onClose }: { onClose: () => void }) {
       {/* US-28 항목 자리 */}
       <div className="flex-1" />
       <div className="border-t border-tp-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <AccountMenuItems />
+        <ThemeButton size="md" className="w-full justify-center gap-2" onClick={onOpenSettings}>
+          <Icon name="gear" size={18} />
+          {SETTINGS_ACCOUNT_LABEL}
+        </ThemeButton>
       </div>
     </div>
   );
