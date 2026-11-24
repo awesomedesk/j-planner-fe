@@ -7,6 +7,14 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 1. Read `../j-planner-product/00-working-rules.md` first, then the docs in its README order. For FE work the key ones are
    `03-decisions.md`, `06-screens.md` (has the screen-design canvas link — the canvas is the visual reference),
    `08-api-design.md`, `09-backlog.md` (stories, acceptance criteria, order).
+   **Design changes (D-114~116, #379, from 2026-11-25)**: the visual reference for new/changed screens is static HTML in
+   `j-planner-product/design/` (`design/index.html` overview, `design/screens/`, rules `design/design-system.md`), made by
+   the codex DESIGN window (`31-designer-start.md`); Figma is only for reading old material. FE reviews each design PR in
+   `awesomedesk/j-planner-product`: matches the real FE code/theme/components, can be built, and — doing the real task —
+   is the next action clear, is editing a plan a burden, is it too dense (D-115). Write the review on the PR.
+   **Build a design change only after its PR is merged** and the source issue has the merged SHA + HTML path (that SHA is
+   the approved version, D-116); then implement that scope (TDD) and ask codex QA (`to:PO`) to check it. Never build from
+   an open/unmerged design PR or from chat agreement. #366~369 follow this.
 2. Pull before work, commit straight to `main` (D-005), commit only files in this repo.
    The terminal can't use SSH, so pull/push over HTTPS with the token file — exact commands in `00-working-rules.md` §7.
    Never open, print, or copy `awesomedesk/.git-credentials`.
