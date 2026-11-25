@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * US-31 · D-060 보안 하한선
- * - next 16.x(16.3.6 이상), react·react-dom 19.2.x — React2Shell(CVE-2025-55182 / CVE-2025-66478),
+ * - next 16.x(16.4.5 이상, D-119 2026-11 Next 보안 릴리스), react·react-dom 19.2.x — React2Shell(CVE-2025-55182 / CVE-2025-66478),
  *   2026-05·09 Next 보안 릴리스, Next 15 지원 종료(2026-10-21)
  * - lockfile에 공급망 공격 오염 버전이 없어야 한다 (2025-09 Shai-Hulud ~ 2026-08 ChainDrop)
  *   목록: test/security/compromised-packages.txt (출처는 파일 머리에)
@@ -45,10 +45,20 @@ describe('보안 하한선 (US-31, D-060)', () => {
     expect(lock.lockfileVersion).toBe(3);
   });
 
-  it('next는 16.x이고 16.3.6 이상', () => {
+  it('next는 16.x이고 16.4.5 이상 (D-119)', () => {
     const next = versionOf('next');
     expect(parse(next)[0]).toBe(16);
-    expect(atLeast(next, '16.3.6')).toBe(true);
+    expect(atLeast(next, '16.4.5')).toBe(true);
+  });
+
+  it('eslint-config-next는 next와 같은 버전 (D-119 짝 패키지)', () => {
+    expect(versionOf('eslint-config-next')).toBe(versionOf('next'));
+  });
+
+  it('.nvmrc는 Node 26.13.1 이상 (D-119 Node 2026-11 보안 릴리스)', () => {
+    const nvmrc = readFileSync(join(root, '.nvmrc'), 'utf8').trim();
+    expect(parse(nvmrc)[0]).toBe(26);
+    expect(atLeast(nvmrc, '26.13.1')).toBe(true);
   });
 
   it('react · react-dom은 19.2.x로 같은 버전', () => {

@@ -24,8 +24,8 @@ describe('서버를 켜기 전 PATH의 node 버전 확인 (#343 Turbopack CSS �
     }
   });
 
-  it('.nvmrc는 현재 LTS Node 26 (2026-10-28 LTS 시작, 대표님 11-04 검토 요청)', () => {
-    expect(readFileSync(join(__dirname, '..', '.nvmrc'), 'utf8').trim()).toBe('26');
+  it('.nvmrc는 LTS Node 26 줄의 보안 패치 26.13.1 (D-119, 2026-10-28 LTS 시작·대표님 11-04 검토 요청)', () => {
+    expect(readFileSync(join(__dirname, '..', '.nvmrc'), 'utf8').trim()).toBe('26.13.1');
   });
 
   it('node를 못 찾으면(빈 값) 멈춘다', () => {

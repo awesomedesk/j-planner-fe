@@ -63,12 +63,12 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 ## Commands
 
-- Node: `.nvmrc` = 26 (현재 LTS, 2026-11-04~; Node 22도 동작). Run `nvm use` first — `/usr/local/bin/node` is 14 and `scripts/checkNode.mjs` stops dev/build on it (#343)
+- Node: `.nvmrc` = 26.13.1 (D-119 보안 패치, 2026-11-26~; Node 22도 동작). Run `nvm use` first (`nvm install` if missing) — `/usr/local/bin/node` is 14 and `scripts/checkNode.mjs` stops dev/build on it (#343)
 - `npm run dev` (test env) / `npm run dev:local` — http://localhost:3000
 - `npm test` (Vitest, once) / `npm run test:watch` — run with lint before every commit
 - `npm run lint` (= `eslint .`, flat config `eslint.config.mjs`; Next 16 has no `next lint`), `npx tsc --noEmit`, `npm run build`
   (Turbopack, type check) — run before committing. `next build` no longer lints.
-- Install with `npm ci` (lockfile). `test/security/supplyChain.test.ts` fails if next < 16.3.6, react ≠ 19.2.x, or the lockfile
+- Install with `npm ci` (lockfile). `test/security/supplyChain.test.ts` fails if next < 16.4.5 (D-119) or eslint-config-next ≠ next, .nvmrc < 26.13.1, react ≠ 19.2.x, or the lockfile
   contains a version from `test/security/compromised-packages.txt` (Shai-Hulud 2025-09 … ChainDrop 2026-08, D-060).
 - `npm run api:types` — regenerate `types/api/schema.d.ts` from `../j-planner-product/08-openapi.yaml`
 
@@ -175,7 +175,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 ## Gotchas
 
-- Stack (US-31, D-060): Next 16.3 + React 19.2. React 19 lint (`react-hooks` 7) forbids writing refs during render and
+- Stack (US-31, D-060, D-119): Next 16.4 + React 19.2. React 19 lint (`react-hooks` 7) forbids writing refs during render and
   calling setState synchronously in effects. For "latest value" refs use `useLatest` (`utils/hooks/useLatest.ts`);
   for "reset when a prop changes" compare with the previous value during render (`useState(prev)` pattern), not in an effect.
   `useRef<T>(null)` is `RefObject<T | null>` — take `RefObject<HTMLElement | null>` in hook params.
