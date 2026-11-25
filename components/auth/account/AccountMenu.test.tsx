@@ -11,6 +11,7 @@ import { goTo } from '@utils/navigation';
 import AccountMenuButton from './AccountMenuButton';
 import MobileMenu from './MobileMenu';
 import SettingsAccountScreen from './SettingsAccountScreen';
+import { takeAccountReturn } from './accountReturnFocus';
 
 vi.mock('@utils/navigation', () => ({ goTo: vi.fn(), currentPath: () => '/' }));
 
@@ -64,10 +65,10 @@ describe('PC·태블릿 ⚙ 설정 및 계정 (D-109, #366 · US-34 D-072)', () 
     expect(within(menu).getByRole('heading', { name: '달력 설정' })).toBeInTheDocument();
   });
 
-  it("[달력 설정]은 아직 점선 — 누르면 '준비 중이에요' (US-26 전, D-008)", async () => {
+  it("[달력 설정]은 아직 점선 — 누르면 메뉴 안 한 줄(aria-live)로 '준비 중이에요' (US-26 전, D-008 · #382 시안)", async () => {
     const { user, menu } = await openPcMenu();
     await user.click(within(menu).getByRole('button', { name: '달력 설정' }));
-    expect(await screen.findByText('준비 중이에요')).toBeInTheDocument();
+    expect(within(menu).getByRole('status')).toHaveTextContent('준비 중이에요');
   });
 
   it('키보드: Enter로 열고 Esc로 닫으면 ⚙로 초점이 돌아온다', async () => {
@@ -91,7 +92,7 @@ describe('PC·태블릿 ⚙ 설정 및 계정 (D-109, #366 · US-34 D-072)', () 
 
   it('바깥을 누르면 닫힌다', async () => {
     const { user } = await openPcMenu();
-    await user.click(document.body);
+    await user.click(screen.getByTestId('settings-account-backdrop'));
     expect(screen.queryByRole('dialog', { name: TRIGGER })).not.toBeInTheDocument();
   });
 
@@ -158,10 +159,78 @@ describe('PC·태블릿 ⚙ 설정 및 계정 (D-109, #366 · US-34 D-072)', () 
   });
 });
 
+describe('PC·태블릿 설정 및 계정 모달 (D-117 · #382 승인 803ad5e)', () => {
+  it('열면 머리 [닫기]에 초점, [닫기]를 누르면 닫히고 ⚙로 초점', async () => {
+    const { user, menu } = await openPcMenu();
+    const close = within(menu).getByRole('button', { name: '닫기' });
+    expect(close).toHaveFocus();
+    await user.click(close);
+    expect(screen.queryByRole('dialog', { name: TRIGGER })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: TRIGGER })).toHaveFocus();
+  });
+
+  it('Tab·Shift+Tab은 메뉴 안에서 마지막 ↔ 첫 항목을 바로 돈다', async () => {
+    const { user, menu } = await openPcMenu();
+    const close = within(menu).getByRole('button', { name: '닫기' });
+    const contact = within(menu).getByRole('link', { name: '문의' });
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(contact).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+  });
+
+  it('바깥을 누르면 닫히고 ⚙로 초점, 그 누름은 뒤 달력으로 가지 않는다 (모달)', async () => {
+    const behind = vi.fn();
+    const view = renderWithStore(
+      <>
+        <button type="button" onClick={behind}>
+          뒤 달력 칸
+        </button>
+        <AccountMenuButton />
+      </>,
+      { store: signedInStore() }
+    );
+    await view.user.click(screen.getByRole('button', { name: TRIGGER }));
+    await view.user.click(screen.getByTestId('settings-account-backdrop'));
+    expect(screen.queryByRole('dialog', { name: TRIGGER })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: TRIGGER })).toHaveFocus();
+    expect(behind).not.toHaveBeenCalled();
+  });
+
+  it('모든 기기 확인 창: Tab은 확인 창 안에서만, 취소·Esc로 닫으면 [모든 기기에서 로그아웃]으로 초점', async () => {
+    const { user, menu } = await openPcMenu();
+    const everywhere = within(menu).getByRole('button', { name: '모든 기기에서 로그아웃' });
+    await user.click(everywhere);
+    const confirm = screen.getByRole('alertdialog');
+    expect(within(confirm).getByRole('button', { name: '취소' })).toHaveFocus();
+    await user.tab();
+    expect(within(confirm).getByRole('button', { name: '모두 로그아웃' })).toHaveFocus();
+    await user.tab();
+    expect(within(confirm).getByRole('button', { name: '취소' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(everywhere).toHaveFocus();
+
+    await user.click(everywhere);
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: '취소' }));
+    expect(everywhere).toHaveFocus();
+  });
+
+  it('[내 계정]은 /me 링크(오른쪽 ›), 누르면 돌아올 때 초점을 둘 진입 버튼(⚙)을 기억한다 (D-117)', async () => {
+    const { user, menu } = await openPcMenu();
+    const link = within(menu).getByRole('link', { name: '내 계정' });
+    expect(link).toHaveAttribute('href', '/me');
+    expect(link).toHaveTextContent('›');
+    link.addEventListener('click', (event) => event.preventDefault());
+    await user.click(link);
+    expect(takeAccountReturn()).toBe('gear');
+    expect(takeAccountReturn()).toBeNull();
+  });
+});
+
 describe('모바일 설정 및 계정 전체 화면 (D-109, #366 · MO-16 자리)', () => {
   it('제목 "설정 및 계정" + [닫기], 같은 내용, 열리면 [닫기]로 초점, 닫기·Esc로 닫힌다', async () => {
     const onClose = vi.fn();
-    const { user } = renderWithStore(<SettingsAccountScreen onClose={onClose} />, { store: signedInStore() });
+    const { user } = renderWithStore(<SettingsAccountScreen entry="gear" onClose={onClose} />, { store: signedInStore() });
     const screenEl = screen.getByRole('dialog', { name: TRIGGER });
     expect(screenEl).toHaveAttribute('aria-modal', 'true');
     const close = within(screenEl).getByRole('button', { name: '닫기' });
@@ -177,9 +246,24 @@ describe('모바일 설정 및 계정 전체 화면 (D-109, #366 · MO-16 자리
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
+  it('머리 오른쪽 × [닫기], Tab은 화면 안에서 돈다, [내 계정]은 연 버튼(≡)을 기억한다 (D-117)', async () => {
+    const { user } = renderWithStore(<SettingsAccountScreen entry="menu" onClose={() => {}} />, { store: signedInStore() });
+    const screenEl = screen.getByRole('dialog', { name: TRIGGER });
+    const close = within(screenEl).getByRole('button', { name: '닫기' });
+    expect(close).toHaveFocus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(within(screenEl).getByRole('link', { name: '문의' })).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+    const link = within(screenEl).getByRole('link', { name: '내 계정' });
+    link.addEventListener('click', (event) => event.preventDefault());
+    await user.click(link);
+    expect(takeAccountReturn()).toBe('menu');
+  });
+
   it('로그아웃하면 로그인 화면', async () => {
     mockApi({ 'POST /auth/logout': () => json(204) });
-    const { user } = renderWithStore(<SettingsAccountScreen onClose={() => {}} />, { store: signedInStore() });
+    const { user } = renderWithStore(<SettingsAccountScreen entry="gear" onClose={() => {}} />, { store: signedInStore() });
     await user.click(screen.getByRole('button', { name: '로그아웃' }));
     await waitFor(() => expect(goTo).toHaveBeenCalledWith('/login'));
   });
