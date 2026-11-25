@@ -189,7 +189,10 @@ describe('모바일 ≡ 메뉴 (MO-02 · D-109: 계정 기능은 "설정 및 계
   it("머리는 '<' + '메뉴', 계정 내용을 겹쳐 두지 않고 [설정 및 계정] 하나", async () => {
     const onClose = vi.fn();
     const onOpenSettings = vi.fn();
-    const { user } = renderWithStore(<MobileMenu onClose={onClose} onOpenSettings={onOpenSettings} />, { store: signedInStore() });
+    const { user } = renderWithStore(
+      <MobileMenu items={[]} onOpenTab={vi.fn()} onOpenCategories={vi.fn()} onClose={onClose} onOpenSettings={onOpenSettings} />,
+      { store: signedInStore() }
+    );
     const menu = screen.getByRole('dialog', { name: '메뉴' });
     expect(within(menu).queryByText('qa@example.com')).not.toBeInTheDocument();
     expect(within(menu).queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
