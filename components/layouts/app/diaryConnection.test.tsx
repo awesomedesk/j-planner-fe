@@ -53,12 +53,10 @@ describe('일기 연결 지점 (US-24)', () => {
 
     const sidebar = screen.getByRole('complementary', { name: '사이드바' });
     await user.click(await within(sidebar).findByRole('button', { name: '9월 25일 (금) 일기 쓰기' }));
-    const dialog = screen.getByRole('dialog', { name: '9월 25일 (금) 일기' });
-    const box = within(dialog).getByRole('textbox', { name: '일기 내용' });
-    await waitFor(() => expect(box).toBeEnabled());
-    await user.type(box, '오늘');
+    await waitFor(() => expect(within(screen.getByRole('dialog', { name: '9월 25일 (금) 일기' })).getByRole('textbox', { name: '일기 내용' })).toBeEnabled());
+    await user.type(within(screen.getByRole('dialog', { name: '9월 25일 (금) 일기' })).getByRole('textbox', { name: '일기 내용' }), '오늘');
     const before = api.calls('GET /diaries').length;
-    await user.click(within(dialog).getAllByRole('button', { name: '저장' })[0]);
+    await user.click(within(screen.getByRole('dialog', { name: '9월 25일 (금) 일기' })).getAllByRole('button', { name: '저장' })[0]);
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '9월 25일 (금) 일기' })).not.toBeInTheDocument());
     await waitFor(() => expect(api.calls('GET /diaries').length).toBeGreaterThan(before));
   });
@@ -68,9 +66,8 @@ describe('일기 연결 지점 (US-24)', () => {
     store.dispatch(setViewMode('DAY'));
     await user.click(await screen.findByRole('tab', { name: '일기' }));
     const panel = screen.getByRole('tabpanel', { name: '일기' });
-    const box = await within(panel).findByRole('textbox', { name: '일기 내용' });
-    await waitFor(() => expect(box).toBeEnabled());
-    await user.type(box, '쓰는 중');
+    await waitFor(() => expect(within(panel).getByRole('textbox', { name: '일기 내용' })).toBeEnabled());
+    await user.type(within(panel).getByRole('textbox', { name: '일기 내용' }), '쓰는 중');
 
     await user.click(screen.getByRole('tab', { name: '시간표' }));
     const confirm = screen.getByRole('alertdialog', { name: '작성을 취소할까요?' });

@@ -10,9 +10,12 @@ import { selectCategoriesById } from '@store/slices/categorySlice';
 import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 
+import Icon from '@components/icons/LineIcon';
+
 import DdayMarkChip from '../common/DdayMarkChip';
 import ScheduleBar from '../common/ScheduleBar';
 import { useDdayMarks } from '../hooks/useDdayMarks';
+import { useDiaryMarks } from '../hooks/useDiaryMarks';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, stripeColorOf, weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import { ddayChipText, type DdayChipItem } from '../utils/ddayMarkUtils';
@@ -26,6 +29,8 @@ interface CalendarMonthlyProps {
   onTapDate?: (date: LocalDate) => void;
   /** D-Day 칩을 누름 → 그 D-Day 수정 창 (US-23) */
   onOpenDday?: (ddayId: Id) => void;
+  /** 펜 아이콘을 누름 → 그날 일기 창 (US-24) */
+  onOpenDiary?: (date: LocalDate) => void;
 }
 
 /** 칸 안 높이 계산 (px): 위아래 여백 12, 날짜 줄 18, 막대 18 + 간격 3 */
@@ -40,10 +45,11 @@ const MAX_DOTS = 3;
  * - 주차 열(CAL-05, ISO 주차), 오늘 강조(CAL-06), 고른 날짜 옅은 테두리 (D-041)
  * - PC·태블릿: 일정 막대, 칸을 넘으면 '+n 더보기'. 모바일: 카테고리 색 점
  * - 날짜를 한 번 누르면 그날 선택(사이드바·시트 기준), 두 번 누르면 일간으로 (D-015)
- * - Todo 요약·지난 미완료는 표시하지 않는다 (D-021). 일기 펜(US-24)은 M3
+ * - Todo 요약·지난 미완료는 표시하지 않는다 (D-021)
+ * - 일기 펜(US-24): 일기를 쓴 날 칸 오른쪽 위 펜 버튼('9월 23일 일기') → 그날 일기 창. 내용은 칸에 없다. 모바일은 그림만 + 접근 이름 '일기 있음'
  * - D-Day(US-23): 칸 맨 위 `D-3 제목` 칩(서버 label 그대로, D-043). 막대와 함께 세어 '+n 더보기'. 모바일은 라벨만 + 접근 이름에 제목
  */
-export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, onOpenDday }: CalendarMonthlyProps) {
+export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, onOpenDday, onOpenDiary }: CalendarMonthlyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -56,6 +62,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
   // 보이는 기간의 일정 받기
   const { schedules } = useScheduleRange(range);
   const ddayChips = useDdayMarks(range);
+  const diaryDates = useDiaryMarks(range);
 
   // 칸 높이에 맞춰 막대 몇 개까지 보일지
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -113,6 +120,7 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
                   day={day}
                   schedules={daySchedules}
                   ddayChips={dayChips}
+                  hasDiary={diaryDates.has(day.date)}
                   categoriesById={categoriesById}
                   isSelected={day.date === selectedDate}
                   onSelect={handleSelect}
@@ -123,6 +131,8 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
                   day={day}
                   schedules={daySchedules}
                   ddayChips={dayChips}
+                  hasDiary={diaryDates.has(day.date)}
+                  onOpenDiary={onOpenDiary}
                   categoriesById={categoriesById}
                   capacity={capacity}
                   isSelected={day.date === selectedDate}
@@ -144,6 +154,12 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
 }
 
 const NO_CHIPS: DdayChipItem[] = [];
+
+/** '9월 23일' (펜 버튼 이름, 06 월간 펜 아이콘) */
+const shortDayLabel = (date: LocalDate) => {
+  const [, month, dayOfMonth] = date.split('-').map(Number);
+  return `${month}월 ${dayOfMonth}일`;
+};
 
 // ---------------------------------------------------------------- 칸
 
@@ -176,6 +192,8 @@ interface BarCellProps {
   day: CalendarDay;
   schedules: Schedule[];
   ddayChips: DdayChipItem[];
+  hasDiary: boolean;
+  onOpenDiary?: (date: LocalDate) => void;
   categoriesById: Map<Id, Category>;
   capacity: number;
   isSelected: boolean;
@@ -188,7 +206,7 @@ interface BarCellProps {
   onCloseMore: () => void;
 }
 
-function BarCell({ day, schedules, ddayChips, categoriesById, capacity, isSelected, isMoreOpen, onSelect, onOpenDay, onOpenSchedule, onOpenDday, onOpenMore, onCloseMore }: BarCellProps) {
+function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesById, capacity, isSelected, isMoreOpen, onSelect, onOpenDay, onOpenSchedule, onOpenDday, onOpenMore, onCloseMore }: BarCellProps) {
   // D-Day 칩이 먼저(맨 위), 그다음 일정 막대. 칸을 넘으면 둘을 함께 세어 '+n 더보기' (06 달력 표시)
   const total = ddayChips.length + schedules.length;
   const shownCount = total > capacity ? Math.max(capacity - 1, 0) : total;
@@ -215,6 +233,21 @@ function BarCell({ day, schedules, ddayChips, categoriesById, capacity, isSelect
         >
           <DateLabel day={day} compact={false} />
         </button>
+        {hasDiary && (
+          <button
+            type="button"
+            aria-label={`${shortDayLabel(day.date)} 일기`}
+            title="일기"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenDiary?.(day.date);
+            }}
+            onDoubleClick={(event) => event.stopPropagation()}
+            className="inline-flex h-[18px] w-[18px] items-center justify-center rounded text-tp-muted hover:bg-tp-secondary hover:text-tp-text"
+          >
+            <Icon name="diary" size={13} />
+          </button>
+        )}
       </div>
       {visibleChips.map((chip) => (
         <DdayMarkChip key={chip.key} chip={chip} onOpen={onOpenDday} />
@@ -267,6 +300,7 @@ interface DotCellProps {
   day: CalendarDay;
   schedules: Schedule[];
   ddayChips: DdayChipItem[];
+  hasDiary: boolean;
   categoriesById: Map<Id, Category>;
   isSelected: boolean;
   onSelect: (date: LocalDate) => void;
@@ -277,7 +311,7 @@ interface DotCellProps {
  * D-Day는 좁아서 첫 라벨만 보이고, 날짜 버튼 접근 이름에 '라벨 제목'을 모두 넣는다 (06 달력 표시).
  * 칸 전체가 버튼이라 칩을 따로 누르지 않는다 — 누르면 날짜 시트 (제가 정한 부분)
  */
-function DotCell({ day, schedules, ddayChips, categoriesById, isSelected, onSelect }: DotCellProps) {
+function DotCell({ day, schedules, ddayChips, hasDiary, categoriesById, isSelected, onSelect }: DotCellProps) {
   const colors = Array.from(
     new Set(
       schedules.map((schedule) => {
@@ -294,13 +328,21 @@ function DotCell({ day, schedules, ddayChips, categoriesById, isSelected, onSele
         formatDayTitle(day.date),
         ...ddayChips.map(ddayChipText),
         ...(schedules.length ? [`일정 ${schedules.length}개`] : []),
+        ...(hasDiary ? ['일기 있음'] : []),
       ].join(', ')}
       aria-pressed={isSelected}
       onClick={() => onSelect(day.date)}
       className="flex min-h-[50px] flex-col items-center gap-[3px] border-t border-dashed border-tp-line px-0.5 pt-[3px]"
       style={day.isToday ? { backgroundColor: TODAY_CELL_STYLE.backgroundColor } : isSelected ? SELECTED_CELL_STYLE : undefined}
     >
-      <DateLabel day={day} compact />
+      <span className="relative inline-flex">
+        <DateLabel day={day} compact />
+        {hasDiary && (
+          <span aria-hidden="true" className="absolute -right-2.5 -top-0.5 text-tp-muted">
+            <Icon name="diary" size={9} />
+          </span>
+        )}
+      </span>
       {ddayChips.length > 0 && (
         <span aria-hidden="true" className="max-w-full truncate rounded bg-tp-secondary px-0.5 text-[9px] font-bold leading-[13px] text-tp-on-secondary">
           {ddayChips[0].label}

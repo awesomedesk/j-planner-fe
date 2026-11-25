@@ -37,7 +37,7 @@ const mount = async (routes: Record<string, Parameters<typeof mockApi>[0][string
   const onSaved = vi.fn();
   const onDeleted = vi.fn();
   const view = renderWithStore(<DiaryDialog date={DATE} onClose={onClose} onSaved={onSaved} onDeleted={onDeleted} />, { store });
-  return { api, store, onClose, onSaved, onDeleted, ...view };
+  return { api, onClose, onSaved, onDeleted, ...view };
 };
 
 const dialog = () => screen.getByRole('dialog', { name: '9월 25일 (금) 일기' });

@@ -1,7 +1,8 @@
-// 리소스별 API 함수. 나머지 리소스(diaries, settings)는 화면을 만들 때 추가한다.
+// 리소스별 API 함수. 나머지 리소스(settings)는 화면을 만들 때 추가한다.
 export { authApi } from './authApi';
 export { categoryApi } from './categoryApi';
 export { ddayApi } from './ddayApi';
+export { diaryApi } from './diaryApi';
 export { meApi, CONNECT_GOOGLE_PATH, REAUTH_GOOGLE_PATH } from './meApi';
 export { memoApi } from './memoApi';
 export { scheduleApi } from './scheduleApi';

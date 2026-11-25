@@ -80,6 +80,11 @@ export function createDemoBackend(data: DemoData, onBlocked: () => void): DemoBa
         }
         return copy(data.memos);
       }
+      // 예시 D-Day·일기는 없다 (빈 목록, 한 개 조회는 404 = 안 쓴 날)
+      case 'ddays':
+      case 'diaries':
+        if (id) throw notFound();
+        return [];
       default:
         return [];
     }

@@ -77,11 +77,10 @@ describe('모바일 일간 일기 탭 (US-24, MO-11 · D-049)', () => {
 
   it('탭 안에서 바로 쓰고 저장하면 머문 채 "저장했어요." (role=status)', async () => {
     const { user, api } = setup(<DiaryTab date="2026-09-24" />);
-    const box = await screen.findByRole('textbox', { name: '일기 내용' });
-    await waitFor(() => expect(box).toBeEnabled());
-    await user.type(box, '오늘');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '일기 내용' })).toBeEnabled());
+    await user.type(screen.getByRole('textbox', { name: '일기 내용' }), '오늘');
     await user.click(screen.getByRole('button', { name: '저장' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('저장했어요.');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('저장했어요.'));
     expect(api.calls('PUT /diaries/2026-09-24')[0].body).toEqual({ content: '오늘' });
     expect(screen.getByRole('textbox', { name: '일기 내용' })).toHaveValue('오늘');
     expect(within(screen.getByRole('region', { name: '9월 24일 (목) 일기' })).getByRole('button', { name: '삭제' })).toBeInTheDocument();

@@ -4,6 +4,7 @@ import type { LocalDate, Schedule } from '@/types/api';
 import type { SidebarItemType } from '@/types/calendar';
 import DayAgendaList from '@components/calendar/common/DayAgendaList';
 import DdayTab from '@components/dday/DdayTab';
+import DiaryTab from '@components/diary/DiaryTab';
 import MemoTab from '@components/memo/MemoTab';
 import TodoBox from '@components/todo/box/TodoBox';
 
@@ -36,6 +37,8 @@ const DAY_TAB_SLOTS: DayTabSlots = {
   },
   // D-Day 탭: 날짜와 상관없는 전체 목록 (MO-13, D-049). + 는 추가 메뉴 그대로
   DDAY: { render: () => <DdayTab /> },
+  // 일기 탭: 머리 줄 < >로 날짜 이동 (MO-11, D-049). 쓰던 중 떠나면 작성 취소 확인 (LeaveGuard)
+  DIARY: { render: ({ date }) => <DiaryTab date={date} /> },
   MEMO: { render: ({ addRequestKey }) => <MemoTab newMemoRequestKey={addRequestKey} />, directAddLabel: '새 메모' },
 };
 

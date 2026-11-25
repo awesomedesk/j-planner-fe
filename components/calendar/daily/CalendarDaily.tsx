@@ -6,6 +6,7 @@ import type { Id, Schedule, Todo } from '@/types/api';
 import type { MobileDayTabKey, SidebarItemType } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
+import { useLeaveGuard } from '@components/dialog/LeaveGuard';
 import { selectMobileDayTab, selectViewDate, setMobileDayTab } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
 
@@ -79,6 +80,8 @@ const SIZE = {
  */
 export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, onOpenDday, draft, onDraftChange, coverBottom = 0, tabContent, timetableNotice }: CalendarDailyProps) {
   const dispatch = useAppDispatch();
+  /** 탭을 바꾸기 전에 쓰던 일기 확인 (06 일기 작성 취소) */
+  const { guard } = useLeaveGuard();
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
   const size = SIZE[variant];
@@ -143,7 +146,7 @@ export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO
               role="tab"
               aria-selected={tab.key === activeTab}
               disabled={!tab.enabled}
-              onClick={() => dispatch(setMobileDayTab(tab.key))}
+              onClick={() => guard(() => dispatch(setMobileDayTab(tab.key)))}
               className={`min-w-[64px] flex-1 shrink-0 whitespace-nowrap rounded-[7px] px-2.5 py-[7px] text-[13px] disabled:opacity-40 ${
                 tab.key === activeTab ? 'bg-tp-primary font-semibold text-tp-on-primary' : 'font-medium text-tp-text'
               }`}

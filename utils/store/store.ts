@@ -7,6 +7,7 @@ import calendarReducer from './slices/calendarSlice'
 import scheduleReducer from './slices/scheduleSlice'
 import todoReducer from './slices/todoSlice'
 import ddayReducer from './slices/ddaySlice'
+import diaryReducer from './slices/diarySlice'
 import authReducer from './slices/authSlice'
 
 const reducer = {
@@ -17,6 +18,7 @@ const reducer = {
   schedule: scheduleReducer,
   todo: todoReducer,
   dday: ddayReducer,
+  diary: diaryReducer,
   auth: authReducer,
 };
 

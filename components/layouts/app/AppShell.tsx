@@ -15,6 +15,9 @@ import CategoryManagerDialog from '@components/category/CategoryManagerDialog';
 import CategoryFilterDropdown from '@components/category/filter/CategoryFilterDropdown';
 import CategoryFilterSheet from '@components/category/filter/CategoryFilterSheet';
 import { DdayActionsContext } from '@components/dday/DdayActionsContext';
+import { DiaryActionsContext } from '@components/diary/DiaryActionsContext';
+import DiaryDialog from '@components/diary/DiaryDialog';
+import { LeaveGuardProvider, useLeaveGuard } from '@components/dialog/LeaveGuard';
 import DdayFormDialog from '@components/dday/form/DdayFormDialog';
 import type { DdayFormTarget } from '@components/dday/hooks/useDdayForm';
 import ClientOnly from '@components/common/ClientOnly';
@@ -80,7 +83,10 @@ export default function AppShell({ topBanner }: { topBanner?: ReactNode } = {}) 
   // 날짜('오늘')에 따라 달라지는 화면이라 브라우저에서만 그린다 (빌드 시각이 남지 않게)
   return (
     <ClientOnly fallback={<div className="h-dvh bg-tp-bg" />}>
-      <AppShellContent topBanner={topBanner} />
+      {/* 모바일 일기 탭처럼 화면 안에서 쓰던 것을 떠날 때의 확인 (D-037) */}
+      <LeaveGuardProvider>
+        <AppShellContent topBanner={topBanner} />
+      </LeaveGuardProvider>
     </ClientOnly>
   );
 }
@@ -112,6 +118,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   /** 열려 있는 D-Day 입력 창 (US-22). 목록 행·달력 칩·추가 메뉴에서 연다 */
   const [ddayFormTarget, setDdayFormTarget] = useState<DdayFormTarget | null>(null);
   const ddaysById = useAppSelector(selectDdaysById);
+  /** 열려 있는 일기 창의 날짜 (US-24, OV-05). 사이드바 일기 섹션·월간 펜에서 연다 */
+  const [diaryDate, setDiaryDate] = useState<LocalDate | null>(null);
+  const diaryActions = useMemo(() => ({ openDiary: (date: LocalDate) => setDiaryDate(date) }), []);
+  const { guard } = useLeaveGuard();
   const notifyError = useErrorNotice();
   /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
@@ -192,20 +202,24 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     setScheduleFormTarget({ mode: 'create', baseDate: date, startTime: values.startTime, draft: values });
   };
   /** 날짜 이동 (US-09): ‹ ›·스와이프는 보기 단위만큼, '오늘'은 오늘로. 열린 날짜 시트는 닫는다 */
-  const move = (step: number) => {
-    setSheetDate(null);
-    closeQuickAdd();
-    dispatch(moveView(step));
-  };
-  const backToToday = () => {
-    setSheetDate(null);
-    closeQuickAdd();
-    dispatch(goToday(toLocalDate(new Date())));
-  };
-  const changeViewMode = (mode: CalendarViewMode) => {
-    closeQuickAdd();
-    dispatch(setViewMode(mode));
-  };
+  // 날짜·보기를 바꾸기 전에 모바일 일기 탭에서 쓰던 것이 있으면 확인 (06 일기 작성 취소)
+  const move = (step: number) =>
+    guard(() => {
+      setSheetDate(null);
+      closeQuickAdd();
+      dispatch(moveView(step));
+    });
+  const backToToday = () =>
+    guard(() => {
+      setSheetDate(null);
+      closeQuickAdd();
+      dispatch(goToday(toLocalDate(new Date())));
+    });
+  const changeViewMode = (mode: CalendarViewMode) =>
+    guard(() => {
+      closeQuickAdd();
+      dispatch(setViewMode(mode));
+    });
   /** 모바일은 달력을 좌우로 밀어 넘긴다 (D-025). PC·태블릿은 헤더 ‹ › */
   const swipe = useSwipe({ onPrev: () => move(-1), onNext: () => move(1) });
 
@@ -258,6 +272,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         variant={isTabletUp ? 'bars' : 'dots'}
         onOpenSchedule={openSchedule}
         onOpenDday={openDdayById}
+        onOpenDiary={diaryActions.openDiary}
         onTapDate={(date) => {
           if (!isFoldUp) setSheetDate(date);
         }}
@@ -276,6 +291,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   return (
     <TodoActionsContext.Provider value={todoActions}>
     <DdayActionsContext.Provider value={ddayActions}>
+    <DiaryActionsContext.Provider value={diaryActions}>
     <div className="flex h-dvh flex-col overflow-hidden bg-tp-bg text-tp-text">
       {topBanner}
       <PcHeader
@@ -408,6 +424,8 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         />
       )}
 
+      {diaryDate && <DiaryDialog date={diaryDate} onClose={() => setDiaryDate(null)} onSaved={() => setDiaryDate(null)} onDeleted={() => setDiaryDate(null)} />}
+
       {ddayFormTarget && (
         <DdayFormDialog target={ddayFormTarget} onClose={() => setDdayFormTarget(null)} onSaved={closeDdayForm} onDeleted={closeDdayForm} />
       )}
@@ -426,6 +444,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         />
       )}
     </div>
+    </DiaryActionsContext.Provider>
     </DdayActionsContext.Provider>
     </TodoActionsContext.Provider>
   );

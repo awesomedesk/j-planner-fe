@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockApi } from '@/test/mockApi';
-import { apiClient, authApi, categoryApi, isApiError, memoApi, meApi, scheduleApi, todoApi } from '@utils/api';
+import { apiClient, authApi, categoryApi, ddayApi, diaryApi, isApiError, memoApi, meApi, scheduleApi, todoApi } from '@utils/api';
 
 import { buildDemoData } from './demoData';
 import { createDemoBackend, isDemoBlocked, installDemoMode } from './demoBackend';
@@ -117,5 +117,26 @@ describe('둘러보기 — 모든 쓰기 API가 보내기 전에 막힌다 (US-4
     expect(isDemoBlocked(error)).toBe(true);
     expect(onBlocked).toHaveBeenCalledTimes(1);
     expect(api.all()).toHaveLength(0);
+  });
+});
+
+describe('둘러보기 가짜 백엔드 — D-Day·일기 (US-22·24, D-093)', () => {
+  it('예시 D-Day·일기는 없다: 목록은 빈 배열, 그날 일기는 404(안 쓴 날), 실제 서버 요청 0회', async () => {
+    const api = mockApi({});
+    installDemoMode(createDemoBackend(buildDemoData(TODAY), vi.fn()));
+    expect(await ddayApi.getList()).toEqual([]);
+    expect(await ddayApi.getMarks('2026-11-01', '2026-11-30')).toEqual([]);
+    expect(await diaryApi.getRange('2026-11-01', '2026-11-30')).toEqual([]);
+    await expect(diaryApi.get('2026-11-04')).rejects.toMatchObject({ status: 404 });
+    expect(api.fetch).not.toHaveBeenCalled();
+  });
+
+  it('일기 저장은 막고 안내 (쓰기 0)', async () => {
+    const api = mockApi({});
+    const onBlocked = vi.fn();
+    installDemoMode(createDemoBackend(buildDemoData(TODAY), onBlocked));
+    await expect(diaryApi.put('2026-11-04', '오늘')).rejects.toSatisfy(isDemoBlocked);
+    expect(onBlocked).toHaveBeenCalled();
+    expect(api.fetch).not.toHaveBeenCalled();
   });
 });

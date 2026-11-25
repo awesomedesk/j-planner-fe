@@ -130,6 +130,12 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   opens the form). Calendar chips: `calendar/hooks/useDdayMarks(range)` → `common/DdayMarkChip` (month cell top, counted in '+n';
   week/day `AllDayRow` top row; mobile month = first label only). Server `label` only, no date math (D-043).
   Shared swipe row: `components/common/SwipeDeleteItem` (`itemProps` for drag).
+- **Diary (US-24, D-118 no design)**: `components/diary/` — `DiaryDialog` (PC OV-05, from sidebar `DiarySection` / month pen via
+  `DiaryActionsContext`), `DiaryTab` (mobile MO-11, inline, '저장했어요.'), shared `DiaryEditor` (content + completed Todos
+  `GET /todos?completedOn`), `useDiaryEntry` (404 = not written), `useDiaryForm` (PUT as typed, 413 message). Store `diary`
+  (pen dates for the visible range, `diaryChanged` bumps `revision` → entries refetch). Month pen: `calendar/hooks/useDiaryMarks`.
+  Leaving an in-screen draft (mobile diary tab) goes through `components/dialog/LeaveGuard` (`guard(action)` on date move / today /
+  view / tab change in AppShell·CalendarDaily, `useGuardWhileDirty`). Demo backend answers ddays/diaries with empty lists, single diary 404.
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).
 - **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
   `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)
