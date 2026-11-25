@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 
 import type { Dday, Id, LocalDate, Schedule, Todo } from '@/types/api';
-import type { CalendarViewMode } from '@/types/calendar';
+import type { CalendarViewMode, SidebarItemType } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
 import CalendarDaily from '@components/calendar/daily/CalendarDaily';
@@ -22,7 +22,7 @@ import DdayFormDialog from '@components/dday/form/DdayFormDialog';
 import type { DdayFormTarget } from '@components/dday/hooks/useDdayForm';
 import ClientOnly from '@components/common/ClientOnly';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
-import { dayTabBehavior } from '@components/sidebar/sidebarItems';
+import { buildMobileMenuTabs, dayTabBehavior } from '@components/sidebar/sidebarItems';
 import TodoFormDialog from '@components/todo/form/TodoFormDialog';
 import { TodoActionsContext } from '@components/todo/TodoActionsContext';
 import type { TodoFormTarget } from '@components/todo/hooks/useTodoForm';
@@ -40,6 +40,7 @@ import {
   selectViewDate,
   selectViewMode,
   setCategoryFilter,
+  setMobileDayTab,
   setViewMode,
 } from '@store/slices/calendarSlice';
 import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
@@ -125,7 +126,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const notifyError = useErrorNotice();
   /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  /** 모바일 ≡ 메뉴 (MO-02, 지금은 계정 항목만 — US-34) */
+  /** 모바일 ≡ 메뉴 (MO-02, US-28) */
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
   // 모바일 '설정 및 계정' 전체 화면 (D-109) — ≡ 메뉴와 동시에 열지 않는다
@@ -235,6 +236,24 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     Object.entries(dayTabSlots).map(([key, slot]) => [key, slot.render({ date: viewDate, addRequestKey: tabAddRequest, openSchedule })])
   );
 
+  /** ≡ 메뉴: 기능 항목은 일간 탭과 같은 순서·켜짐 (US-28) */
+  const menuTabs = useMemo(() => buildMobileMenuTabs(undefined, new Set(Object.keys(dayTabSlots) as SidebarItemType[])), [dayTabSlots]);
+  /** ≡ 메뉴 > Todo·D-Day·일기·메모 → 오늘 날짜 일간의 그 탭 (D-049). 쓰던 일기가 있으면 먼저 확인 */
+  const openTabFromMenu = (key: SidebarItemType) => {
+    setMobileMenuOpen(false);
+    guard(() => {
+      setSheetDate(null);
+      closeQuickAdd();
+      dispatch(openDayView(toLocalDate(new Date())));
+      dispatch(setMobileDayTab(key));
+    });
+  };
+  /** ≡ 메뉴 > 카테고리 → 카테고리 관리 (모바일은 전체 화면, MO-21) */
+  const openCategoriesFromMenu = () => {
+    setMobileMenuOpen(false);
+    setIsCategoryManagerOpen(true);
+  };
+
   const openDayPlan = (date: LocalDate) => {
     setSheetDate(null);
     dispatch(openDayView(date));
@@ -316,7 +335,15 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         onClickMenu={() => setMobileMenuOpen(true)}
         onClickSettings={() => setSettingsOpen(true)}
       />
-      {!isTabletUp && mobileMenuOpen && <MobileMenu onClose={closeMobileMenu} onOpenSettings={openSettingsFromMenu} />}
+      {!isTabletUp && mobileMenuOpen && (
+        <MobileMenu
+          items={menuTabs}
+          onOpenTab={openTabFromMenu}
+          onOpenCategories={openCategoriesFromMenu}
+          onOpenSettings={openSettingsFromMenu}
+          onClose={closeMobileMenu}
+        />
+      )}
       {!isTabletUp && settingsOpen && <SettingsAccountScreen onClose={closeSettings} />}
 
       <div className="relative flex min-h-0 flex-1">

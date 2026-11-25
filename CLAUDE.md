@@ -65,7 +65,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 - Node: `.nvmrc` = 26.13.1 (D-119 보안 패치, 2026-11-26~; Node 22도 동작). Run `nvm use` first (`nvm install` if missing) — `/usr/local/bin/node` is 14 and `scripts/checkNode.mjs` stops dev/build on it (#343)
 - `npm run dev` (test env) / `npm run dev:local` — http://localhost:3000
-- `npm test` (Vitest, once) / `npm run test:watch` — run with lint before every commit
+- `npm test` (Vitest, once; testTimeout 15s because AppShell tests slow down when all files run together) / `npm run test:watch` — run with lint before every commit
 - `npm run lint` (= `eslint .`, flat config `eslint.config.mjs`; Next 16 has no `next lint`), `npx tsc --noEmit`, `npm run build`
   (Turbopack, type check) — run before committing. `next build` no longer lints.
 - Install with `npm ci` (lockfile). `test/security/supplyChain.test.ts` fails if next < 16.4.5 (D-119) or eslint-config-next ≠ next, .nvmrc < 26.13.1, react ≠ 19.2.x, or the lockfile
@@ -136,6 +136,9 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   (pen dates for the visible range, `diaryChanged` bumps `revision` → entries refetch). Month pen: `calendar/hooks/useDiaryMarks`.
   Leaving an in-screen draft (mobile diary tab) goes through `components/dialog/LeaveGuard` (`guard(action)` on date move / today /
   view / tab change in AppShell·CalendarDaily, `useGuardWhileDirty`). Demo backend answers ddays/diaries with empty lists, single diary 404.
+- **Mobile ≡ menu (US-28, MO-02)**: `components/auth/account/MobileMenu` — Todo·D-Day·일기·메모 (`buildMobileMenuTabs`, same order/enabled
+  as the day tabs) → today's day view on that tab (AppShell `openTabFromMenu`, through `guard`), 카테고리 → `CategoryManagerDialog`
+  (full screen on mobile, MO-21), [설정 및 계정] → `SettingsAccountScreen`. Focus goes to '<' on open and back to ≡ on close.
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).
 - **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
   `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)

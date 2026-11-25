@@ -46,6 +46,22 @@ export const buildMobileDayTabs = (
     })),
 ];
 
+export interface MobileMenuTab {
+  key: SidebarItemType;
+  label: string;
+  enabled: boolean;
+}
+
+/**
+ * 모바일 ≡ 메뉴의 기능 항목 (US-28, D-021·049): 일간 탭과 같은 순서·같은 켜짐, 시간표만 뺀다.
+ * 사이드바에서 끈 항목 숨기기도 일간 탭과 같이 따라간다 (US-21)
+ */
+export const buildMobileMenuTabs = (
+  sidebarItems: SidebarItem[] = DEFAULT_SIDEBAR_ITEMS,
+  enabledTypes: ReadonlySet<SidebarItemType> = new Set()
+): MobileMenuTab[] =>
+  buildMobileDayTabs(sidebarItems, enabledTypes).flatMap((tab) => (tab.key === 'TIMETABLE' ? [] : [{ ...tab, key: tab.key }]));
+
 /** 모바일 일간 탭별 동작 (D-049) */
 export interface DayTabBehavior {
   /** 좌우로 밀어 날짜 이동 */
