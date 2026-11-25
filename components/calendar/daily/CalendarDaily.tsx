@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, type ReactNode } from 'react';
 
-import type { Schedule, Todo } from '@/types/api';
+import type { Id, Schedule, Todo } from '@/types/api';
 import type { MobileDayTabKey, SidebarItemType } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
@@ -20,6 +20,7 @@ import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
 import TimetableTodoBlock from '../common/TimetableTodoBlock';
 import { useRevealDraft, useTimetableQuickAdd, type TimetableSlot } from '../hooks/useQuickAddSlot';
+import { useDdayMarks } from '../hooks/useDdayMarks';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableTodos } from '../hooks/useTimetableTodos';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
@@ -41,6 +42,8 @@ interface CalendarDailyProps {
   onOpenTodo?: (todo: Todo) => void;
   /** 빈 시간을 누름 → 빠른 추가 (US-10) */
   onAddAt?: (slot: TimetableSlot) => void;
+  /** 종일 줄 맨 위 D-Day 칩을 누름 → 그 D-Day 수정 창 (US-23) */
+  onOpenDday?: (ddayId: Id) => void;
   /** 빠른 추가 중 임시 블록 (D-017) */
   draft?: TimetableDraft | null;
   /** 임시 블록 손잡이·몸통을 끌어 시간을 바꿀 때 (D-053) */
@@ -72,9 +75,9 @@ const SIZE = {
  * - 모바일 탭: 시간표 + 사이드바 항목(설정 순서, 끈 것 숨김), 좁으면 좌우 스크롤 (D-049)
  * - 세로 위치는 주간과 같은 규칙: 시간표끼리 바꾸면 보던 시간 유지, 월간에서 오면 처음 위치 (useTimetableScroll)
  * - 빈 시간을 누르면 빠른 추가 + 점선 임시 블록 (US-10, D-017)
- * - 시간 지정 Todo 블록(US-15)은 일정과 같이 칸을 나눈다. 시간 없는 Todo 안내(US-18)는 timetableNotice로 받는다. D-Day(US-23)는 그 스토리에서
+ * - 시간 지정 Todo 블록(US-15)은 일정과 같이 칸을 나눈다. 시간 없는 Todo 안내(US-18)는 timetableNotice로 받는다. D-Day(US-23)는 종일 줄 맨 위 칩
  */
-export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, draft, onDraftChange, coverBottom = 0, tabContent, timetableNotice }: CalendarDailyProps) {
+export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, onOpenDday, draft, onDraftChange, coverBottom = 0, tabContent, timetableNotice }: CalendarDailyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const categoriesById = useAppSelector(selectCategoriesById);
@@ -95,6 +98,7 @@ export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
   const todos = useTimetableTodos(range);
+  const ddayChips = useDdayMarks(range);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { handleScroll } = useTimetableScroll({
@@ -170,6 +174,8 @@ export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO
           paddingRight={scrollbarWidth}
           minHeight={isMobile ? 26 : 32}
           onOpen={onOpenSchedule}
+          ddayChips={ddayChips}
+          onOpenDday={onOpenDday}
         />
 
         {/* 시간표 */}

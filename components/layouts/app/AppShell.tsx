@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 
-import type { LocalDate, Schedule, Todo } from '@/types/api';
+import type { Dday, Id, LocalDate, Schedule, Todo } from '@/types/api';
 import type { CalendarViewMode } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
@@ -14,6 +14,9 @@ import CalendarWeekly from '@components/calendar/weekly/CalendarWeekly';
 import CategoryManagerDialog from '@components/category/CategoryManagerDialog';
 import CategoryFilterDropdown from '@components/category/filter/CategoryFilterDropdown';
 import CategoryFilterSheet from '@components/category/filter/CategoryFilterSheet';
+import { DdayActionsContext } from '@components/dday/DdayActionsContext';
+import DdayFormDialog from '@components/dday/form/DdayFormDialog';
+import type { DdayFormTarget } from '@components/dday/hooks/useDdayForm';
 import ClientOnly from '@components/common/ClientOnly';
 import ScheduleFormDialog from '@components/schedule/form/ScheduleFormDialog';
 import { dayTabBehavior } from '@components/sidebar/sidebarItems';
@@ -37,10 +40,13 @@ import {
   setViewMode,
 } from '@store/slices/calendarSlice';
 import { selectCategories, selectCategoriesById } from '@store/slices/categorySlice';
+import { refreshDdays, selectDdaysById } from '@store/slices/ddaySlice';
 import { refreshSchedules, selectSchedules } from '@store/slices/scheduleSlice';
 import { refreshTodos } from '@store/slices/todoSlice';
 
+import { ddayApi } from '@utils/api';
 import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
+import { useErrorNotice } from '@utils/hooks/useErrorNotice';
 import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
 import { useSwipe } from '@utils/hooks/useSwipe';
 
@@ -103,6 +109,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const [scheduleFormTarget, setScheduleFormTarget] = useState<ScheduleFormTarget | null>(null);
   /** 열려 있는 Todo 입력 창 (US-12). 수정은 Todo 박스(US-13)에서 연다 */
   const [todoFormTarget, setTodoFormTarget] = useState<TodoFormTarget | null>(null);
+  /** 열려 있는 D-Day 입력 창 (US-22). 목록 행·달력 칩·추가 메뉴에서 연다 */
+  const [ddayFormTarget, setDdayFormTarget] = useState<DdayFormTarget | null>(null);
+  const ddaysById = useAppSelector(selectDdaysById);
+  const notifyError = useErrorNotice();
   /** 카테고리 관리 창 (필터 드롭다운·시트에서 연다, D-016) */
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   /** 모바일 ≡ 메뉴 (MO-02, 지금은 계정 항목만 — US-34) */
@@ -124,6 +134,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const handleSelectAdd = (target: AddTarget) => {
     if (target === 'SCHEDULE') setScheduleFormTarget({ mode: 'create', baseDate: selectedDate });
     if (target === 'TODO') setTodoFormTarget({ mode: 'create', baseDate: selectedDate });
+    if (target === 'DDAY') setDdayFormTarget({ mode: 'create', baseDate: selectedDate });
   };
   const openSchedule = (schedule: Schedule) => setScheduleFormTarget({ mode: 'edit', schedule });
   const closeScheduleForm = (changed: boolean) => {
@@ -143,6 +154,31 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     }),
     []
   );
+  /** D-Day 목록이 부탁하는 일: 새 D-Day(기준 날짜 = 사이드바 기준 날짜) · 수정 (US-22) */
+  const ddayActions = useMemo(
+    () => ({
+      openNewDday: () => setDdayFormTarget({ mode: 'create', baseDate: selectedDate }),
+      openDday: (dday: Dday) => setDdayFormTarget({ mode: 'edit', dday }),
+    }),
+    [selectedDate]
+  );
+  /** 달력 칩 → 그 D-Day 수정. 목록에 아직 없으면 한 개만 받아 온다 (US-23) */
+  const openDdayById = (id: Id) => {
+    const known = ddaysById.get(id);
+    if (known) {
+      ddayActions.openDday(known);
+      return;
+    }
+    ddayApi
+      .getById(id)
+      .then(ddayActions.openDday)
+      .catch(notifyError);
+  };
+  /** D-Day 저장·삭제 뒤: 창을 닫고 목록과 달력 표시를 다시 받는다 (06 달력 표시) */
+  const closeDdayForm = () => {
+    setDdayFormTarget(null);
+    void dispatch(refreshDdays());
+  };
   const saveQuickAdd = (schedule: Schedule) => {
     hiddenSave.notify(schedule);
     closeQuickAdd();
@@ -209,6 +245,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const timetableProps = {
     onOpenSchedule: openSchedule,
     onOpenTodo: todoActions.openTodo,
+    onOpenDday: openDdayById,
     onAddAt: quickAdd.addAt,
     draft: quickAdd.draft,
     onDraftChange: quickAdd.changeDraftRange,
@@ -220,6 +257,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
       <CalendarMonthly
         variant={isTabletUp ? 'bars' : 'dots'}
         onOpenSchedule={openSchedule}
+        onOpenDday={openDdayById}
         onTapDate={(date) => {
           if (!isFoldUp) setSheetDate(date);
         }}
@@ -237,6 +275,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
 
   return (
     <TodoActionsContext.Provider value={todoActions}>
+    <DdayActionsContext.Provider value={ddayActions}>
     <div className="flex h-dvh flex-col overflow-hidden bg-tp-bg text-tp-text">
       {topBanner}
       <PcHeader
@@ -369,6 +408,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         />
       )}
 
+      {ddayFormTarget && (
+        <DdayFormDialog target={ddayFormTarget} onClose={() => setDdayFormTarget(null)} onSaved={closeDdayForm} onDeleted={closeDdayForm} />
+      )}
+
       {scheduleFormTarget && (
         <ScheduleFormDialog
           target={scheduleFormTarget}
@@ -383,6 +426,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         />
       )}
     </div>
+    </DdayActionsContext.Provider>
     </TodoActionsContext.Provider>
   );
 }

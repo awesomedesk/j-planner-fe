@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from 'react';
 
-import type { LocalDate, Schedule, Todo } from '@/types/api';
+import type { Id, LocalDate, Schedule, Todo } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
@@ -18,6 +18,7 @@ import NowLine from '../common/NowLine';
 import TimetableBlock from '../common/TimetableBlock';
 import TimetableTodoBlock from '../common/TimetableTodoBlock';
 import { useRevealDraft, useTimetableQuickAdd, type TimetableSlot } from '../hooks/useQuickAddSlot';
+import { useDdayMarks } from '../hooks/useDdayMarks';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useTimetableTodos } from '../hooks/useTimetableTodos';
 import { useTimetableScroll } from '../hooks/useTimetableScroll';
@@ -41,6 +42,8 @@ interface CalendarWeeklyProps {
   onOpenTodo?: (todo: Todo) => void;
   /** 빈 시간을 누름 → 빠른 추가 (US-10) */
   onAddAt?: (slot: TimetableSlot) => void;
+  /** 종일 줄 맨 위 D-Day 칩을 누름 → 그 D-Day 수정 창 (US-23) */
+  onOpenDday?: (ddayId: Id) => void;
   /** 빠른 추가 중 임시 블록 (D-017) */
   draft?: TimetableDraft | null;
   /** 임시 블록 손잡이·몸통을 끌어 시간을 바꿀 때 (D-053) */
@@ -65,9 +68,9 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
  * - 겹치는 일정은 나란히, 시각 있는 여러 날 일정은 날마다 나눠서 (D-045)
  * - 날짜 머리글: 한 번 누르면 그날 선택, 두 번 누르면 일간 (월간과 같게, D-015·D-041)
  * - 빈 시간을 누르면 빠른 추가 + 그날 칸에 점선 임시 블록 (US-10, D-017 · D-021)
- * - 시간 지정 Todo 블록(US-15): 일정과 같이 칸을 나누고, 체크박스로 바로 완료 · 제목은 Todo 수정 창. D-Day(US-23)는 그 스토리에서
+ * - 시간 지정 Todo 블록(US-15): 일정과 같이 칸을 나누고, 체크박스로 바로 완료 · 제목은 Todo 수정 창. D-Day(US-23)는 종일 줄 맨 위 칩
  */
-export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
+export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, onOpenDday, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -86,6 +89,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = N
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
   const todos = useTimetableTodos(range);
+  const ddayChips = useDdayMarks(range);
 
   const nowMinutes = nowLineMinutes(now, hours);
 
@@ -171,6 +175,8 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = N
         paddingRight={scrollbarWidth}
         minHeight={isMobile ? 24 : 32}
         onOpen={onOpenSchedule}
+        ddayChips={ddayChips}
+        onOpenDday={onOpenDday}
       />
 
       {/* 시간표 */}

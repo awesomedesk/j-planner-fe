@@ -11,7 +11,7 @@ import { useNow } from '@utils/hooks/useNow';
 import EmptyMemoMessage from './EmptyMemoMessage';
 import { useMemos } from './hooks/useMemos';
 import MemoEditor from './mobile/MemoEditor';
-import SwipeDeleteItem from './mobile/SwipeDeleteItem';
+import SwipeDeleteItem from '@components/common/SwipeDeleteItem';
 import { formatMemoDate, getMemoHeading, getMemoPreview } from './utils/memoUtils';
 
 interface MemoTabProps {

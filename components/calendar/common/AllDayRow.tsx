@@ -10,8 +10,11 @@ import { formatDayTitle } from '@utils/date/dateUtils';
 import { multiDayProgress } from '../utils/calendarUtils';
 import { allDaySchedulesOn, layoutAllDayRow } from '../utils/timetableUtils';
 
+import type { DdayChipItem } from '../utils/ddayMarkUtils';
+
 import AllDayChip from './AllDayChip';
 import DayListPopover from './DayListPopover';
+import DdayMarkChip from './DdayMarkChip';
 
 interface AllDayRowProps {
   /** 보이는 날짜들 (주간 7일, 일간 하루) */
@@ -29,12 +32,16 @@ interface AllDayRowProps {
   paddingRight?: number;
   minHeight: number;
   onOpen: (schedule: Schedule) => void;
+  /** 날짜별 D-Day 칩 (US-23). 있으면 종일 영역 맨 위 한 줄에 그날 칩을 모두 */
+  ddayChips?: Map<LocalDate, DdayChipItem[]>;
+  onOpenDday?: (ddayId: Id) => void;
 }
 
 /**
  * AllDayRow - 주간·일간 맨 위 종일 줄 (PC-02 ⑤, US-08, D-052)
  * - 여러 날 종일 일정은 이어진 막대 하나 (주를 넘으면 다음 주에서 이어서 시작)
  * - 3줄까지 막대, 넘으면 그날 칸 아래 '+n' → 누르면 그날 종일 일정 목록
+ * - D-Day 칩(US-23)은 맨 위 줄에 날짜마다 (06 달력 표시: 종일 영역 맨 위). 좁은 칸은 라벨만
  * 격자: 1열 = '종일' 글자, 2열부터 날짜 칸. 막대는 grid-column으로 걸친 칸만큼 늘린다
  */
 export default function AllDayRow({
@@ -48,6 +55,8 @@ export default function AllDayRow({
   paddingRight = 0,
   minHeight,
   onOpen,
+  ddayChips,
+  onOpenDday,
 }: AllDayRowProps) {
   const [openDate, setOpenDate] = useState<LocalDate | null>(null);
   /** 일간(하루)에서는 여러 날 일정에 '(2/3일)'. 주간 이어진 막대에는 붙이지 않는다 (D-052 보완) */
@@ -57,7 +66,10 @@ export default function AllDayRow({
     return progress ? `(${progress.nth}/${progress.total}일)` : undefined;
   };
   const { bars, hidden, laneCount } = layoutAllDayRow(schedules, dates);
-  const rowCount = Math.max(laneCount, 1) + (hidden.some(Boolean) ? 1 : 0);
+  const chipsOf = (date: LocalDate) => ddayChips?.get(date) ?? [];
+  /** D-Day 줄이 있으면 막대 줄은 한 칸 아래부터 */
+  const ddayRows = dates.some((date) => chipsOf(date).length > 0) ? 1 : 0;
+  const rowCount = ddayRows + Math.max(laneCount, 1) + (hidden.some(Boolean) ? 1 : 0);
   const style: CSSProperties = {
     gridTemplateColumns: `${labelWidth}px repeat(${dates.length}, minmax(0, 1fr))`,
     gridTemplateRows: `repeat(${rowCount}, auto)`,
@@ -79,6 +91,16 @@ export default function AllDayRow({
           style={{ gridColumn: index + 2, gridRow: '1 / -1' }}
         />
       ))}
+      {ddayRows > 0 &&
+        dates.map((date, index) =>
+          chipsOf(date).length > 0 ? (
+            <div key={`dday-${date}`} className="flex min-w-0 flex-col gap-px" style={{ gridColumn: index + 2, gridRow: 1, margin: compact ? '1px' : '2px' }}>
+              {chipsOf(date).map((chip) => (
+                <DdayMarkChip key={chip.key} chip={chip} compact={compact} onOpen={onOpenDday} />
+              ))}
+            </div>
+          ) : null
+        )}
       {bars.map((bar) => (
         <AllDayChip
           key={bar.schedule.id}
@@ -91,7 +113,7 @@ export default function AllDayRow({
           onOpen={onOpen}
           style={{
             gridColumn: `${bar.startCol + 2} / span ${bar.span}`,
-            gridRow: bar.lane + 1,
+            gridRow: ddayRows + bar.lane + 1,
             margin: compact ? '1px' : '2px',
           }}
         />

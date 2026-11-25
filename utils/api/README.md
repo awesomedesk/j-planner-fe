@@ -97,7 +97,7 @@ const saved = await scheduleApi.update(1, { color: null }); // 바뀐 필드만
 | `scheduleApi.ts` | `/schedules` |
 | `todoApi.ts` | `/todos` (조회 조건은 date / from·to / completedOn 중 하나만) |
 
-나머지(ddays, dday-marks, diaries, memos, settings)는 그 화면을 만들 때 추가한다.
+나머지(diaries, settings)는 그 화면을 만들 때 추가한다.
 
 ## 타입 생성
 

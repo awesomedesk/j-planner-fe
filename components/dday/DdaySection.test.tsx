@@ -82,11 +82,11 @@ describe('PC 사이드바 D-Day 섹션 (US-22, OV-03 · D-029)', () => {
     await user.click(screen.getByRole('button', { name: '기말 시험 아래로' }));
     expect(rowTexts()[0]).toContain('만난 날');
     expect(rowTexts()[1]).toContain('기말 시험');
-    expect(api.calls('PUT /ddays/:id/position')[0]).toMatchObject({ path: '/ddays/1', body: { afterId: 2 } });
+    expect(api.calls('PUT /ddays/:id/position')[0]).toMatchObject({ path: '/ddays/1/position', body: { afterId: 2 } });
     expect(screen.getByRole('button', { name: '기말 시험 아래로' })).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: '오늘 마감 위로' }));
-    expect(api.calls('PUT /ddays/:id/position')[1]).toMatchObject({ path: '/ddays/3', body: { afterId: 2 } });
+    expect(api.calls('PUT /ddays/:id/position')[1]).toMatchObject({ path: '/ddays/3/position', body: { afterId: 2 } });
   });
 });
 

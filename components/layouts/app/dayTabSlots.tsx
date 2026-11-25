@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { LocalDate, Schedule } from '@/types/api';
 import type { SidebarItemType } from '@/types/calendar';
 import DayAgendaList from '@components/calendar/common/DayAgendaList';
+import DdayTab from '@components/dday/DdayTab';
 import MemoTab from '@components/memo/MemoTab';
 import TodoBox from '@components/todo/box/TodoBox';
 
@@ -33,6 +34,8 @@ const DAY_TAB_SLOTS: DayTabSlots = {
       </div>
     ),
   },
+  // D-Day 탭: 날짜와 상관없는 전체 목록 (MO-13, D-049). + 는 추가 메뉴 그대로
+  DDAY: { render: () => <DdayTab /> },
   MEMO: { render: ({ addRequestKey }) => <MemoTab newMemoRequestKey={addRequestKey} />, directAddLabel: '새 메모' },
 };
 

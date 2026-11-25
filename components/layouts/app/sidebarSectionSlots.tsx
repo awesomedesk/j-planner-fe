@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { SidebarItemType } from '@/types/calendar';
+import DdaySection from '@components/dday/DdaySection';
 import MemoSection from '@components/memo/MemoSection';
 import TodoSection from '@components/todo/box/TodoSection';
 
@@ -14,5 +15,6 @@ export type SidebarSectionSlot = (props: { header: (actions?: ReactNode) => Reac
 /** 기능을 만들 때 여기에 한 줄씩 꽂는다 (Todo M2, D-Day·일기·메모 M3) */
 export const SIDEBAR_SECTION_SLOTS: Partial<Record<SidebarItemType, SidebarSectionSlot>> = {
   TODO: ({ header }) => <TodoSection header={header} />,
+  DDAY: ({ header }) => <DdaySection header={header} />,
   MEMO: ({ header }) => <MemoSection header={header} />,
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useRef, useState, type HTMLAttributes, type ReactNode, type TouchEvent } from 'react';
 
 import { SWIPE_MIN_DISTANCE } from '@utils/hooks/useSwipe';
 
@@ -16,13 +16,16 @@ interface SwipeDeleteItemProps {
   isDeleting?: boolean;
   /** 카드 (밀린 상태에서 누르면 원래 자리로) */
   children: (props: { isRevealed: boolean; close: () => void }) => ReactNode;
+  /** 줄(li)에 더 붙일 속성 — 예: 길게 눌러 끌기(useDragReorder rowProps) */
+  itemProps?: HTMLAttributes<HTMLLIElement> & Record<`data-${string}`, unknown>;
 }
 
 /**
- * SwipeDeleteItem - 왼쪽으로 밀면 오른쪽에 '삭제' 버튼이 드러나는 목록 줄 (MO-14, D-030 · D-055)
+ * SwipeDeleteItem - 왼쪽으로 밀면 오른쪽에 '삭제' 버튼이 드러나는 목록 줄 (메모 MO-14 · D-Day MO-13, D-030 · D-055)
  * 오른쪽으로 밀면 다시 들어간다. 날짜 넘기기 스와이프와 겹치지 않게 data-swipe-ignore.
+ * 삭제 버튼을 누른 뒤의 동작(바로 삭제 / 확인 창)은 쓰는 쪽이 정한다
  */
-export default function SwipeDeleteItem({ onDelete, deleteLabel, isDeleting = false, children }: SwipeDeleteItemProps) {
+export default function SwipeDeleteItem({ onDelete, deleteLabel, isDeleting = false, children, itemProps }: SwipeDeleteItemProps) {
   const start = useRef<{ x: number; y: number } | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -44,6 +47,7 @@ export default function SwipeDeleteItem({ onDelete, deleteLabel, isDeleting = fa
 
   return (
     <li
+      {...itemProps}
       data-swipe-ignore
       className="relative overflow-hidden rounded-xl"
       onTouchStart={handleTouchStart}

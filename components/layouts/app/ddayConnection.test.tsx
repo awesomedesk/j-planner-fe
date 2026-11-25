@@ -42,7 +42,7 @@ const setup = async (width: number) => {
   });
   const store = makeStore();
   await store.dispatch(fetchCategories());
-  return { api, store, ...renderWithStore(<AppShell />, { store }) };
+  return { api, ...renderWithStore(<AppShell />, { store }) };
 };
 
 describe('D-Day 연결 지점 (US-22·23)', () => {

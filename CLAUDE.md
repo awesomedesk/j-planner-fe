@@ -89,7 +89,7 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   types in `types/api/index.ts` (never edit `schema.d.ts`). Show failures with `useErrorNotice()` (`utils/hooks`) → `noticeSlice` → `NoticeCenter`.
 - **Redux** (`utils/store/store.ts`): `theme`, `notice`, `category` (`selectCategoriesById` for id lookups), `calendar` (viewMode · viewDate ·
   selectedDate · timetableTopMinutes), `schedule` (visible-range schedules; late responses for an old range are ignored; `refreshSchedules()` after
-  save/delete). Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
+  save/delete), `dday` (list + visible-range `/dday-marks`; `refreshDdays()` after save/delete, `moveDday`). Use `useAppSelector` / `useAppDispatch` from `app/hooks.ts` and the slice selectors.
 - **Login (US-34, D-072)**: same origin — `next.config.mjs` rewrites `/api/**` → BE, no CORS. `utils/api/client.ts` sends `X-XSRF-TOKEN`
   (cookie `__Host-XSRF-TOKEN`, `utils/api/csrf.ts`) on every non-GET, refetches `GET /auth/csrf` and retries once on 403 `CSRF_INVALID`,
   and on 401 asks the handler set by `components/auth/RequireLogin` (`setUnauthenticatedHandler`; true = retry once). `RequireLogin`
@@ -124,6 +124,12 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
     (form opens with '시간 지정' on, counts as dirty).
   - `utils/calendarUtils.ts` (month grid, which days a schedule shows on, `blockBackground`/`stripeColorOf`, `weekdayTextClass`),
     `utils/timetableUtils.ts` (week range, block layout/overlap columns, initial scroll target, line clamp).
+- **D-Day (US-22·23, D-118 no design)**: `components/dday/` — `form/DdayFormDialog` + `hooks/useDdayForm` + `utils/ddayFormUtils`
+  (count-type defaults D-020, edit switch keeps interval, update sends other type's options off), `DdayList` (sidebar rows / mobile
+  cards, drag + [위로]·[아래로], swipe delete → `DdayDeleteConfirm`), `DdaySection` / `DdayTab` (slots), `DdayActionsContext` (AppShell
+  opens the form). Calendar chips: `calendar/hooks/useDdayMarks(range)` → `common/DdayMarkChip` (month cell top, counted in '+n';
+  week/day `AllDayRow` top row; mobile month = first label only). Server `label` only, no date math (D-043).
+  Shared swipe row: `components/common/SwipeDeleteItem` (`itemProps` for drag).
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).
 - **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
   `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)
