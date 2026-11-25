@@ -59,7 +59,7 @@ describe('PC·태블릿 ⚙ 설정 및 계정 (D-109, #366 · US-34 D-072)', () 
     expect(within(menu).getByText('qa@example.com')).toBeInTheDocument();
     expect(within(menu).getByRole('link', { name: '내 계정' })).toHaveAttribute('href', '/me');
     const order = ['내 계정', '달력 설정', '로그아웃', '모든 기기에서 로그아웃', '이용약관', '개인정보처리방침', '문의'];
-    const names = Array.from(menu.querySelectorAll('button, a')).map((el) => el.textContent?.trim());
+    const names = Array.from(menu.querySelectorAll('button, a')).map((el) => el.textContent?.replace('›', '').trim()); // › 는 꾸밈(aria-hidden)
     expect(names.filter((n) => order.includes(n ?? ''))).toEqual(order);
     expect(within(menu).getByRole('heading', { name: '계정' })).toBeInTheDocument();
     expect(within(menu).getByRole('heading', { name: '달력 설정' })).toBeInTheDocument();

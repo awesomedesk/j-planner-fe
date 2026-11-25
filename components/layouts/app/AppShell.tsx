@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { Dday, Id, LocalDate, Schedule, Todo } from '@/types/api';
 import type { CalendarViewMode, SidebarItemType } from '@/types/calendar';
@@ -60,6 +60,7 @@ import MobileAddMenu from './MobileAddMenu';
 import AccountMenuButton from '@components/auth/account/AccountMenuButton';
 import MobileMenu from '@components/auth/account/MobileMenu';
 import SettingsAccountScreen from '@components/auth/account/SettingsAccountScreen';
+import { focusAccountEntry, peekAccountReturn, takeAccountReturn, type AccountEntry } from '@components/auth/account/accountReturnFocus';
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
@@ -130,12 +131,22 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
   // 모바일 '설정 및 계정' 전체 화면 (D-109) — ≡ 메뉴와 동시에 열지 않는다
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  /** 열려 있으면 연 버튼(⚙ / ≡), 닫혀 있으면 null */
+  const [settingsEntry, setSettingsEntry] = useState<AccountEntry | null>(null);
+  const closeSettings = useCallback(() => setSettingsEntry(null), []);
   const openSettingsFromMenu = useCallback(() => {
     setMobileMenuOpen(false);
-    setSettingsOpen(true);
+    setSettingsEntry('menu');
   }, []);
+  /**
+   * 내 계정(/me)에서 앱 안 이동으로 돌아오면 들어갔던 버튼에 한 번 초점 (D-117).
+   * ≡로 들어갔는데 넓은 폭이라 ≡가 없으면 헤더 ⚙로. 버튼이 아직 없으면 다음 폭 판단 때 다시 본다
+   */
+  useEffect(() => {
+    const entry = peekAccountReturn();
+    if (!entry) return;
+    if (focusAccountEntry(entry === 'menu' && isTabletUp ? 'gear' : entry)) takeAccountReturn();
+  }, [isTabletUp]);
   /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
   const quickAdd = useQuickAddState();
   /** 필터에서 빠진 카테고리로 저장했을 때 알려 주기 (D-056) */
@@ -333,7 +344,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         onMoveDay={tabBehavior.dateNav === 'arrows' ? move : undefined}
         categoryFilter={!isTabletUp && tabBehavior.categoryFilter && <CategoryFilterSheet {...categoryFilterProps} />}
         onClickMenu={() => setMobileMenuOpen(true)}
-        onClickSettings={() => setSettingsOpen(true)}
+        onClickSettings={() => setSettingsEntry('gear')}
       />
       {!isTabletUp && mobileMenuOpen && (
         <MobileMenu
@@ -344,7 +355,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
           onClose={closeMobileMenu}
         />
       )}
-      {!isTabletUp && settingsOpen && <SettingsAccountScreen onClose={closeSettings} />}
+      {!isTabletUp && settingsEntry && <SettingsAccountScreen entry={settingsEntry} onClose={closeSettings} />}
 
       <div className="relative flex min-h-0 flex-1">
         <main

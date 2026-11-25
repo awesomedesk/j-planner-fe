@@ -96,7 +96,10 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   wraps app pages: `checkSession` (store `auth`) → not signed in → `/login?next=` (`utils/auth/nextPath` `safeNextPath` = same-site only).
   GET 401 → `/login?next=`; save 401 → `ReloginDialog` over the open form (same account → new CSRF + same request again, other account
   → reload page, cancel/Esc → that save fails). `/login` = `LoginPage` + shared `LoginForm` (429 wait lock). Page moves use
-  `utils/navigation` `goTo` (location.replace, mocked in tests). Account menu: `components/auth/account/` (PC header button, mobile ≡ menu bottom).
+  `utils/navigation` `goTo` (location.replace, mocked in tests). Account menu (D-109·117, #382 approved 803ad5e): `components/auth/account/` — PC ⚙ `AccountMenuButton` is a modal
+  (close × first focus, `utils/hooks/useFocusTrap` Tab last↔first, transparent backdrop closes, focus back to ⚙); mobile
+  `SettingsAccountScreen` (× right, same trap) from header ⚙ or ≡. [내 계정] is a `next/link` (store survives) and
+  `accountReturnFocus` remembers the entry (`data-account-entry="gear"|"menu"`); AppShell focuses it once on return.
 - **App start** (`app/layout.tsx`): `ServerStatusCheck` (GET /api/v1/health) and `AppDataLoader` (categories).
 - **Dependency direction**: `types/`, `utils/` (date, theme, api, store, hooks) never import from `components/`. Features may import `utils/`,
   the store and shared modules (`components/sidebar`, `components/dialog`, …), but not another feature's screens or `layouts/`.

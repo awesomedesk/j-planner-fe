@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 
 /**
  * ThemeButton - 테마색 버튼 (D-022: 흰색 버튼 없음)
@@ -15,6 +15,8 @@ interface ThemeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ThemeButtonSize;
   /** 아이콘만 있는 정사각 버튼. aria-label을 꼭 준다 */
   iconOnly?: boolean;
+  /** React 19: ref는 보통 prop으로 받아 button에 그대로 넘긴다 (초점 돌려주기 등) */
+  ref?: Ref<HTMLButtonElement>;
   children: ReactNode;
 }
 

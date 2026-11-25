@@ -44,7 +44,7 @@ export default function MobileHeader({
   return (
     <header aria-label="모바일 머리" className={`shrink-0 flex-col ${className}`}>
       <div className="flex h-[52px] items-center justify-between bg-tp-primary px-3 text-tp-on-primary">
-        <button type="button" aria-label="메뉴" onClick={onClickMenu} className="inline-flex h-11 w-11 items-center justify-center">
+        <button type="button" data-account-entry="menu" aria-label="메뉴" onClick={onClickMenu} className="inline-flex h-11 w-11 items-center justify-center">
           <Icon name="menu" size={20} />
         </button>
         <div className="flex items-center gap-1">
@@ -62,6 +62,7 @@ export default function MobileHeader({
         </div>
         <button
           type="button"
+          data-account-entry="gear"
           aria-label="설정 및 계정"
           aria-haspopup="dialog"
           onClick={onClickSettings}
