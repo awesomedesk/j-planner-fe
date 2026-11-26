@@ -28,8 +28,11 @@ interface CalendarState {
   mobileDayTab: MobileDayTabKey;
 }
 
-/** 보기별 날짜 이동 단위 (US-09, D-025) */
-const STEP_UNIT: Record<CalendarViewMode, DateStepUnit> = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
+/** 보기별 날짜 이동 단위 (US-09, D-025): 3일은 하루씩, 목록은 한 주씩 (US-29) */
+const STEP_UNIT: Record<CalendarViewMode, DateStepUnit> = { MONTH: 'month', WEEK: 'week', THREE_DAY: 'day', DAY: 'day', LIST: 'week' };
+
+/** 시간표가 없는 보기 — 들르면 보던 시간을 잊는다 (D-046) */
+const isTimetableless = (mode: CalendarViewMode) => mode === 'MONTH' || mode === 'LIST';
 
 /** store를 만들 때의 오늘로 시작한다 (테스트에서 시각을 고정할 수 있게 함수로) */
 const initialState = (): CalendarState => {
@@ -49,9 +52,9 @@ const calendarSlice = createSlice({
   name: 'calendar',
   initialState,
   reducers: {
-    /** 보기 전환: 고른 날짜가 들어 있는 달·주·날을 본다 (US-07) */
+    /** 보기 전환: 고른 날짜가 들어 있는 달·주·날을 본다 (US-07). 3일은 고른 날짜가 맨 왼쪽 (처음엔 오늘, D-025) */
     setViewMode(state, action: PayloadAction<CalendarViewMode>) {
-      if (state.viewMode === 'MONTH' || action.payload === 'MONTH') state.timetableTopMinutes = null;
+      if (isTimetableless(state.viewMode) || isTimetableless(action.payload)) state.timetableTopMinutes = null;
       if (action.payload !== 'DAY') state.mobileDayTab = 'TIMETABLE';
       state.viewMode = action.payload;
       state.viewDate = state.selectedDate;
@@ -61,14 +64,14 @@ const calendarSlice = createSlice({
     },
     /** 날짜를 두 번 눌렀을 때: 그날 일간으로 (D-015) */
     openDayView(state, action: PayloadAction<LocalDate>) {
-      if (state.viewMode === 'MONTH') state.timetableTopMinutes = null;
+      if (isTimetableless(state.viewMode)) state.timetableTopMinutes = null;
       state.mobileDayTab = 'TIMETABLE';
       state.selectedDate = action.payload;
       state.viewDate = action.payload;
       state.viewMode = 'DAY';
     },
     /**
-     * ‹ › · 스와이프: 보기 단위만큼 옮긴다 (월간 한 달, 주간 한 주, 일간 하루)
+     * ‹ › · 스와이프: 보기 단위만큼 옮긴다 (월간 한 달, 주간·목록 한 주, 3일·일간 하루)
      * 고른 날짜도 같이 옮겨서 사이드바가 따라가고, 다음 보기 전환이 옛 날짜로 돌아가지 않게 한다.
      * 시간표에서 보던 시간은 그대로 (D-046 ②)
      */

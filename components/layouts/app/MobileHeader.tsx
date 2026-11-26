@@ -125,21 +125,16 @@ function ViewModeSelect({ viewMode, onChange }: { viewMode: CalendarViewMode; on
         >
           {MOBILE_VIEW_OPTIONS.map((option) => {
             const isSelected = option.mode === viewMode;
-            const isDisabled = option.mode === null;
             return (
               <li
                 key={option.label}
                 role="option"
                 aria-selected={isSelected}
-                aria-disabled={isDisabled || undefined}
                 onClick={() => {
-                  if (!option.mode) return;
                   setIsOpen(false);
                   onChange(option.mode);
                 }}
-                className={`rounded-lg px-3 py-2 text-sm ${isSelected ? 'bg-tp-panel font-bold' : 'font-medium'} ${
-                  isDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer hover:bg-tp-panel'
-                }`}
+                className={`cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-tp-panel ${isSelected ? 'bg-tp-panel font-bold' : 'font-medium'}`}
               >
                 {option.label}
               </li>

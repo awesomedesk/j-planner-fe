@@ -59,7 +59,10 @@ describe('모바일 3일 보기 (US-29, D-025 · MO-20)', () => {
     expect(within(mobileHeader()).getByRole('button', { name: '화면 선택' })).toHaveTextContent('3일');
 
     const timetable = screen.getByLabelText('3일 시간표');
-    const columns = within(timetable).getAllByRole('group').map((group) => group.getAttribute('aria-label'));
+    const columns = within(timetable)
+      .getAllByRole('group')
+      .map((group) => group.getAttribute('aria-label'))
+      .filter((name) => name?.endsWith('시간표'));
     expect(columns).toEqual(['9월 25일 (금) 시간표', '9월 26일 (토) 시간표', '9월 27일 (일) 시간표']);
     expect(within(timetable).getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');
   });

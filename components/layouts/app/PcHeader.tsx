@@ -4,7 +4,7 @@ import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
 import type { ReactNode } from 'react';
 
-import type { CalendarViewMode } from '@/types/calendar';
+import type { CalendarViewMode, PcViewMode } from '@/types/calendar';
 
 import type { AddTarget } from './addMenuItems';
 import PcAddMenu from './PcAddMenu';
@@ -69,7 +69,7 @@ export default function PcHeader({
         {categoryFilter}
 
         <div role="group" aria-label="보기 전환" className="inline-flex gap-0.5 rounded-[10px] border border-tp-line bg-tp-panel p-[3px]">
-          {(Object.keys(VIEW_MODE_LABEL) as CalendarViewMode[]).map((mode) => {
+          {(Object.keys(VIEW_MODE_LABEL) as PcViewMode[]).map((mode) => {
             const isActive = mode === viewMode;
             return (
               <button

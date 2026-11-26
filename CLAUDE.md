@@ -110,7 +110,11 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   the store and shared modules (`components/sidebar`, `components/dialog`, …), but not another feature's screens or `layouts/`.
 - **Dates**: `utils/date/dateUtils.ts` — `toLocalDate`/`fromLocalDate`, week start, `formatMonthTitle` / `formatDayTitle` / `formatClock`.
   "Now" comes from `useNow()` (`utils/hooks`, refreshes every minute) so today/current-time line follow midnight. View-mode type: `types/calendar.ts`.
-- **Calendar** (`components/calendar/`): monthly (US-06), weekly (US-07), daily (US-08).
+- **Calendar** (`components/calendar/`): monthly (US-06), weekly (US-07), daily (US-08), mobile 3-day + list (US-29).
+  - View modes (`types/calendar.ts`): `MONTH | WEEK | THREE_DAY | DAY | LIST`; PC buttons only `PcViewMode` (월·주·일). 3일·목록 are mobile
+    views — at tablet+ AppShell shows them as WEEK (`displayedViewMode`, store keeps the mode). Swipe: 3일 one day, 목록 one week.
+    3일 = `CalendarWeekly span="threeDays"` (view date is the left column, `getThreeDayRange`); 목록 = `list/CalendarList` (week by
+    weekday, `common/AgendaRows` shared with the day Todo tab list, D-Day chips, day header → that day's 일간).
   - Month empty-cell double click (PC·tablet bars only, D-110 #367): `CalendarMonthly` `onAddAt` → same quick-add popover; default time
     `utils/monthQuickAdd` `monthQuickAddTimes` (next top of hour 1h, 23시대 = that day 23:00~23:59), dashed `month-quick-add-draft` marker
     (`monthDraftLabel`, '다음 날'), clicks inside buttons/links/popovers are ignored, no more month → day on double click.

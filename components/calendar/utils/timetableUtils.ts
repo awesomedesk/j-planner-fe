@@ -41,6 +41,18 @@ export const buildWeekDays = (anchor: LocalDate, weekStart: WeekStartDay, today:
   });
 };
 
+/** 모바일 3일 보기의 사흘: 기준 날짜가 맨 왼쪽 (US-29, D-025) */
+export const THREE_DAY_COUNT = 3;
+export const getThreeDayRange = (anchor: LocalDate): DateRange => ({ from: anchor, to: shiftDate(anchor, 'day', THREE_DAY_COUNT - 1) });
+
+/** 3일 보기 칸 */
+export const buildThreeDays = (anchor: LocalDate, today: LocalDate): CalendarDay[] =>
+  Array.from({ length: THREE_DAY_COUNT }, (_, i) => {
+    const date = shiftDate(anchor, 'day', i);
+    const day = fromLocalDate(date);
+    return { date, dayOfMonth: day.getDate(), weekday: day.getDay(), inMonth: true, isToday: date === today };
+  });
+
 /** 헤더 제목: `9월 20일 – 26일`, 달이 바뀌면 `9월 27일 – 10월 3일`, 해가 바뀌면 연도까지 */
 export const formatWeekTitle = ({ from, to }: DateRange) => {
   const start = fromLocalDate(from);

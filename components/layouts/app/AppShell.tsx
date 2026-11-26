@@ -7,6 +7,7 @@ import type { CalendarViewMode, SidebarItemType } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import DayScheduleList from '@components/calendar/common/DayScheduleList';
 import CalendarDaily from '@components/calendar/daily/CalendarDaily';
+import CalendarList from '@components/calendar/list/CalendarList';
 import UnscheduledTodoNotice from '@components/todo/unscheduled/UnscheduledTodoNotice';
 import DateSheet from '@components/calendar/mobile/DateSheet';
 import CalendarMonthly from '@components/calendar/monthly/CalendarMonthly';
@@ -55,7 +56,7 @@ import { BREAKPOINT, useMediaQuery } from '@utils/hooks/useMediaQuery';
 import { useSwipe } from '@utils/hooks/useSwipe';
 
 import type { AddTarget } from './addMenuItems';
-import { formatViewTitle } from './appLayoutUtils';
+import { displayedViewMode, formatViewTitle } from './appLayoutUtils';
 import MobileAddMenu from './MobileAddMenu';
 import AccountMenuButton from '@components/auth/account/AccountMenuButton';
 import MobileMenu from '@components/auth/account/MobileMenu';
@@ -296,8 +297,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     coverBottom: isTabletUp ? 0 : QUICK_ADD_SHEET_HEIGHT,
   };
 
+  /** 화면에 그릴 보기: 3일·목록은 모바일 보기라서 태블릿·PC 폭에서는 주간 (US-29) */
+  const shownViewMode = displayedViewMode(viewMode, isTabletUp);
   const mainContent =
-    viewMode === 'MONTH' ? (
+    shownViewMode === 'MONTH' ? (
       <CalendarMonthly
         variant={isTabletUp ? 'bars' : 'dots'}
         onOpenSchedule={openSchedule}
@@ -311,8 +314,14 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
           if (!isFoldUp) setSheetDate(date);
         }}
       />
-    ) : viewMode === 'WEEK' ? (
+    ) : shownViewMode === 'WEEK' ? (
       <CalendarWeekly variant={isTabletUp ? 'pc' : 'mobile'} {...timetableProps} />
+    ) : shownViewMode === 'THREE_DAY' ? (
+      // 모바일 3일 보기: 보는 날이 맨 왼쪽인 3칸 시간표 (US-29, MO-20 · D-025)
+      <CalendarWeekly variant="mobile" span="threeDays" {...timetableProps} />
+    ) : shownViewMode === 'LIST' ? (
+      // 모바일 목록 보기: 한 주를 요일별로 (US-29, MO-19 · D-022)
+      <CalendarList onOpenSchedule={openSchedule} onOpenDday={openDdayById} />
     ) : (
       <CalendarDaily
         variant={isTabletUp ? 'pc' : 'mobile'}
@@ -330,8 +339,8 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
       {topBanner}
       <PcHeader
         className="hidden tablet:flex"
-        title={formatViewTitle(viewMode, viewDate)}
-        viewMode={viewMode}
+        title={formatViewTitle(shownViewMode, viewDate)}
+        viewMode={shownViewMode}
         onChangeViewMode={changeViewMode}
         onMove={move}
         onToday={backToToday}

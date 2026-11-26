@@ -25,8 +25,10 @@ import { useTimetableScroll } from '../hooks/useTimetableScroll';
 import { weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import {
   DEFAULT_TIMETABLE_HOURS,
+  buildThreeDays,
   buildWeekDays,
   getHourLabels,
+  getThreeDayRange,
   getWeekRange,
   layoutDayBlocks,
   nowLineMinutes,
@@ -37,6 +39,8 @@ import {
 interface CalendarWeeklyProps {
   /** PC·태블릿(PC-02) / 모바일 7칸(MO-05) */
   variant: 'pc' | 'mobile';
+  /** 한 주 7칸(기본) / 모바일 3일 보기 3칸 — 보는 날이 맨 왼쪽 (US-29, MO-20 · D-025) */
+  span?: 'week' | 'threeDays';
   onOpenSchedule: (schedule: Schedule) => void;
   /** 시간표의 Todo 블록 제목을 누름 → Todo 수정 창 (US-15, US-12) */
   onOpenTodo?: (todo: Todo) => void;
@@ -68,9 +72,10 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
  * - 겹치는 일정은 나란히, 시각 있는 여러 날 일정은 날마다 나눠서 (D-045)
  * - 날짜 머리글: 한 번 누르면 그날 선택, 두 번 누르면 일간 (월간과 같게, D-015·D-041)
  * - 빈 시간을 누르면 빠른 추가 + 그날 칸에 점선 임시 블록 (US-10, D-017 · D-021)
+ * - 3일 보기(span='threeDays', MO-20): 보는 날부터 3칸. 블록·종일 줄·빠른 추가·D-Day 칩 규칙은 같다 (D-025)
  * - 시간 지정 Todo 블록(US-15): 일정과 같이 칸을 나누고, 체크박스로 바로 완료 · 제목은 Todo 수정 창. D-Day(US-23)는 종일 줄 맨 위 칩
  */
-export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = NO_OP, onAddAt, onOpenDday, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
+export default function CalendarWeekly({ variant, span = 'week', onOpenSchedule, onOpenTodo = NO_OP, onAddAt, onOpenDday, draft, onDraftChange, coverBottom = 0 }: CalendarWeeklyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -83,9 +88,13 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = N
   const now = useNow();
   const today = toLocalDate(now);
 
-  const days = useMemo(() => buildWeekDays(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
+  const isThreeDays = span === 'threeDays';
+  const days = useMemo(
+    () => (isThreeDays ? buildThreeDays(viewDate, today) : buildWeekDays(viewDate, DEFAULT_WEEK_START, today)),
+    [isThreeDays, viewDate, today]
+  );
   const dates = useMemo(() => days.map((day) => day.date), [days]);
-  const range = useMemo(() => getWeekRange(viewDate, DEFAULT_WEEK_START), [viewDate]);
+  const range = useMemo(() => (isThreeDays ? getThreeDayRange(viewDate) : getWeekRange(viewDate, DEFAULT_WEEK_START)), [isThreeDays, viewDate]);
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
   const todos = useTimetableTodos(range);
@@ -105,7 +114,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = N
     now,
   });
 
-  const gridColumns = { gridTemplateColumns: `${size.timeColumn}px repeat(7, minmax(0, 1fr))` };
+  const gridColumns = { gridTemplateColumns: `${size.timeColumn}px repeat(${days.length}, minmax(0, 1fr))` };
   // 시간표 스크롤바 폭만큼 머리글·종일 줄도 비워 세로선을 맞춘다
   const scrollbarWidth = useScrollbarWidth(scrollRef);
   const headerStyle = { ...gridColumns, paddingRight: scrollbarWidth };
@@ -130,7 +139,7 @@ export default function CalendarWeekly({ variant, onOpenSchedule, onOpenTodo = N
   };
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-2' : ''}`} aria-label="주간 시간표">
+    <div className={`flex min-h-0 flex-1 flex-col ${isMobile ? 'px-2' : ''}`} aria-label={isThreeDays ? '3일 시간표' : '주간 시간표'}>
       {/* 요일·날짜 머리글 */}
       <div className="grid border-b border-tp-line" style={headerStyle}>
         <div />
