@@ -5,6 +5,7 @@ import Icon from '@components/icons/LineIcon';
 
 import { blockBackground, readableTextColor } from '../utils/calendarUtils';
 import { blockDetailText, lineClampFor, type ScheduleBlockLayout } from '../utils/timetableUtils';
+import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 interface TimetableBlockProps {
   layout: ScheduleBlockLayout;
@@ -42,6 +43,7 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
   const hasDetail = showDetail && height - GAP * 2 >= fontSize * 1.25 + DETAIL_LINE_HEIGHT + 4;
   const titleHeight = height - GAP * 2 - (hasDetail ? DETAIL_LINE_HEIGHT : 0);
 
+  const linkUrl = safeHttpUrl(schedule.url);
   return (
     <div
       data-block
@@ -84,9 +86,9 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
             </span>
           )}
         </button>
-        {showLink && schedule.url && (
+        {showLink && linkUrl && (
           <a
-            href={schedule.url}
+            href={linkUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${schedule.title} 링크 열기`}

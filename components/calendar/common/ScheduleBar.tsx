@@ -4,6 +4,7 @@ import type { Category, LocalDate, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { barTimeLabel, blockBackground, readableTextColor } from '../utils/calendarUtils';
+import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 interface ScheduleBarProps {
   schedule: Schedule;
@@ -22,6 +23,7 @@ export default function ScheduleBar({ schedule, date, category, onOpen }: Schedu
   const textColor = readableTextColor(schedule.color);
   const time = barTimeLabel(schedule, date);
 
+  const linkUrl = safeHttpUrl(schedule.url);
   return (
     <div
       className="flex h-[18px] min-w-0 shrink-0 items-center rounded text-[11px] font-medium leading-none"
@@ -40,9 +42,9 @@ export default function ScheduleBar({ schedule, date, category, onOpen }: Schedu
         {time && <span className="mr-1 opacity-85">{time}</span>}
         {schedule.title}
       </button>
-      {schedule.url && (
+      {linkUrl && (
         <a
-          href={schedule.url}
+          href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`${schedule.title} 링크 열기`}

@@ -4,6 +4,7 @@ import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { listTimeLabel, schedulesOn, stripeColorOf } from '../utils/calendarUtils';
+import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 interface DayScheduleListProps {
   date: LocalDate;
@@ -27,6 +28,7 @@ export default function DayScheduleList({ date, schedules, categoriesById, onOpe
     <ul className="flex flex-col" aria-label="일정 목록">
       {items.map((schedule) => {
         const category = categoriesById.get(schedule.categoryId) ?? null;
+        const linkUrl = safeHttpUrl(schedule.url);
         return (
           <li key={schedule.id} className="flex items-center gap-2">
             <button type="button" onClick={() => onOpen(schedule)} className="flex min-h-9 min-w-0 flex-1 items-center gap-2 text-left text-[13px]">
@@ -38,9 +40,9 @@ export default function DayScheduleList({ date, schedules, categoriesById, onOpe
               <span className="w-10 shrink-0 text-tp-muted">{listTimeLabel(schedule, date)}</span>
               <span className="min-w-0 flex-1 truncate font-semibold">{schedule.title}</span>
             </button>
-            {schedule.url && (
+            {linkUrl && (
               <a
-                href={schedule.url}
+                href={linkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${schedule.title} 링크 열기`}

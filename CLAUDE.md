@@ -100,6 +100,11 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   (close × first focus, `utils/hooks/useFocusTrap` Tab last↔first, transparent backdrop closes, focus back to ⚙); mobile
   `SettingsAccountScreen` (× right, same trap) from header ⚙ or ≡. [내 계정] is a `next/link` (store survives) and
   `accountReturnFocus` remembers the entry (`data-account-entry="gear"|"menu"`); AppShell focuses it once on return.
+- **Page security (#417 US-44)**: `next.config.mjs` `headers()` sends nosniff · Referrer-Policy strict-origin-when-cross-origin ·
+  X-Frame-Options DENY · CSP `frame-ancestors 'none'` on every page (mail-link `no-referrer` rules come after so they win), `poweredByHeader: false`.
+  `proxy.ts` (Next 16 proxy) adds a per-request nonce CSP as **Report-Only** (`utils/security/csp.ts`; enforcing is decided at deploy prep);
+  root layout awaits `connection()` so every page is dynamic and gets the nonce. User links go through `utils/url/safeHttpUrl` (http(s) only).
+  `test/security/staticBans.test.ts` bans `dangerouslySetInnerHTML`/innerHTML/eval/new Function/localStorage/`href={….url}` in source.
 - **App start** (`app/layout.tsx`): `ServerStatusCheck` (GET /api/v1/health) and `AppDataLoader` (categories).
 - **Dependency direction**: `types/`, `utils/` (date, theme, api, store, hooks) never import from `components/`. Features may import `utils/`,
   the store and shared modules (`components/sidebar`, `components/dialog`, …), but not another feature's screens or `layouts/`.
@@ -163,7 +168,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   plugged in via the two slot files above), `components/schedule/` (US-05 form, US-10 `quick/QuickAddSchedule`;
   AppShell owns the quick-add state and passes `draft` to the timetable). Feature hooks in `components/<feature>/hooks/`,
   pure rules in `components/<feature>/utils/` (keep them pure so they can be tested without React).
-- **Dev pages**: `app/dev/*` — for checking features before the real entry points exist. Remove them when the feature is wired into real screens.
+- **Dev pages**: `app/(site)/dev/*` — for checking features before the real entry points exist. 404 in any `next build` output and with APP_ENV=production
+  (`app/(site)/dev/layout.tsx` + `env/devPages.ts`, #417); open only on `next dev` local/test. Remove them when the feature is wired into real screens.
 
 ## Rules decided so far (quick reference — the source is 03-decisions.md)
 

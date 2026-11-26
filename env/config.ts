@@ -5,8 +5,6 @@ interface EnvConfig {
   // API Configuration
   apiBaseUrl: string;
   
-  // Auth Settings
-  authDomain: string;
   
   // App Settings
   appVersion: string;
@@ -20,13 +18,9 @@ interface EnvConfig {
   enableAnalytics: boolean;
   enableNotifications: boolean;
   
-  // External Services
-  googleCalendarApiKey?: string;
-  firebaseApiKey?: string;
   
   // Optional Settings
   mockApi?: boolean;
-  testUserEmail?: string;
   enableServiceWorker?: boolean;
   cacheTimeout?: number;
 }
@@ -38,8 +32,6 @@ export const envConfig: EnvConfig = {
   // API Configuration
   apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
 
-  // Auth Settings
-  authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN || '',
 
   // App Settings
   appVersion: process.env.NEXT_PUBLIC_APP_VERSION || '',
@@ -53,13 +45,9 @@ export const envConfig: EnvConfig = {
   enableAnalytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
   enableNotifications: process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS === 'true',
 
-  // External Services
-  googleCalendarApiKey: process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_API_KEY,
-  firebaseApiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
 
   // Optional Settings
   mockApi: process.env.NEXT_PUBLIC_MOCK_API === 'true',
-  testUserEmail: process.env.NEXT_PUBLIC_TEST_USER_EMAIL,
   enableServiceWorker: process.env.NEXT_PUBLIC_ENABLE_SERVICE_WORKER === 'true',
   cacheTimeout: process.env.NEXT_PUBLIC_CACHE_TIMEOUT ? parseInt(process.env.NEXT_PUBLIC_CACHE_TIMEOUT, 10) : undefined,
 };
@@ -107,10 +95,6 @@ export const validateEnvConfig = (): { isValid: boolean; errors: string[] } => {
   
   if (!envConfig.apiBaseUrl) {
     errors.push('API Base URL is required');
-  }
-  
-  if (!envConfig.authDomain) {
-    errors.push('Auth domain is required');
   }
   
   if (isProduction() && envConfig.debugMode) {

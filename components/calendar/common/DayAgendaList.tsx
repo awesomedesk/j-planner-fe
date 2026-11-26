@@ -14,6 +14,7 @@ import { useNow } from '@utils/hooks/useNow';
 
 import { blockBackground, readableTextColor, stripeColorOf } from '../utils/calendarUtils';
 import { dayAgendaItems } from '../utils/dayAgendaUtils';
+import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 interface DayAgendaListProps {
   date: LocalDate;
@@ -61,6 +62,7 @@ export default function DayAgendaList({ date, onOpenSchedule }: DayAgendaListPro
                 }
               : { background: blockBackground(category, item.schedule.color), color: readableTextColor(item.schedule.color) };
             const side = isTodo ? 'Todo' : (item.schedule.location?.name ?? null);
+            const linkUrl = safeHttpUrl(item.kind === 'schedule' ? item.schedule.url : null);
             return (
               <li key={`${item.kind}-${source.id}`} className="flex items-stretch gap-2">
                 <span className="flex w-10 shrink-0 flex-col pt-1 text-[11px] text-tp-muted">
@@ -80,9 +82,9 @@ export default function DayAgendaList({ date, onOpenSchedule }: DayAgendaListPro
                   </span>
                   {side && <span className="shrink-0 truncate pr-2 text-[11px] font-medium opacity-80">{side}</span>}
                 </button>
-                {item.kind === 'schedule' && item.schedule.url && (
+                {item.kind === 'schedule' && linkUrl && (
                   <a
-                    href={item.schedule.url}
+                    href={linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`${item.schedule.title} 링크 열기`}

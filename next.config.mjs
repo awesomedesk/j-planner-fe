@@ -11,16 +11,33 @@ const apiProxyTarget = () => (process.env.API_PROXY_TARGET || '').replace(/\/+$/
  */
 const MAIL_LINK_PAGES = ['/signup/verify', '/password/reset', '/email/verify'];
 
+/**
+ * 모든 화면 응답의 고정 보안 헤더 (#417 US-44 A02, PO 결정 1). API 응답 헤더는 BE가 맡는다.
+ * - 다른 사이트 틀(iframe)에 넣지 못하게: CSP frame-ancestors(실제 막기) + 옛 브라우저용 X-Frame-Options
+ *   (Report-Only CSP에서는 frame-ancestors가 무시되므로 따로 막는다. nonce CSP는 proxy.ts)
+ * - HSTS는 앞단 서버 몫(배포 때, #186)
+ */
+const SECURITY_HEADERS = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // next dev가 CLAUDE.md·AGENTS.md에 안내 블록을 자동으로 붙이지 않게 (대표님 결정 2026-10-31, 우리 CLAUDE.md에 Next 16 주의사항이 있음)
   agentRules: false,
+  // X-Powered-By: Next.js를 보내지 않는다 (#417 A02). 브라우저 소스맵(productionBrowserSourceMaps)은 켜지 않는다
+  poweredByHeader: false,
   async rewrites() {
     const target = apiProxyTarget();
     return target ? [{ source: '/api/:path*', destination: `${target}/api/:path*` }] : [];
   },
   async headers() {
+    // 같은 헤더는 뒤 규칙이 이긴다 — 메일 링크 화면의 no-referrer가 공통 Referrer-Policy보다 뒤에 와야 한다
     return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
       ...MAIL_LINK_PAGES.map((source) => ({ source, headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] })),
       // 글꼴은 버전이 주소에 들어 있어 바뀌지 않는다 (#342) — 오래 캐시
       { source: '/fonts/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
