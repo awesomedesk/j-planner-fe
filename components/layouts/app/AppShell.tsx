@@ -303,6 +303,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
         onOpenSchedule={openSchedule}
         onOpenDday={openDdayById}
         onOpenDiary={diaryActions.openDiary}
+        // PC·태블릿: 빈 칸 두 번 누름 → 빠른 추가 (D-110). 모바일은 날짜 시트 그대로
+        onAddAt={isTabletUp ? quickAdd.addAt : undefined}
+        quickAddDate={quickAdd.slot?.date ?? null}
+        draft={quickAdd.draft}
         onTapDate={(date) => {
           if (!isFoldUp) setSheetDate(date);
         }}

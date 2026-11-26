@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 
 import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
+import { selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
 
 import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
@@ -16,7 +16,10 @@ import DdayMarkChip from '../common/DdayMarkChip';
 import ScheduleBar from '../common/ScheduleBar';
 import { useDdayMarks } from '../hooks/useDdayMarks';
 import { useDiaryMarks } from '../hooks/useDiaryMarks';
+import type { TimetableSlot } from '../hooks/useQuickAddSlot';
 import { useScheduleRange } from '../hooks/useScheduleRange';
+import { monthDraftLabel, monthQuickAddTimes } from '../utils/monthQuickAdd';
+import type { TimetableDraft } from '../utils/timetableUtils';
 import { buildMonthGrid, getGridRange, getWeekdayLabels, schedulesOn, stripeColorOf, weekdayTextClass, type CalendarDay } from '../utils/calendarUtils';
 import { ddayChipText, type DdayChipItem } from '../utils/ddayMarkUtils';
 import MoreSchedulesPopover from './MoreSchedulesPopover';
@@ -31,7 +34,23 @@ interface CalendarMonthlyProps {
   onOpenDday?: (ddayId: Id) => void;
   /** 펜 아이콘을 누름 → 그날 일기 창 (US-24) */
   onOpenDiary?: (date: LocalDate) => void;
+  /** PC·태블릿(막대)만: 빈 칸 두 번 누름 → 그날 빠른 추가 (D-110, #367) */
+  onAddAt?: (slot: TimetableSlot) => void;
+  /** 열려 있는 빠른 추가의 날짜. 열린 채 다른 날을 누르면 그 날로 옮기기 요청 */
+  quickAddDate?: LocalDate | null;
+  /** 빠른 추가 중 입력한 값 → 그 날짜 칸의 점선 임시 표식 */
+  draft?: TimetableDraft | null;
 }
+
+/** 칸 안에서 누를 수 있는 것(날짜 번호·막대·링크·칩·펜·+n·더보기 창)은 빈 칸 두 번 누르기가 아니다 */
+const INTERACTIVE = 'button, a, input, select, textarea, [role="dialog"], [data-draft]';
+
+/** 칸 자리 = 빠른 추가 팝업이 가리지 않을 기준. 기본 시간은 누른 순간으로 한 번만 정한다 (D-110) */
+const monthSlot = (date: LocalDate, cell: HTMLElement): TimetableSlot => {
+  const { left, top, right, bottom } = cell.getBoundingClientRect();
+  const anchor = { left, top, right, bottom };
+  return { date, ...monthQuickAddTimes(new Date()), anchor, anchorFor: () => anchor };
+};
 
 /** 칸 안 높이 계산 (px): 위아래 여백 12, 날짜 줄 18, 막대 18 + 간격 3 */
 const CELL_PADDING = 12;
@@ -44,12 +63,13 @@ const MAX_DOTS = 3;
  * CalendarMonthly - 월간 달력 (US-06, PC-01 · MO-01)
  * - 주차 열(CAL-05, ISO 주차), 오늘 강조(CAL-06), 고른 날짜 옅은 테두리 (D-041)
  * - PC·태블릿: 일정 막대, 칸을 넘으면 '+n 더보기'. 모바일: 카테고리 색 점
- * - 날짜를 한 번 누르면 그날 선택(사이드바·시트 기준), 두 번 누르면 일간으로 (D-015)
+ * - 날짜를 한 번 누르면 그날 선택(사이드바·시트 기준). PC·태블릿에서 빈 칸을 두 번 누르면 그날 빠른 추가 (D-110, 일간은 보기 전환으로)
+ *   칸 안의 버튼·링크·더보기 창을 두 번 눌러도 빠른 추가가 되지 않는다. 모바일(색 점)은 한 번 누르면 날짜 시트 그대로
  * - Todo 요약·지난 미완료는 표시하지 않는다 (D-021)
  * - 일기 펜(US-24): 일기를 쓴 날 칸 오른쪽 위 펜 버튼('9월 23일 일기') → 그날 일기 창. 내용은 칸에 없다. 모바일은 그림만 + 접근 이름 '일기 있음'
  * - D-Day(US-23): 칸 맨 위 `D-3 제목` 칩(서버 label 그대로, D-043). 막대와 함께 세어 '+n 더보기'. 모바일은 라벨만 + 접근 이름에 제목
  */
-export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, onOpenDday, onOpenDiary }: CalendarMonthlyProps) {
+export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, onOpenDday, onOpenDiary, onAddAt, quickAddDate = null, draft = null }: CalendarMonthlyProps) {
   const dispatch = useAppDispatch();
   const viewDate = useAppSelector(selectViewDate);
   const selectedDate = useAppSelector(selectSelectedDate);
@@ -138,7 +158,9 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
                   isSelected={day.date === selectedDate}
                   isMoreOpen={moreDate === day.date}
                   onSelect={handleSelect}
-                  onOpenDay={(date) => dispatch(openDayView(date))}
+                  onAddAt={onAddAt}
+                  quickAddDate={quickAddDate}
+                  draft={draft?.date === day.date ? draft : null}
                   onOpenSchedule={onOpenSchedule}
                   onOpenDday={onOpenDday}
                   onOpenMore={setMoreDate}
@@ -199,14 +221,25 @@ interface BarCellProps {
   isSelected: boolean;
   isMoreOpen: boolean;
   onSelect: (date: LocalDate) => void;
-  onOpenDay: (date: LocalDate) => void;
+  onAddAt?: (slot: TimetableSlot) => void;
+  quickAddDate: LocalDate | null;
+  draft: TimetableDraft | null;
   onOpenSchedule: (schedule: Schedule) => void;
   onOpenDday?: (ddayId: Id) => void;
   onOpenMore: (date: LocalDate) => void;
   onCloseMore: () => void;
 }
 
-function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesById, capacity, isSelected, isMoreOpen, onSelect, onOpenDay, onOpenSchedule, onOpenDday, onOpenMore, onCloseMore }: BarCellProps) {
+function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesById, capacity, isSelected, isMoreOpen, onSelect, onAddAt, quickAddDate, draft, onOpenSchedule, onOpenDday, onOpenMore, onCloseMore }: BarCellProps) {
+  /** 빠른 추가가 열린 채 다른 날을 누르면 그 날로 옮기기 (입력 중이면 AppShell이 '작성을 취소할까요?', D-053 Q7) */
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (onAddAt && quickAddDate && quickAddDate !== day.date) onAddAt(monthSlot(day.date, event.currentTarget));
+    else onSelect(day.date);
+  };
+  const handleDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!onAddAt || (event.target as Element).closest(INTERACTIVE)) return;
+    onAddAt(monthSlot(day.date, event.currentTarget));
+  };
   // D-Day 칩이 먼저(맨 위), 그다음 일정 막대. 칸을 넘으면 둘을 함께 세어 '+n 더보기' (06 달력 표시)
   const total = ddayChips.length + schedules.length;
   const shownCount = total > capacity ? Math.max(capacity - 1, 0) : total;
@@ -218,8 +251,9 @@ function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesB
     <div
       className="relative flex min-h-0 min-w-0 cursor-pointer flex-col gap-[3px] border-l border-dashed border-tp-line p-1.5"
       style={cellStyle(day, isSelected)}
-      onClick={() => onSelect(day.date)}
-      onDoubleClick={() => onOpenDay(day.date)}
+      data-quick-add-slot
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
     >
       <div className="flex h-[18px] shrink-0 items-center justify-between">
         <button
@@ -261,6 +295,15 @@ function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesB
           onOpen={onOpenSchedule}
         />
       ))}
+      {draft && (
+        <div
+          data-draft
+          data-testid="month-quick-add-draft"
+          className="h-[18px] shrink-0 truncate rounded border-2 border-dashed border-tp-primary bg-white px-1 text-[11px] font-semibold leading-[14px] text-ink"
+        >
+          {monthDraftLabel(draft.title, draft.startTime, draft.endTime)}
+        </div>
+      )}
       {hiddenCount > 0 && (
         <button
           type="button"

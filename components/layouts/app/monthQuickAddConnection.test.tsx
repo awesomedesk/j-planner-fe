@@ -85,7 +85,7 @@ describe('월간 빈 칸 더블클릭 빠른 추가 연결 (D-110, #367)', () =>
     const { user } = await setup(1440, new Date(2026, 8, 25, 10, 20));
     await user.dblClick(cellOf('9월 23일 (수)'));
     await user.type(within(screen.getByRole('dialog', { name: '빠른 추가' })).getByRole('textbox', { name: '제목' }), '쓰던 것');
-    await user.click(screen.getByTestId('quick-add-backdrop'), { pointerEventsCheck: 0 });
+    await user.click(screen.getByTestId('quick-add-backdrop'));
     // jsdom은 elementFromPoint가 없어 바깥 누름은 닫기 요청 → 입력이 있으니 확인
     expect(screen.getByRole('alertdialog', { name: '작성을 취소할까요?' })).toBeInTheDocument();
   });

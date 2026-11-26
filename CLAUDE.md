@@ -106,6 +106,9 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 - **Dates**: `utils/date/dateUtils.ts` — `toLocalDate`/`fromLocalDate`, week start, `formatMonthTitle` / `formatDayTitle` / `formatClock`.
   "Now" comes from `useNow()` (`utils/hooks`, refreshes every minute) so today/current-time line follow midnight. View-mode type: `types/calendar.ts`.
 - **Calendar** (`components/calendar/`): monthly (US-06), weekly (US-07), daily (US-08).
+  - Month empty-cell double click (PC·tablet bars only, D-110 #367): `CalendarMonthly` `onAddAt` → same quick-add popover; default time
+    `utils/monthQuickAdd` `monthQuickAddTimes` (next top of hour 1h, 23시대 = that day 23:00~23:59), dashed `month-quick-add-draft` marker
+    (`monthDraftLabel`, '다음 날'), clicks inside buttons/links/popovers are ignored, no more month → day on double click.
   - `hooks/useScheduleRange(range)` — fetch the visible range + error notice + `isLoaded` / `loadedSchedules`. Pass a memoized range.
   - `hooks/useTimetableScroll` — D-046 initial position and keeping the viewed time between week↔day (minutes in the store).
   - `hooks/useQuickAddSlot` (`useTimetableQuickAdd`) — empty-slot click (30-min snap) / PC drag-create → `onAddAt(slot)`, draft handle·body drag
