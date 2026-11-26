@@ -182,7 +182,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
 
 ## Testing (TDD)
 
-- Vitest 3 + jsdom + Testing Library. Config `vitest.config.mts` (TZ fixed to Asia/Seoul, API base `http://api.test`).
+- Vitest 5 (D-124, #424) + jsdom + Testing Library. Config `vitest.config.mts` (TZ fixed to Asia/Seoul, API base `http://api.test`;
+  Node web storage off via top-level `execArgv` — `poolOptions` no longer exists since Vitest 4).
 - Tests sit next to the code: `Foo.tsx` → `Foo.test.tsx`, `fooUtils.ts` → `fooUtils.test.ts`.
 - `describe`/`it` names are Korean and cite the source: `describe('월간 달력 (US-06)')`, `it('... (D-041)')`.
 - Helpers in `test/`: `renderWithStore` (fresh `makeStore()` + `user`), `mockApi({'GET /schedules': () => json(200, [...])})`

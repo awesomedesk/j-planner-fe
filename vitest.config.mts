@@ -16,11 +16,9 @@ export default defineConfig({
     // AppShell 전체를 그리는 연결 테스트는 혼자 돌면 1~3초지만, 모든 파일을 함께 돌리면 기본 5초를 가끔 넘긴다 (#395 중 확인)
     testTimeout: 15_000,
     // Node 25+는 전역 localStorage를 기본으로 켜서(파일 없으면 undefined) jsdom의 localStorage를 가린다.
-    // 테스트는 jsdom 것을 쓰게 Node 쪽을 끈다 — Node 22·26 모두 받는 옛 이름의 끄기 옵션
-    poolOptions: {
-      forks: { execArgv: ['--no-experimental-webstorage'] },
-      threads: { execArgv: ['--no-experimental-webstorage'] },
-    },
+    // 테스트는 jsdom 것을 쓰게 Node 쪽을 끈다 — Node 22·26 모두 받는 옛 이름의 끄기 옵션.
+    // Vitest 4부터 poolOptions가 없어지고 execArgv가 맨 위 옵션이다 (D-124 vitest 5)
+    execArgv: ['--no-experimental-webstorage'],
     env: {
       NEXT_PUBLIC_LOG_LEVEL: 'error',
       NEXT_PUBLIC_API_BASE_URL: 'http://api.test',
