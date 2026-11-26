@@ -74,6 +74,16 @@ describe('일간 Todo 탭 아래 그날 일정 목록 (US-17, D-022 · MO-10 ③
     expect(openTodo).toHaveBeenCalledWith(expect.objectContaining({ id: 11 }));
   });
 
+  it('URL이 http(s)가 아니면 링크를 그리지 않는다 (#417 safeHttpUrl)', async () => {
+    await setup('2026-09-25', [
+      schedule({ id: 3, title: '수상한 링크', start: '2026-09-25T15:00:00', end: '2026-09-25T16:00:00', url: 'javascript:alert(1)' }),
+      schedule({ id: 4, title: '데이터 링크', start: '2026-09-25T17:00:00', end: '2026-09-25T18:00:00', url: 'data:text/html,hi' }),
+    ], []);
+    expect(screen.getByText('수상한 링크')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '수상한 링크 링크 열기' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '데이터 링크 링크 열기' })).not.toBeInTheDocument();
+  });
+
   it('URL이 있는 일정은 링크 아이콘 (D-021)', async () => {
     await setup();
     expect(screen.getByRole('link', { name: '영어 회화 링크 열기' })).toHaveAttribute('href', 'https://meet.example.com/en');
