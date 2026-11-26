@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockApi } from '@/test/mockApi';
-import { apiClient, authApi, categoryApi, ddayApi, diaryApi, isApiError, memoApi, meApi, scheduleApi, todoApi } from '@utils/api';
+import { apiClient, authApi, categoryApi, ddayApi, diaryApi, isApiError, memoApi, meApi, scheduleApi, settingsApi, todoApi } from '@utils/api';
+import { DEFAULT_SETTINGS } from '@store/slices/settingsSlice';
 
 import { buildDemoData } from './demoData';
 import { createDemoBackend, isDemoBlocked, installDemoMode } from './demoBackend';
@@ -30,6 +31,13 @@ describe('둘러보기 예시 데이터 (US-40, 06 SITE-08)', () => {
 });
 
 describe('둘러보기 가짜 백엔드 — 실제 서버에 보내지 않음 (US-40 AC3·AC4)', () => {
+  it('설정은 기본값으로 답한다 (사이드바 네 섹션 모두 표시, US-21)', async () => {
+    const api = mockApi({});
+    installDemoMode(createDemoBackend(buildDemoData(TODAY), () => {}));
+    expect(await settingsApi.get()).toEqual(DEFAULT_SETTINGS);
+    expect(api.calls('GET /settings')).toHaveLength(0);
+  });
+
   it('설치하면 조회는 예시로 답하고 fetch를 부르지 않는다 (기간·카테고리 필터 반영)', async () => {
     const api = mockApi({});
     installDemoMode(createDemoBackend(buildDemoData(TODAY), () => {}));
