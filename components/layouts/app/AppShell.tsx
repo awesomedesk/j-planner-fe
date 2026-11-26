@@ -65,7 +65,8 @@ import { focusAccountEntry, peekAccountReturn, takeAccountReturn, type AccountEn
 import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
-import SidebarSections from './SidebarSections';
+import SidebarSections, { type SectionFocusRequest } from './SidebarSections';
+import { saveSettings, selectSidebarItems, selectSidebarOpenSetting } from '@store/slices/settingsSlice';
 import PaperPlane from './PaperPlane';
 import { useHiddenSaveNotice } from './useHiddenSaveNotice';
 import { useQuickAddState } from './useQuickAddState';
@@ -109,9 +110,25 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   const categoriesById = useAppSelector(selectCategoriesById);
   const categoryFilter = useAppSelector(selectCategoryFilter);
 
-  /** 사용자가 직접 열고 닫기 전에는 폭에 따라 정한다 (PC 열림, 태블릿 닫힘) */
-  const [sidebarOpenOverride, setSidebarOpenOverride] = useState<boolean | null>(null);
-  const isSidebarOpen = sidebarOpenOverride ?? isPc;
+  /**
+   * 사이드바 열림 (US-20, D-021): PC(1024px~)는 저장된 `/settings` sidebarOpen(열고 닫을 때마다 저장),
+   * 태블릿(768~1023px)은 늘 닫힌 채 시작하고 저장하지 않는다 (FE 검토 ③)
+   */
+  const sidebarOpenSetting = useAppSelector(selectSidebarOpenSetting);
+  const sidebarItems = useAppSelector(selectSidebarItems);
+  const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
+  const isSidebarOpen = isPc ? sidebarOpenSetting : tabletSidebarOpen;
+  /** 막대의 섹션 버튼으로 연 섹션 → 펼쳐서 제목에 초점 (v1.2) */
+  const [sectionFocus, setSectionFocus] = useState<SectionFocusRequest | null>(null);
+  const openSidebar = (section?: SidebarItemType) => {
+    if (isPc) void dispatch(saveSettings({ sidebarOpen: true }));
+    else setTabletSidebarOpen(true);
+    setSectionFocus((prev) => (section ? { type: section, key: (prev?.key ?? 0) + 1 } : null));
+  };
+  const closeSidebar = () => {
+    if (isPc) void dispatch(saveSettings({ sidebarOpen: false }));
+    else setTabletSidebarOpen(false);
+  };
   /** 모바일 날짜 시트에 보이는 날짜 (null = 닫힘) */
   const [sheetDate, setSheetDate] = useState<LocalDate | null>(null);
   /** 열려 있는 일정 입력 창 (US-05) */
@@ -239,7 +256,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   /** 모바일 일간 탭 (D-049, US-25 연결 지점): 탭 내용은 dayTabSlots, 탭별 동작은 dayTabBehavior */
   const mobileDayTab = useAppSelector(selectMobileDayTab);
   const dayTabSlots = getDayTabSlots();
-  const activeDayTab = !isTabletUp && viewMode === 'DAY' && mobileDayTab !== 'TIMETABLE' && dayTabSlots[mobileDayTab] ? mobileDayTab : 'TIMETABLE';
+  // 설정에서 끈 탭을 고른 채였다면 시간표 (US-21)
+  const isTabVisible = mobileDayTab === 'TIMETABLE' || sidebarItems.some((item) => item.type === mobileDayTab && item.visible);
+  const activeDayTab =
+    !isTabletUp && viewMode === 'DAY' && mobileDayTab !== 'TIMETABLE' && isTabVisible && dayTabSlots[mobileDayTab] ? mobileDayTab : 'TIMETABLE';
   const tabBehavior = dayTabBehavior(activeDayTab);
   const activeSlot = activeDayTab === 'TIMETABLE' ? undefined : dayTabSlots[activeDayTab];
   /** + 를 누를 때마다 1씩 → 탭 내용이 새로 만들기를 연다 (directAddLabel이 있는 탭) */
@@ -249,7 +269,10 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
   );
 
   /** ≡ 메뉴: 기능 항목은 일간 탭과 같은 순서·켜짐 (US-28) */
-  const menuTabs = useMemo(() => buildMobileMenuTabs(undefined, new Set(Object.keys(dayTabSlots) as SidebarItemType[])), [dayTabSlots]);
+  const menuTabs = useMemo(
+    () => buildMobileMenuTabs(sidebarItems, new Set(Object.keys(dayTabSlots) as SidebarItemType[])),
+    [sidebarItems, dayTabSlots]
+  );
   /** ≡ 메뉴 > Todo·D-Day·일기·메모 → 오늘 날짜 일간의 그 탭 (D-049). 쓰던 일기가 있으면 먼저 확인 */
   const openTabFromMenu = (key: SidebarItemType) => {
     setMobileMenuOpen(false);
@@ -403,8 +426,9 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
           selectedDate={selectedDate}
           isOpen={isSidebarOpen}
           isOverlay={!isPc}
-          onOpen={() => setSidebarOpenOverride(true)}
-          onClose={() => setSidebarOpenOverride(false)}
+          onOpen={openSidebar}
+          onClose={closeSidebar}
+          focusRequest={sectionFocus}
         />
       </div>
 

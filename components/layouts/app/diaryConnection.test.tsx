@@ -52,6 +52,7 @@ describe('일기 연결 지점 (US-24)', () => {
     await user.keyboard('{Escape}');
 
     const sidebar = screen.getByRole('complementary', { name: '사이드바' });
+    await user.click(within(sidebar).getByRole('button', { name: '일기' })); // 일기 섹션은 처음 접혀 있다 (#394 v1.2)
     await user.click(await within(sidebar).findByRole('button', { name: '9월 25일 (금) 일기 쓰기' }));
     await waitFor(() => expect(within(screen.getByRole('dialog', { name: '9월 25일 (금) 일기' })).getByRole('textbox', { name: '일기 내용' })).toBeEnabled());
     await user.type(within(screen.getByRole('dialog', { name: '9월 25일 (금) 일기' })).getByRole('textbox', { name: '일기 내용' }), '오늘');

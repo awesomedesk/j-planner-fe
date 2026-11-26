@@ -1,4 +1,6 @@
 import { ApiError, isApiError, setRequestInterceptor, type RequestInterceptor } from '../client';
+import type { Settings } from '@/types/api';
+
 import type { QueryParams } from '../types';
 import type { DemoData } from './demoData';
 
@@ -16,6 +18,23 @@ const blocked = () => new ApiError({ message: '', status: 0, code: 'DEMO_READ_ON
 const notFound = () => new ApiError({ message: '찾을 수 없어요.', status: 404, code: 'NOT_FOUND' });
 
 const copy = <T>(value: T): T => structuredClone(value);
+
+/** 둘러보기 설정 = 서버 기본값 (08 §9). store의 DEFAULT_SETTINGS와 같다 (store를 부르면 순환이라 따로 둔다) */
+const DEMO_SETTINGS: Settings = {
+  weekStartDay: 'SUN',
+  startView: 'MONTH',
+  timeFormat: '24H',
+  slotMinutes: 60,
+  darkMode: false,
+  colorTheme: 'GREEN',
+  sidebarOpen: true,
+  sidebarItems: [
+    { type: 'TODO', visible: true },
+    { type: 'DDAY', visible: true },
+    { type: 'DIARY', visible: true },
+    { type: 'MEMO', visible: true },
+  ],
+};
 const text = (params: QueryParams | undefined, key: string) => {
   const value = params?.[key];
   return typeof value === 'string' ? value : undefined;
@@ -80,6 +99,9 @@ export function createDemoBackend(data: DemoData, onBlocked: () => void): DemoBa
         }
         return copy(data.memos);
       }
+      // 설정은 기본값 (08 §9). 바꾸기(PATCH)는 위에서 막힌다
+      case 'settings':
+        return copy(DEMO_SETTINGS);
       // 예시 D-Day·일기는 없다 (빈 목록, 한 개 조회는 404 = 안 쓴 날)
       case 'ddays':
       case 'diaries':

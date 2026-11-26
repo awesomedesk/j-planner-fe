@@ -3,11 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Settings, SidebarItem } from '@/types/api';
 import { CATEGORIES } from '@/test/fixtures';
-import { json, mockApi, problem } from '@/test/mockApi';
+import { json, mockApi, problem, type MockResponse } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { setViewportWidth } from '@/test/viewport';
 import { openDayView } from '@store/slices/calendarSlice';
 import { fetchCategories } from '@store/slices/categorySlice';
+import { selectNotices } from '@store/slices/noticeSlice';
 import { DEFAULT_SETTINGS, fetchSettings } from '@store/slices/settingsSlice';
 import { makeStore } from '@store/store';
 
@@ -21,7 +22,7 @@ afterEach(() => vi.useRealTimers());
 
 const items = (...entries: [SidebarItem['type'], boolean][]): SidebarItem[] => entries.map(([type, visible]) => ({ type, visible }));
 
-const setup = async ({ width = 1440, settings = DEFAULT_SETTINGS, patch }: { width?: number; settings?: Settings; patch?: () => Response | Promise<Response> } = {}) => {
+const setup = async ({ width = 1440, settings = DEFAULT_SETTINGS, patch }: { width?: number; settings?: Settings; patch?: () => MockResponse } = {}) => {
   setViewportWidth(width);
   const api = mockApi({
     'GET /settings': () => json(200, settings),
@@ -38,7 +39,7 @@ const setup = async ({ width = 1440, settings = DEFAULT_SETTINGS, patch }: { wid
   const store = makeStore();
   await store.dispatch(fetchCategories());
   await store.dispatch(fetchSettings());
-  return { api, store, ...renderWithStore(<AppShell />, { store }) };
+  return { api, ...renderWithStore(<AppShell />, { store }) };
 };
 
 const sidebar = () => screen.getByRole('complementary', { name: '사이드바' });
@@ -122,11 +123,11 @@ describe('섹션 편집 (US-21, D-049 · v1.2)', () => {
   });
 
   it('저장에 실패하면 되돌리고 알린다', async () => {
-    const { user } = await setup({ patch: () => problem(500, 'INTERNAL', '실패') });
+    const { user, store } = await setup({ patch: () => problem(500, 'INTERNAL', '실패') });
     const list = await openEditor(user);
     await user.click(within(list).getByRole('checkbox', { name: '메모 표시' }));
     await waitFor(() => expect(within(list).getByRole('checkbox', { name: '메모 표시' })).toBeChecked());
-    expect(await screen.findByText('설정을 저장하지 못해 이전 값으로 되돌렸어요. 다시 바꿔 주세요.')).toBeInTheDocument();
+    expect(selectNotices(store.getState()).at(-1)?.message).toBe('설정을 저장하지 못해 이전 값으로 되돌렸어요. 다시 바꿔 주세요.');
   });
 });
 

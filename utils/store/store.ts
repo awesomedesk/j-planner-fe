@@ -9,6 +9,7 @@ import todoReducer from './slices/todoSlice'
 import ddayReducer from './slices/ddaySlice'
 import diaryReducer from './slices/diarySlice'
 import authReducer from './slices/authSlice'
+import settingsReducer from './slices/settingsSlice'
 
 const reducer = {
   theme: themeReducer,
@@ -20,6 +21,7 @@ const reducer = {
   dday: ddayReducer,
   diary: diaryReducer,
   auth: authReducer,
+  settings: settingsReducer,
 };
 
 /** 새 store를 만든다. 앱은 아래 `store` 하나를 쓰고, 테스트는 매번 새로 만든다 */

@@ -155,6 +155,12 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   as the day tabs) → today's day view on that tab (AppShell `openTabFromMenu`, through `guard`), 카테고리 → `CategoryManagerDialog`
   (full screen on mobile, MO-21), [설정 및 계정] → `SettingsAccountScreen`. Focus goes to '<' on open and back to ≡ on close.
 - **Sidebar items**: `components/sidebar/sidebarItems.ts` — sections, default settings order, mobile day tabs, `dayTabBehavior` (D-049).
+- **Settings + sidebar (US-19~21, #394 db5f2fd)**: store `settings` (`utils/store/slices/settingsSlice.ts`, `settingsApi`) — `fetchSettings` in
+  `AppDataLoader` (defaults on failure), `saveSettings(patch)` applies first, PATCHes only changed fields, reverts untouched fields on failure
+  with a notice, blocked in demo (`allowWrite`). `SidebarSections` follows `sidebarItems` order/visibility (all off → notice), Todo·D-Day open
+  and 일기·메모 folded by default (fold state not saved), heading button toggles. `SidebarArea`: [섹션 편집]/[완료] → `components/sidebar/
+  SidebarItemsEditor` (checkbox 'Todo 표시' + ▲▼, focus kept; reused by US-26), Esc ends editing, rail '{섹션} 열기' opens + unfolds + focuses.
+  PC open state = `/settings` sidebarOpen; tablet always starts closed and is not saved. Mobile day tabs and ≡ menu follow the same items.
 - **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
   `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)
   and `components/layouts/app/sidebarSectionSlots.tsx` (sidebar/fold panel section; draw the head with `header(actions)`).

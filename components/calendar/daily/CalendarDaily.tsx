@@ -6,6 +6,7 @@ import type { Id, Schedule, Todo } from '@/types/api';
 import type { MobileDayTabKey, SidebarItemType } from '@/types/calendar';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { buildMobileDayTabs } from '@components/sidebar/sidebarItems';
+import { selectSidebarItems } from '@store/slices/settingsSlice';
 import { useLeaveGuard } from '@components/dialog/LeaveGuard';
 import { selectMobileDayTab, selectViewDate, setMobileDayTab } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
@@ -122,9 +123,11 @@ export default function CalendarDaily({ variant, onOpenSchedule, onOpenTodo = NO
 
   const selectedTab = useAppSelector(selectMobileDayTab);
   const enabledTabs = useMemo(() => new Set(Object.keys(tabContent ?? {}) as SidebarItemType[]), [tabContent]);
-  const tabs = buildMobileDayTabs(undefined, enabledTabs);
-  // 고른 탭에 내용이 없으면(PC·내용을 뺀 경우) 시간표
-  const activeTab: MobileDayTabKey = isMobile && selectedTab !== 'TIMETABLE' && tabContent?.[selectedTab] ? selectedTab : 'TIMETABLE';
+  const sidebarItems = useAppSelector(selectSidebarItems);
+  const tabs = buildMobileDayTabs(sidebarItems, enabledTabs);
+  // 고른 탭에 내용이 없거나(PC·내용을 뺀 경우) 설정에서 끈 탭이면 시간표 (US-21)
+  const activeTab: MobileDayTabKey =
+    isMobile && selectedTab !== 'TIMETABLE' && tabContent?.[selectedTab] && tabs.some((tab) => tab.key === selectedTab) ? selectedTab : 'TIMETABLE';
   const activeTabLabel = tabs.find((tab) => tab.key === activeTab)?.label ?? '';
 
   const nowMinutes = day.isToday ? nowLineMinutes(now, hours) : null;
