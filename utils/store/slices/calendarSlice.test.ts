@@ -162,3 +162,52 @@ describe('모바일 일간 탭 (D-049, US-25 연결 지점)', () => {
     expect(selectMobileDayTab(store.getState())).toBe('TIMETABLE');
   });
 });
+
+describe('모바일 3일·목록 보기 (US-29, D-025 · MO-19·20)', () => {
+  it('3일로 바꾸면 고른 날짜가 맨 왼쪽 (처음엔 오늘)', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('THREE_DAY'));
+    expect(store.getState().calendar).toMatchObject({ viewMode: 'THREE_DAY', viewDate: '2026-09-25', selectedDate: '2026-09-25' });
+  });
+
+  it('3일은 스와이프 한 번에 하루씩 (24~26 → 25~27, D-025)', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('THREE_DAY'));
+    store.dispatch(moveView(1));
+    expect(store.getState().calendar).toMatchObject({ viewDate: '2026-09-26', selectedDate: '2026-09-26' });
+    store.dispatch(moveView(-2));
+    expect(store.getState().calendar).toMatchObject({ viewDate: '2026-09-24', selectedDate: '2026-09-24' });
+  });
+
+  it('목록은 한 주씩', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('LIST'));
+    store.dispatch(moveView(1));
+    expect(store.getState().calendar).toMatchObject({ viewMode: 'LIST', viewDate: '2026-10-02', selectedDate: '2026-10-02' });
+  });
+
+  it('3일도 시간표라서 주·일과 오가면 보던 시간을 지킨다 (D-046 ②)', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('WEEK'));
+    store.dispatch(setTimetableTopMinutes(480));
+    store.dispatch(setViewMode('THREE_DAY'));
+    expect(store.getState().calendar.timetableTopMinutes).toBe(480);
+    store.dispatch(setViewMode('DAY'));
+    expect(store.getState().calendar.timetableTopMinutes).toBe(480);
+  });
+
+  it('목록은 시간표가 아니라서 들르면 보던 시간을 잊는다 (월간과 같게)', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('THREE_DAY'));
+    store.dispatch(setTimetableTopMinutes(480));
+    store.dispatch(setViewMode('LIST'));
+    expect(store.getState().calendar.timetableTopMinutes).toBeNull();
+  });
+
+  it('3일·목록에서 날짜를 두 번 눌러 일간으로 (D-015)', () => {
+    const store = makeStore();
+    store.dispatch(setViewMode('LIST'));
+    store.dispatch(openDayView('2026-09-23'));
+    expect(store.getState().calendar).toMatchObject({ viewMode: 'DAY', viewDate: '2026-09-23' });
+  });
+});

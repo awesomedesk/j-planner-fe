@@ -196,12 +196,12 @@ describe('날짜 이동 — 모바일 (US-09, D-022·D-025)', () => {
   };
   const mobileTitle = () => within(screen.getByRole('banner', { name: '모바일 머리' })).getByRole('heading').textContent;
 
-  it('화면 선택: 월간/주간/3일/일간/목록, 3일·목록은 아직 막힘 (US-29)', async () => {
+  it('화면 선택: 월간/주간/3일/일간/목록, 모두 고를 수 있다 (US-29)', async () => {
     const { user, store } = await setup(390);
     await user.click(screen.getByRole('button', { name: '화면 선택' }));
     const list = screen.getByRole('listbox', { name: '화면 선택' });
     expect(within(list).getAllByRole('option').map((o) => o.textContent)).toEqual(['월간', '주간', '3일', '일간', '목록']);
-    expect(within(list).getByRole('option', { name: '3일' })).toHaveAttribute('aria-disabled', 'true');
+    for (const option of within(list).getAllByRole('option')) expect(option).not.toHaveAttribute('aria-disabled');
     expect(within(list).getByRole('option', { name: '월간' })).toHaveAttribute('aria-selected', 'true');
     await user.click(within(list).getByRole('option', { name: '주간' }));
     expect(store.getState().calendar.viewMode).toBe('WEEK');
