@@ -1,4 +1,5 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES, schedule } from '@/test/fixtures';
@@ -86,7 +87,7 @@ describe('월간 달력 (US-06)', () => {
     expect(link).toHaveAttribute('target', '_blank');
   });
 
-  it('날짜를 한 번 누르면 선택 + 옅은 테두리, 두 번 누르면 일간 (D-015, D-041)', async () => {
+  it('날짜를 한 번 누르면 선택 + 옅은 테두리, 날짜 번호를 두 번 눌러도 일간으로 가지 않는다 (D-015, D-041 · D-110)', async () => {
     const { store, user } = await setup();
     await user.click(screen.getByRole('button', { name: '9월 23일 (수)' }));
     expect(store.getState().calendar.selectedDate).toBe('2026-09-23');
@@ -94,7 +95,7 @@ describe('월간 달력 (US-06)', () => {
     expect(dayCell('9월 25일 (금)').getAttribute('style')).toContain('var(--tp-theme1)'); // 오늘은 진한 강조 그대로
 
     await user.dblClick(screen.getByRole('button', { name: '9월 30일 (수)' }));
-    expect(store.getState().calendar).toMatchObject({ viewMode: 'DAY', selectedDate: '2026-09-30' });
+    expect(store.getState().calendar).toMatchObject({ viewMode: 'MONTH', selectedDate: '2026-09-30' });
   });
 
   it('칸을 넘으면 "+n 더보기" → 그날 일정 전체 작은 창 (D-041)', async () => {
@@ -175,3 +176,69 @@ describe('모바일 월간 (MO-01)', () => {
     expect(onTapDate).toHaveBeenCalledWith('2026-09-25');
   });
 });
+
+describe('월간 빈 칸 더블클릭 → 빠른 추가 (D-110, #367)', () => {
+  const mount = async (props: Partial<ComponentProps<typeof CalendarMonthly>> = {}, variant: 'bars' | 'dots' = 'bars') => {
+    setResizeHeight(400); // 막대 2칸 → 25일 '+n 더보기'
+    mockApi({ 'GET /schedules': () => json(200, SEED_SCHEDULES), 'GET /categories': () => json(200, CATEGORIES) });
+    const store = makeStore();
+    await store.dispatch(fetchCategories());
+    const onAddAt = vi.fn();
+    const view = renderWithStore(<CalendarMonthly variant={variant} onOpenSchedule={vi.fn()} onAddAt={onAddAt} {...props} />, { store });
+    if (variant === 'bars') await screen.findAllByRole('button', { name: /팀 주간 회의/ });
+    else await screen.findByRole('button', { name: /9월 25일 \(금\), 일정/ });
+    return { onAddAt, ...view };
+  };
+
+  it('빈 자리를 두 번 누르면 그날 빠른 추가: 지금 다음 정각부터 1시간, 월간 그대로', async () => {
+    vi.setSystemTime(new Date(2026, 8, 25, 10, 20));
+    const { onAddAt, user, store } = await mount();
+    await user.dblClick(dayCell('9월 23일 (수)'));
+    expect(onAddAt).toHaveBeenCalledTimes(1);
+    expect(onAddAt.mock.calls[0][0]).toMatchObject({ date: '2026-09-23', startTime: '11:00', durationMinutes: 60 });
+    expect(store.getState().calendar.viewMode).toBe('MONTH');
+  });
+
+  it('23시대에는 고른 날 23:00~23:59 (다른 달 칸도 같은 규칙)', async () => {
+    vi.setSystemTime(new Date(2026, 8, 25, 23, 15));
+    const { onAddAt, user } = await mount();
+    await user.dblClick(dayCell('10월 2일 (금)'));
+    expect(onAddAt.mock.calls[0][0]).toMatchObject({ date: '2026-10-02', startTime: '23:00', durationMinutes: 59 });
+  });
+
+  it('칸 안의 날짜 번호·일정 막대·링크·+n 더보기·더보기 창 안을 두 번 눌러도 빠른 추가·일간 이동이 없다', async () => {
+    const { onAddAt, user, store } = await mount();
+    await user.dblClick(screen.getByRole('button', { name: '9월 23일 (수)' }));
+    await user.dblClick(screen.getAllByRole('button', { name: /팀 주간 회의/ })[0]);
+    await user.keyboard('{Escape}');
+    const more = screen.getByRole('button', { name: /더보기/ });
+    await user.dblClick(more);
+    const popover = screen.getByRole('dialog', { name: /일정$/ });
+    await user.dblClick(popover);
+    expect(onAddAt).not.toHaveBeenCalled();
+    expect(store.getState().calendar.viewMode).toBe('MONTH');
+  });
+
+  it('모바일 색 점 칸은 두 번 눌러도 빠른 추가가 없다 (한 번 누르면 날짜 시트 그대로)', async () => {
+    const onTapDate = vi.fn();
+    const { onAddAt, user } = await mount({ onTapDate }, 'dots');
+    await user.dblClick(screen.getByRole('button', { name: /9월 23일 \(수\)/ }));
+    expect(onAddAt).not.toHaveBeenCalled();
+    expect(onTapDate).toHaveBeenCalledWith('2026-09-23');
+  });
+
+  it('입력 중인 값은 그 날짜 칸에 점선 임시 표식으로 (제목 · 시간)', async () => {
+    await mount({ draft: { date: '2026-09-23', title: '기획 회의', startTime: '23:00', endTime: '00:00' } });
+    const marker = within(dayCell('9월 23일 (수)')).getByTestId('month-quick-add-draft');
+    expect(marker).toHaveTextContent('기획 회의 · 23:00-다음 날 00:00');
+  });
+
+  it('빠른 추가가 열린 채 다른 날을 누르면 그 날로 옮기기 요청(입력 중이면 확인은 AppShell), 같은 날은 그대로', async () => {
+    const { onAddAt, user } = await mount({ quickAddDate: '2026-09-23' });
+    await user.click(dayCell('9월 23일 (수)'));
+    expect(onAddAt).not.toHaveBeenCalled();
+    await user.click(dayCell('9월 24일 (목)'));
+    expect(onAddAt.mock.calls[0][0]).toMatchObject({ date: '2026-09-24' });
+  });
+});
+
