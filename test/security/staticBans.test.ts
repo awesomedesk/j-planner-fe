@@ -34,13 +34,18 @@ const BANNED: [string, RegExp][] = [
   ['href에 일정 url을 바로 (safeHttpUrl 거치기)', /href=\{[^}]*\.url\}/],
 ];
 
+/** localStorage 예외는 이 파일 하나: '마지막에 본 화면'은 서버에 없고 브라우저에만 기억한다 (D-029, 08 §9 · #432 FE 검토 ③) */
+const LOCAL_STORAGE_ALLOWED = 'utils/storage/lastViewStorage.ts';
+
 describe('정적 금지 검사 — HTML 주입·문자열 코드 실행·localStorage (#417 US-44 A05 · PO 결정 3)', () => {
   it('검사할 파일이 있다', () => {
     expect(sources().length).toBeGreaterThan(100);
   });
 
-  it.each(BANNED)('%s 를 쓰는 화면 코드가 없다', (_name, pattern) => {
-    const hits = sources().filter((file) => pattern.test(readFileSync(file, 'utf8')));
+  it.each(BANNED)('%s 를 쓰는 화면 코드가 없다', (name, pattern) => {
+    const hits = sources()
+      .filter((file) => !(name === 'localStorage' && relative(root, file) === LOCAL_STORAGE_ALLOWED))
+      .filter((file) => pattern.test(readFileSync(file, 'utf8')));
     expect(hits.map((file) => relative(root, file))).toEqual([]);
   });
 });
@@ -51,5 +56,13 @@ describe('브라우저 묶음에 들어가는 공개 변수 (#417 US-44 A02 · P
 
   it.each(UNUSED)('쓰지 않는 %s 는 설정·환경 파일에서 뺐다', (name) => {
     for (const file of ENV_FILES) expect(readFileSync(join(root, file), 'utf8'), file).not.toContain(name);
+  });
+});
+
+describe('localStorage 예외 (D-029)', () => {
+  it('예외 파일 하나만 쓰고, 그 파일은 읽기·쓰기를 try로 감싼다', () => {
+    const text = readFileSync(join(root, LOCAL_STORAGE_ALLOWED), 'utf8');
+    expect(text.match(/localStorage\.(get|set)Item/g)).toHaveLength(2);
+    expect(text.match(/try \{/g)).toHaveLength(2);
   });
 });

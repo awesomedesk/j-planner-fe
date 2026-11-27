@@ -56,26 +56,39 @@ export const fetchSettings = createAsyncThunk<Settings, void, { rejectValue: str
   }
 );
 
-/**
- * 설정 바꾸기: 먼저 화면에 반영 → PATCH(바뀐 항목만).
- * 실패하면 그사이 다시 바뀌지 않은 항목만 이전 값으로 되돌리고 알린다 (마지막 값이 이김). 둘러보기는 막힘 안내만 (D-093)
- */
-export const saveSettings = createAsyncThunk<void, SettingsUpdateRequest, { state: { settings: SettingsState } }>(
-  'settings/save',
-  async (patch, { dispatch, getState }) => {
-    if (!allowWrite()) return;
-    const keys = keysOf(patch);
-    const before = pick(getState().settings.value, keys);
-    dispatch(settingsSlice.actions.applySettings(patch));
-    try {
-      await settingsApi.update(patch);
-    } catch {
-      const now = getState().settings.value;
-      const untouched = keys.filter((key) => JSON.stringify(now[key]) === JSON.stringify(patch[key]));
-      if (untouched.length > 0) dispatch(settingsSlice.actions.applySettings(pick({ ...now, ...before } as Settings, untouched)));
-      dispatch(showNotice(SETTINGS_SAVE_FAILED, 'error'));
-    }
+export type SaveResult = 'saved' | 'failed' | 'blocked';
+
+type ThunkApi = { state: { settings: SettingsState } };
+
+/** 먼저 화면에 반영 → PATCH(바뀐 항목만). 실패하면 그사이 다시 바뀌지 않은 항목만 이전 값으로 (마지막 값이 이김) */
+const runSave = async (
+  patch: SettingsUpdateRequest,
+  { dispatch, getState }: { dispatch: (action: unknown) => unknown; getState: () => { settings: SettingsState } }
+): Promise<SaveResult> => {
+  if (!allowWrite()) return 'blocked';
+  const keys = keysOf(patch);
+  const before = pick(getState().settings.value, keys);
+  dispatch(applySettings(patch));
+  try {
+    await settingsApi.update(patch);
+    return 'saved';
+  } catch {
+    const now = getState().settings.value;
+    const untouched = keys.filter((key) => JSON.stringify(now[key]) === JSON.stringify(patch[key]));
+    if (untouched.length > 0) dispatch(applySettings(pick({ ...now, ...before } as Settings, untouched)));
+    return 'failed';
   }
+};
+
+/** 설정 바꾸기 (사이드바 등): 실패하면 알림으로 안내. 둘러보기는 막힘 안내만 (D-093) */
+export const saveSettings = createAsyncThunk<void, SettingsUpdateRequest, ThunkApi>('settings/save', async (patch, api) => {
+  const result = await runSave(patch, api);
+  if (result === 'failed') api.dispatch(showNotice(SETTINGS_SAVE_FAILED, 'error'));
+});
+
+/** 달력 설정 패널용: 결과를 돌려주고 알림은 띄우지 않는다 (패널 위 안내 줄이 알린다, #396 v1.3) */
+export const saveSettingsQuietly = createAsyncThunk<SaveResult, SettingsUpdateRequest, ThunkApi>('settings/saveQuietly', (patch, api) =>
+  runSave(patch, api)
 );
 
 const settingsSlice = createSlice({
@@ -100,6 +113,8 @@ const settingsSlice = createSlice({
       });
   },
 });
+
+export const { applySettings } = settingsSlice.actions;
 
 export const selectSettings = (state: { settings: SettingsState }) => state.settings.value;
 export const selectSidebarItems = (state: { settings: SettingsState }) => state.settings.value.sidebarItems;

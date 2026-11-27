@@ -15,7 +15,16 @@ import type { AccountEntry } from './accountReturnFocus';
  * 열리면 머리 오른쪽 [× 닫기]로 초점, Tab은 화면 안에서 돌고(D-117), 닫으면 연 버튼으로 초점을 돌려준다.
  * 모든 기기 확인 창이 떠 있으면 Esc는 그 창이 먼저 받는다. entry = 연 버튼(⚙ / ≡), [내 계정]에서 돌아올 때 쓴다.
  */
-export default function SettingsAccountScreen({ entry, onClose }: { entry: AccountEntry; onClose: () => void }) {
+export default function SettingsAccountScreen({
+  entry,
+  onClose,
+  focusCalendarSettings = false,
+}: {
+  entry: AccountEntry;
+  onClose: () => void;
+  /** 달력 설정에서 ‹ 뒤로 돌아왔을 때 '달력 설정'에 초점 (#396 v1.3) */
+  focusCalendarSettings?: boolean;
+}) {
   const titleId = useId();
   const screenRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -23,8 +32,11 @@ export default function SettingsAccountScreen({ entry, onClose }: { entry: Accou
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
+    const row = focusCalendarSettings ? screenRef.current?.querySelector<HTMLElement>('[data-calendar-settings-entry]') : null;
+    (row ?? closeRef.current)?.focus();
     return () => opener?.focus?.();
+    // 처음 열 때 한 번만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

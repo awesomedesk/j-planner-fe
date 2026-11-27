@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { Dday, Id, LocalDate, Schedule, Todo } from '@/types/api';
 import type { CalendarViewMode, SidebarItemType } from '@/types/calendar';
@@ -67,6 +67,9 @@ import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
 import SidebarSections, { type SectionFocusRequest } from './SidebarSections';
 import SidebarItemsEditor from '@components/sidebar/SidebarItemsEditor';
+import CalendarSettingsPanel from '@components/settings/CalendarSettingsPanel';
+import { CalendarSettingsContext } from '@components/settings/CalendarSettingsContext';
+import { saveLastView } from '@utils/storage/lastViewStorage';
 import { saveSettings, selectSidebarItems, selectSidebarOpenSetting } from '@store/slices/settingsSlice';
 import PaperPlane from './PaperPlane';
 import { useHiddenSaveNotice } from './useHiddenSaveNotice';
@@ -166,6 +169,47 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     if (!entry) return;
     if (focusAccountEntry(entry === 'menu' && isTabletUp ? 'gear' : entry)) takeAccountReturn();
   }, [isTabletUp]);
+  /**
+   * 달력 설정 (US-26, #396 v1.3): 설정 및 계정의 '달력 설정 ›'로 연다. entry = 처음 연 버튼(⚙/≡)
+   * PC·태블릿은 사이드바 자리 패널(태블릿은 겹침, 바깥 누름 닫기), 모바일은 전체 화면.
+   * × · Esc(PC) → 닫고 ⚙에 초점, ‹ 뒤로 → 설정 및 계정(PC 메뉴 다시 열기 / 모바일 화면)의 '달력 설정'에 초점
+   */
+  const [calendarSettings, setCalendarSettings] = useState<{ entry: AccountEntry } | null>(null);
+  const [menuReopenKey, setMenuReopenKey] = useState(0);
+  const [returnToCalendarSettings, setReturnToCalendarSettings] = useState(false);
+  const calendarSettingsContext = useMemo(
+    () => ({
+      open: (entry: AccountEntry) => {
+        setSettingsEntry(null);
+        setReturnToCalendarSettings(false);
+        setCalendarSettings({ entry });
+      },
+      menuReopenKey,
+    }),
+    [menuReopenKey]
+  );
+  const closeCalendarSettings = useCallback(() => {
+    setCalendarSettings(null);
+    focusAccountEntry('gear');
+  }, []);
+  const backFromCalendarSettings = useCallback(() => {
+    const entry = calendarSettings?.entry ?? 'gear';
+    setCalendarSettings(null);
+    if (isTabletUp) setMenuReopenKey((key) => key + 1);
+    else {
+      setReturnToCalendarSettings(true);
+      setSettingsEntry(entry);
+    }
+  }, [calendarSettings, isTabletUp]);
+
+  /** 보기가 바뀔 때마다 이 브라우저에 기억 → 처음 화면 '마지막에 본 화면' (US-27, D-029). 처음 그린 보기는 기록하지 않는다 */
+  const previousViewMode = useRef(viewMode);
+  useEffect(() => {
+    if (previousViewMode.current === viewMode) return;
+    previousViewMode.current = viewMode;
+    saveLastView(viewMode);
+  }, [viewMode]);
+
   /** 빈 시간을 눌러 연 빠른 추가 (US-10, D-053) */
   const quickAdd = useQuickAddState();
   /** 필터에서 빠진 카테고리로 저장했을 때 알려 주기 (D-056) */
@@ -356,6 +400,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     );
 
   return (
+    <CalendarSettingsContext.Provider value={calendarSettingsContext}>
     <TodoActionsContext.Provider value={todoActions}>
     <DdayActionsContext.Provider value={ddayActions}>
     <DiaryActionsContext.Provider value={diaryActions}>
@@ -392,7 +437,17 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
           onClose={closeMobileMenu}
         />
       )}
-      {!isTabletUp && settingsEntry && <SettingsAccountScreen entry={settingsEntry} onClose={closeSettings} />}
+      {!isTabletUp && settingsEntry && (
+        <SettingsAccountScreen entry={settingsEntry} onClose={closeSettings} focusCalendarSettings={returnToCalendarSettings} />
+      )}
+      {!isTabletUp && calendarSettings && (
+        <CalendarSettingsPanel
+          variant="screen"
+          onBack={backFromCalendarSettings}
+          onClose={backFromCalendarSettings}
+          onOpenCategories={() => setIsCategoryManagerOpen(true)}
+        />
+      )}
 
       <div className="relative flex min-h-0 flex-1">
         <main
@@ -422,15 +477,31 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
           <SidebarSections />
         </aside>
 
-        <SidebarArea
-          className="hidden tablet:flex"
-          selectedDate={selectedDate}
-          isOpen={isSidebarOpen}
-          isOverlay={!isPc}
-          onOpen={openSidebar}
-          onClose={closeSidebar}
-          focusRequest={sectionFocus}
-        />
+        {isTabletUp && calendarSettings ? (
+          // 달력 설정 패널이 사이드바 자리를 대신한다 (사이드바가 닫혀 있어도 같은 자리, D-024)
+          isPc ? (
+            <CalendarSettingsPanel variant="panel" onBack={backFromCalendarSettings} onClose={closeCalendarSettings} onOpenCategories={() => setIsCategoryManagerOpen(true)} />
+          ) : (
+            <div className="hidden tablet:flex">
+              <div className="w-14 shrink-0 border-l border-tp-line bg-tp-bg" aria-hidden="true" />
+              {/* 바깥(달력 쪽)을 누르면 닫는 투명한 막 (D-039) */}
+              <div data-testid="calendar-settings-backdrop" aria-hidden="true" className="absolute inset-0 z-20" onClick={closeCalendarSettings} />
+              <div className="absolute inset-y-0 right-0 z-30 flex shadow-2xl">
+                <CalendarSettingsPanel variant="panel" onBack={backFromCalendarSettings} onClose={closeCalendarSettings} onOpenCategories={() => setIsCategoryManagerOpen(true)} />
+              </div>
+            </div>
+          )
+        ) : (
+          <SidebarArea
+            className="hidden tablet:flex"
+            selectedDate={selectedDate}
+            isOpen={isSidebarOpen}
+            isOverlay={!isPc}
+            onOpen={openSidebar}
+            onClose={closeSidebar}
+            focusRequest={sectionFocus}
+          />
+        )}
       </div>
 
       {/* 모바일(600px 미만): 날짜를 누르면 아래 시트 (MO-01 ③) */}
@@ -525,5 +596,6 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
     </DiaryActionsContext.Provider>
     </DdayActionsContext.Provider>
     </TodoActionsContext.Provider>
+    </CalendarSettingsContext.Provider>
   );
 }

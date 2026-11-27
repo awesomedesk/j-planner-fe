@@ -164,6 +164,13 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   and ≡ menu follow the same items. `components/sidebar/MiniCalendar` (selected date's month, names '23일 (수)' so they don't clash with
   month cells) sits on top (not in the mobile sheet). `DateSheet` takes `sections`/`editor` from AppShell (calendar may not import layouts):
   sections under the day's schedules, [크게 보기]/[작게 보기] or drag the handle up = full height (MO-18), [섹션 편집] inside the sheet.
+- **Calendar settings (US-26·27, #396 3dbb81f)**: `components/settings/CalendarSettingsPanel` (panel = PC sidebar place / tablet overlay with
+  `calendar-settings-backdrop`, screen = mobile full screen). Opened via `CalendarSettingsContext.open(entry)` from the account menu row
+  '달력 설정 ›' (`data-calendar-settings-entry`); × / Esc → ⚙ focus, ‹ → PC menu reopens (`menuReopenKey`) / mobile account screen
+  (`focusCalendarSettings`) with focus on that row. Each change → `saveSettingsQuietly` (result 'saved'|'failed'|'blocked', panel status line,
+  no notice). `themeSlice` follows settings darkMode/colorTheme. Start view: `AppDataLoader` → `resolveStartView`; LAST = `utils/storage/
+  lastViewStorage` (the only localStorage user, static-ban exception), AppShell saves each view change. Still to do: week start day,
+  12H display, 30-min grid lines, custom time picker (D-040).
 - **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
   `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)
   and `components/layouts/app/sidebarSectionSlots.tsx` (sidebar/fold panel section; draw the head with `header(actions)`).

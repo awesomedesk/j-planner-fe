@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import ThemeButton from '@components/button/ThemeButton';
 import Icon from '@components/icons/LineIcon';
+import { useCalendarSettings } from '@components/settings/CalendarSettingsContext';
 import { useFocusTrap } from '@utils/hooks/useFocusTrap';
 
 import AccountMenuItems from './AccountMenuItems';
@@ -25,6 +26,19 @@ export default function AccountMenuButton() {
   const closeRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
   const titleId = useId();
+  /** 달력 설정 ‹ 뒤로 → 메뉴를 다시 열고 '달력 설정'에 초점 (#396 v1.3) */
+  const calendarSettings = useCalendarSettings();
+  const reopenKey = calendarSettings?.menuReopenKey ?? 0;
+  const [handledReopen, setHandledReopen] = useState(reopenKey);
+  /** 왜 열렸나: ⚙를 눌러서(닫기에 초점) / 달력 설정에서 돌아와서('달력 설정'에 초점) */
+  const [openReason, setOpenReason] = useState<'user' | 'reopen'>('user');
+  if (reopenKey !== handledReopen) {
+    setHandledReopen(reopenKey);
+    if (reopenKey > 0) {
+      setOpenReason('reopen');
+      setIsOpen(true);
+    }
+  }
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -35,13 +49,14 @@ export default function AccountMenuButton() {
 
   useEffect(() => {
     if (!isOpen) return;
-    closeRef.current?.focus();
+    const row = openReason === 'reopen' ? panelRef.current?.querySelector<HTMLElement>('[data-calendar-settings-entry]') : null;
+    (row ?? closeRef.current)?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, close]);
+  }, [isOpen, close, openReason]);
 
   return (
     <div className="relative">
@@ -54,7 +69,10 @@ export default function AccountMenuButton() {
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          setOpenReason('user');
+          setIsOpen((open) => !open);
+        }}
         className="min-h-11 min-w-11"
       >
         <Icon name="gear" size={18} />
@@ -85,7 +103,7 @@ export default function AccountMenuButton() {
                 <Icon name="close" size={18} />
               </button>
             </div>
-            <AccountMenuItems entry="gear" />
+            <AccountMenuItems entry="gear" onNavigate={() => setIsOpen(false)} />
           </div>
         </>
       )}

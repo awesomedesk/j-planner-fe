@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { useAppSelector } from '@/app/hooks';
-import { LaterButton, NOT_READY_MESSAGE } from '@components/auth/common/AuthFrame';
 import ThemeButton, { themeButtonClass } from '@components/button/ThemeButton';
 import { selectAuth } from '@store/slices/authSlice';
 
 import PolicyLinks from '@components/public/PolicyLinks';
+import { useCalendarSettings } from '@components/settings/CalendarSettingsContext';
 
 import { rememberAccountReturn, type AccountEntry } from './accountReturnFocus';
 import { useLogout } from './useLogout';
@@ -24,16 +24,16 @@ const SECTION_TITLE = 'px-1 text-[13px] font-semibold text-tp-muted';
 
 /**
  * '설정 및 계정' 내용 (D-109, US-34 D-072) — PC·태블릿 ⚙ 메뉴와 모바일 전체 화면이 같이 쓴다.
- * 계정(이름·이메일·[내 계정] /me) → 달력 설정(US-26 전 점선) → [로그아웃]·[모든 기기에서 로그아웃](확인 창) → 약관·처리방침·문의.
+ * 계정(이름·이메일·[내 계정] /me) → [달력 설정 ›](US-26: 패널·전체 화면을 연다, onNavigate로 메뉴를 닫음) → [로그아웃]·[모든 기기에서 로그아웃](확인 창) → 약관·처리방침·문의.
  * 로그인 정보가 없으면(둘러보기, D-093) 계정·로그아웃은 빼고 달력 설정·약관만.
  * [내 계정]은 앱 안 이동이라 달력의 날짜·보기가 남고, 어느 진입 버튼(entry)으로 왔는지 기억해 돌아오면 그 버튼에 초점 (D-117).
  * 모든 기기 확인 창을 취소·Esc로 닫으면 [모든 기기에서 로그아웃]으로 초점을 돌려준다 (#382 시안).
  */
-export default function AccountMenuItems({ entry }: { entry: AccountEntry }) {
+export default function AccountMenuItems({ entry, onNavigate }: { entry: AccountEntry; onNavigate?: () => void }) {
+  const calendarSettings = useCalendarSettings();
   const { me } = useAppSelector(selectAuth);
   const { busy, logout, logoutEverywhere } = useLogout();
   const [confirming, setConfirming] = useState(false);
-  const [notReady, setNotReady] = useState(false);
   const everywhereRef = useRef<HTMLButtonElement>(null);
   const cancelConfirm = () => {
     setConfirming(false);
@@ -57,11 +57,18 @@ export default function AccountMenuItems({ entry }: { entry: AccountEntry }) {
       )}
       <section className="flex flex-col gap-2 pt-1">
         <h3 className={SECTION_TITLE}>달력 설정</h3>
-        <LaterButton block label="달력 설정" onClick={() => setNotReady(true)} />
-        {/* 메뉴 안 한 줄로 알린다 (전체 화면 알림은 모바일 전체 화면에 가려질 수 있음, #382 시안) */}
-        <p role="status" aria-live="polite" className="px-1 text-[13px] text-tp-muted empty:hidden">
-          {notReady ? `${NOT_READY_MESSAGE}.` : ''}
-        </p>
+        <ThemeButton
+          size="md"
+          data-calendar-settings-entry=""
+          className="w-full !justify-between"
+          onClick={() => {
+            onNavigate?.();
+            calendarSettings?.open(entry);
+          }}
+        >
+          달력 설정
+          <span aria-hidden="true">›</span>
+        </ThemeButton>
       </section>
       {me && (
         <div className="flex flex-col gap-2 border-t border-tp-line pt-3">
