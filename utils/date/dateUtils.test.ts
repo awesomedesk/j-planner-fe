@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatClock, formatDayTitle, formatShortDay, monthRangeOf, weekRangeOf, formatMonthTitle, fromLocalDate, shiftDate, toLocalDate, weekStartsOn } from './dateUtils';
+import { formatClock, formatDayTitle, formatHourLabel, formatShortDay, formatTimeOfDay, monthRangeOf, weekRangeOf, formatMonthTitle, fromLocalDate, shiftDate, toLocalDate, weekStartsOn } from './dateUtils';
 
 describe('날짜 기본 도구', () => {
   it('LocalDate ↔ Date (시간대 변환 없이, D-040)', () => {
@@ -43,5 +43,32 @@ describe('주·달 범위 (Todo 주간·월간 목표, 08-api-design 5절)', () 
   it('그 날이 들어 있는 달: 1일 ~ 말일 (윤년 2월 포함)', () => {
     expect(monthRangeOf('2026-09-24')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
     expect(monthRangeOf('2028-02-10')).toEqual({ from: '2028-02-01', to: '2028-02-29' });
+  });
+});
+
+describe('시간 표시 24시간 / 12시간 (US-26 SET-03, #396 v1.3.1)', () => {
+  it('24시간은 그대로, 12시간은 오전/오후 h:mm', () => {
+    expect(formatTimeOfDay('13:00', '24H')).toBe('13:00');
+    expect(formatTimeOfDay('13:00', '12H')).toBe('오후 1:00');
+    expect(formatTimeOfDay('00:30', '12H')).toBe('오전 12:30');
+    expect(formatTimeOfDay('12:00', '12H')).toBe('오후 12:00');
+    expect(formatTimeOfDay('09:05', '12H')).toBe('오전 9:05');
+    expect(formatTimeOfDay('23:59', '12H')).toBe('오후 11:59');
+  });
+
+  it("시각이 아닌 글자('종일'·'계속')는 그대로", () => {
+    expect(formatTimeOfDay('종일', '12H')).toBe('종일');
+    expect(formatTimeOfDay('계속', '12H')).toBe('계속');
+  });
+
+  it('시간 눈금: PC는 오후 1:00, 좁은 모바일 눈금은 숫자만이고 0시·12시에만 오전·오후', () => {
+    expect(formatHourLabel(13, '12H', false)).toBe('오후 1:00');
+    expect(formatHourLabel(0, '12H', false)).toBe('오전 12:00');
+    expect(formatHourLabel(0, '12H', true)).toBe('오전 12');
+    expect(formatHourLabel(1, '12H', true)).toBe('1');
+    expect(formatHourLabel(12, '12H', true)).toBe('오후 12');
+    expect(formatHourLabel(13, '12H', true)).toBe('1');
+    expect(formatHourLabel(13, '24H', true)).toBe('13');
+    expect(formatHourLabel(13, '24H', false)).toBe('13:00');
   });
 });

@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Settings } from '@/types/api';
-import { CATEGORIES } from '@/test/fixtures';
+import type { Schedule, Settings } from '@/types/api';
+import { CATEGORIES, schedule } from '@/test/fixtures';
 import { json, mockApi, problem, type MockResponse } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 import { setViewportWidth } from '@/test/viewport';
@@ -23,12 +23,17 @@ afterEach(() => {
   localStorage.clear();
 });
 
-const setup = async ({ width = 1440, settings = DEFAULT_SETTINGS, patch }: { width?: number; settings?: Settings; patch?: () => MockResponse } = {}) => {
+const setup = async ({
+  width = 1440,
+  settings = DEFAULT_SETTINGS,
+  patch,
+  schedules = [],
+}: { width?: number; settings?: Settings; patch?: () => MockResponse; schedules?: Schedule[] } = {}) => {
   setViewportWidth(width);
   const api = mockApi({
     'GET /settings': () => json(200, settings),
     'PATCH /settings': patch ?? ((req) => json(200, { ...settings, ...(req.body as object) })),
-    'GET /schedules': () => json(200, []),
+    'GET /schedules': () => json(200, schedules),
     'GET /categories': () => json(200, CATEGORIES),
     'GET /todos': () => json(200, []),
     'GET /memos': () => json(200, []),
@@ -216,5 +221,48 @@ describe('주 시작 요일 반영 (US-26 SET-01, D-024)', () => {
     const panel = await openFromPcMenu(user);
     await user.click(within(panel).getByRole('radio', { name: '월요일' }));
     expect(within(screen.getByLabelText('월간 달력')).getAllByRole('columnheader')[0]).toHaveTextContent('월');
+  });
+});
+
+describe('12시간 표시 · 시간표 칸 30분 (US-26 SET-03·04, #396 v1.3.1)', () => {
+  const DENTIST = schedule({ id: 4, title: '치과', start: '2026-09-25T14:30:00', end: '2026-09-25T15:00:00', categoryId: 2 });
+  const TWELVE = { ...DEFAULT_SETTINGS, timeFormat: '12H' as const };
+
+  it('PC: 월간 막대 앞 시각·주간 블록·시간 눈금이 오전/오후 h:mm', async () => {
+    const { user } = await setup({ settings: TWELVE, schedules: [DENTIST] });
+    expect(await within(screen.getByLabelText('월간 달력')).findByText('오후 2:30')).toBeInTheDocument();
+    await user.click(within(screen.getByRole('banner', { name: '달력 도구' })).getByRole('button', { name: '주' }));
+    const week = screen.getByLabelText('주간 시간표');
+    expect(await within(week).findByText('오후 2:30~오후 3:00')).toBeInTheDocument();
+    expect(within(week).getByText('오후 1:00')).toBeInTheDocument();
+    expect(within(week).queryByText('13:00')).not.toBeInTheDocument();
+  });
+
+  it('모바일 주간의 좁은 눈금은 숫자만, 0시·12시에만 오전·오후 · 목록 보기 시각도 12시간', async () => {
+    const { user } = await setup({ width: 390, settings: TWELVE, schedules: [DENTIST] });
+    const pick = async (label: string) => {
+      await user.click(within(screen.getByRole('banner', { name: '모바일 머리' })).getByRole('button', { name: '화면 선택' }));
+      await user.click(within(screen.getByRole('listbox', { name: '화면 선택' })).getByRole('option', { name: label }));
+    };
+    await pick('주간');
+    const week = screen.getByLabelText('주간 시간표');
+    expect(within(week).getByText('오전 12')).toBeInTheDocument();
+    expect(within(week).getByText('오후 12')).toBeInTheDocument();
+    expect(within(week).queryByText('13')).not.toBeInTheDocument();
+    await pick('목록');
+    const friday = within(screen.getByRole('region', { name: '목록 보기' })).getByRole('region', { name: '9월 25일 (금)' });
+    await waitFor(() => expect(within(friday).getByRole('listitem')).toHaveTextContent(/오후 2:30.*오후 3:00.*치과/));
+  });
+
+  it('칸 30분이면 정각 사이에 30분 점선을 더하고(높이는 그대로), 1시간이면 없다', async () => {
+    const { user } = await setup({ settings: { ...DEFAULT_SETTINGS, slotMinutes: 30 } });
+    await user.click(within(screen.getByRole('banner', { name: '달력 도구' })).getByRole('button', { name: '주' }));
+    expect(screen.getByLabelText('주간 시간표').querySelectorAll('[data-half-hour-line]')).toHaveLength(24);
+  });
+
+  it('칸 1시간(기본)이면 30분 점선이 없다', async () => {
+    const { user } = await setup();
+    await user.click(within(screen.getByRole('banner', { name: '달력 도구' })).getByRole('button', { name: '주' }));
+    expect(screen.getByLabelText('주간 시간표').querySelectorAll('[data-half-hour-line]')).toHaveLength(0);
   });
 });
