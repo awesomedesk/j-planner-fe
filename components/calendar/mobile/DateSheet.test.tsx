@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CATEGORIES } from '@/test/fixtures';
+import { renderWithStore } from '@/test/render';
 import { SEED_SCHEDULES } from '@/test/seed';
 
 import DateSheet from './DateSheet';
@@ -9,7 +10,7 @@ import DateSheet from './DateSheet';
 const setup = () => {
   const onClose = vi.fn();
   const onOpenDayPlan = vi.fn();
-  render(
+  renderWithStore(
     <DateSheet
       date="2026-09-25"
       schedules={SEED_SCHEDULES}
@@ -39,7 +40,7 @@ describe('모바일 날짜 시트 (MO-01 ③, US-06)', () => {
 
   it('여러 날 종일 일정은 걸친 날의 목록 맨 위에 "종일"로', () => {
     const trip = { ...SEED_SCHEDULES[0], id: 40, title: '출장', allDay: true, start: '2026-09-24T00:00:00', end: '2026-09-26T23:59:59', url: null };
-    render(
+    renderWithStore(
       <DateSheet
         date="2026-09-25"
         schedules={[...SEED_SCHEDULES, trip]}

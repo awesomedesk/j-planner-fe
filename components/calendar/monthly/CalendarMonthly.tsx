@@ -8,6 +8,7 @@ import { selectDate, selectSelectedDate, selectViewDate } from '@store/slices/ca
 import { selectCategoriesById } from '@store/slices/categorySlice';
 
 import { selectWeekStartDay } from '@store/slices/settingsSlice';
+import { useClockText } from '@utils/hooks/useTimeFormat';
 import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 
@@ -234,6 +235,7 @@ interface BarCellProps {
 }
 
 function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesById, capacity, isSelected, isMoreOpen, onSelect, onAddAt, quickAddDate, draft, onOpenSchedule, onOpenDday, onOpenMore, onCloseMore }: BarCellProps) {
+  const clock = useClockText();
   /** 빠른 추가가 열린 채 다른 날을 누르면 그 날로 옮기기 (입력 중이면 AppShell이 '작성을 취소할까요?', D-053 Q7) */
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (onAddAt && quickAddDate && quickAddDate !== day.date) onAddAt(monthSlot(day.date, event.currentTarget));
@@ -304,7 +306,7 @@ function BarCell({ day, schedules, ddayChips, hasDiary, onOpenDiary, categoriesB
           data-testid="month-quick-add-draft"
           className="h-[18px] shrink-0 truncate rounded border-2 border-dashed border-tp-primary bg-white px-1 text-[11px] font-semibold leading-[14px] text-ink"
         >
-          {monthDraftLabel(draft.title, draft.startTime, draft.endTime)}
+          {monthDraftLabel(draft.title, draft.startTime, draft.endTime, clock)}
         </div>
       )}
       {hiddenCount > 0 && (

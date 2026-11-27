@@ -3,6 +3,8 @@
 import type { Category, LocalDate, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
+import { useClockText } from '@utils/hooks/useTimeFormat';
+
 import { barTimeLabel, blockBackground, readableTextColor } from '../utils/calendarUtils';
 import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
@@ -21,7 +23,9 @@ interface ScheduleBarProps {
  */
 export default function ScheduleBar({ schedule, date, category, onOpen }: ScheduleBarProps) {
   const textColor = readableTextColor(schedule.color);
-  const time = barTimeLabel(schedule, date);
+  const clock = useClockText();
+  const rawTime = barTimeLabel(schedule, date);
+  const time = rawTime && clock(rawTime);
 
   const linkUrl = safeHttpUrl(schedule.url);
   return (

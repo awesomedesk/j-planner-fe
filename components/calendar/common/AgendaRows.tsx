@@ -5,6 +5,7 @@ import { useAppSelector } from '@/app/hooks';
 import Icon from '@components/icons/LineIcon';
 import { useTodoActions } from '@components/todo/TodoActionsContext';
 import { selectCategoriesById } from '@store/slices/categorySlice';
+import { useClockText } from '@utils/hooks/useTimeFormat';
 import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 import { blockBackground, readableTextColor, stripeColorOf } from '../utils/calendarUtils';
@@ -29,6 +30,7 @@ const THEME2 = 'var(--tp-theme2)';
 export default function AgendaRows({ label, items, onOpenSchedule }: AgendaRowsProps) {
   const categoriesById = useAppSelector(selectCategoriesById);
   const { openTodo } = useTodoActions();
+  const clock = useClockText();
   return (
     <ul aria-label={label} className="flex flex-col gap-1.5">
       {items.map((item) => {
@@ -47,8 +49,8 @@ export default function AgendaRows({ label, items, onOpenSchedule }: AgendaRowsP
         return (
           <li key={`${item.kind}-${source.id}`} className="flex items-stretch gap-2">
             <span className="flex w-10 shrink-0 flex-col pt-1 text-[11px] text-tp-muted">
-              <span>{item.timeTop}</span>
-              {item.timeBottom && <span>{item.timeBottom}</span>}
+              <span>{clock(item.timeTop)}</span>
+              {item.timeBottom && <span>{clock(item.timeBottom)}</span>}
             </span>
             <button
               type="button"

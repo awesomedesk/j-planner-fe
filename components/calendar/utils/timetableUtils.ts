@@ -278,19 +278,23 @@ const BLOCK_VERTICAL_PADDING = 4;
 export const lineClampFor = (heightPx: number, fontSizePx: number) =>
   Math.max(1, Math.floor((heightPx - BLOCK_VERTICAL_PADDING) / (fontSizePx * LINE_HEIGHT_RATIO)));
 
+/** 시각 글자 바꾸기 (설정의 12/24시간, useClockText). 기본은 그대로 `HH:mm` */
+export type Clock = (hhmm: string) => string;
+const SAME_CLOCK: Clock = (hhmm) => hhmm;
+
 /** `9/30 14:00` — 날짜가 다른 시작·끝을 보여 줄 때 */
-const monthDayTime = (dateTime: string) => `${Number(dateTime.slice(5, 7))}/${Number(dateTime.slice(8, 10))} ${dateTime.slice(11, 16)}`;
+const monthDayTime = (dateTime: string, clock: Clock) => `${Number(dateTime.slice(5, 7))}/${Number(dateTime.slice(8, 10))} ${clock(dateTime.slice(11, 16))}`;
 
 /**
  * 블록 아래 설명 줄 (PC 일간, PC-03)
  * - 하루 안 일정: `일정 · 10:00-11:00 · 회의실 A`
  * - 날짜가 다르면 날짜를 붙인다: `일정 · 9/30 14:00 – 10/2 11:00` (시각만 쓰면 거꾸로 읽혀서, US-08 검수)
  */
-export const blockDetailText = (schedule: Schedule) => {
+export const blockDetailText = (schedule: Schedule, clock: Clock = SAME_CLOCK) => {
   const sameDay = schedule.start.slice(0, 10) === schedule.end.slice(0, 10);
   const time = sameDay
-    ? `${schedule.start.slice(11, 16)}-${schedule.end.slice(11, 16)}`
-    : `${monthDayTime(schedule.start)} – ${monthDayTime(schedule.end)}`;
+    ? `${clock(schedule.start.slice(11, 16))}-${clock(schedule.end.slice(11, 16))}`
+    : `${monthDayTime(schedule.start, clock)} – ${monthDayTime(schedule.end, clock)}`;
   return ['일정', time, schedule.location?.name].filter(Boolean).join(' · ');
 };
 
@@ -316,8 +320,8 @@ export const minutesToClock = (minutes: number) => {
 };
 
 /** 빠른 추가 임시 블록 글자: `(제목 없음) · 14:00-15:00` (D-017, PC-03) */
-export const draftBlockLabel = (title: string, startTime: string, endTime: string) =>
-  `${title.trim() || '(제목 없음)'} · ${startTime}-${endTime}`;
+export const draftBlockLabel = (title: string, startTime: string, endTime: string, clock: Clock = SAME_CLOCK) =>
+  `${title.trim() || '(제목 없음)'} · ${clock(startTime)}-${clock(endTime)}`;
 
 /** 빠른 추가 중인 임시 블록 (US-10). 날짜는 누른 날, 시간·제목은 입력 중인 값 */
 export interface TimetableDraft {

@@ -3,6 +3,7 @@
 import type { Category, Todo } from '@/types/api';
 import { useAppDispatch } from '@/app/hooks';
 import { setTodoCompleted } from '@store/slices/todoSlice';
+import { useClockText } from '@utils/hooks/useTimeFormat';
 
 import { stripeColorOf } from '../utils/calendarUtils';
 import { lineClampFor, minutesToClock, clockToMinutes, type TodoBlockLayout } from '../utils/timetableUtils';
@@ -24,10 +25,10 @@ const GAP = 1;
 /** 색을 고르지 않은 Todo의 테두리 = 테마 Theme2 (D-030) */
 const THEME2 = 'var(--tp-theme2)';
 
-const timeText = (todo: Todo) => {
+const timeText = (todo: Todo, clock: (hhmm: string) => string) => {
   const { start, durationMinutes } = todo.time!;
   const end = (clockToMinutes(start) + durationMinutes) % 1440;
-  return `${start}~${minutesToClock(end)}`;
+  return `${clock(start)}~${clock(minutesToClock(end))}`;
 };
 
 /**
@@ -37,6 +38,7 @@ const timeText = (todo: Todo) => {
  * - 제목을 누르면 Todo 수정 창 (US-12)
  */
 export default function TimetableTodoBlock({ layout, category, hourHeight, fontSize, onOpen, compact = false }: TimetableTodoBlockProps) {
+  const clock = useClockText();
   const dispatch = useAppDispatch();
   const { todo } = layout;
   const toPx = (minutes: number) => (minutes / 60) * hourHeight;
@@ -74,7 +76,7 @@ export default function TimetableTodoBlock({ layout, category, hourHeight, fontS
         />
         <button
           type="button"
-          aria-label={`${todo.title} Todo, ${timeText(todo)}`}
+          aria-label={`${todo.title} Todo, ${timeText(todo, clock)}`}
           title={todo.title}
           onClick={(event) => {
             event.stopPropagation();

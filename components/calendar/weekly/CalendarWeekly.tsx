@@ -10,6 +10,7 @@ import { selectCategoriesById } from '@store/slices/categorySlice';
 import { selectWeekStartDay } from '@store/slices/settingsSlice';
 import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
+import { useTimetableDisplay } from '@utils/hooks/useTimeFormat';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
 import AllDayRow from '../common/AllDayRow';
@@ -85,6 +86,7 @@ export default function CalendarWeekly({ variant, span = 'week', onOpenSchedule,
   const isMobile = variant === 'mobile';
   const hours = DEFAULT_TIMETABLE_HOURS;
   const hourLabels = getHourLabels(hours);
+  const timetableDisplay = useTimetableDisplay();
 
   const now = useNow();
   const today = toLocalDate(now);
@@ -200,6 +202,7 @@ export default function CalendarWeekly({ variant, span = 'week', onOpenSchedule,
       >
         <div className="relative grid" style={{ ...gridColumns, height: hourLabels.length * size.hourHeight }}>
           <HourLabels
+            {...timetableDisplay}
             labels={hourLabels}
             hourHeight={size.hourHeight}
             width={size.timeColumn - (isMobile ? 3 : 0)}

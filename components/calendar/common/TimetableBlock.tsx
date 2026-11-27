@@ -4,7 +4,8 @@ import type { Category, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { blockBackground, readableTextColor } from '../utils/calendarUtils';
-import { blockDetailText, lineClampFor, type ScheduleBlockLayout } from '../utils/timetableUtils';
+import { useClockText } from '@utils/hooks/useTimeFormat';
+import { blockDetailText, lineClampFor, type Clock, type ScheduleBlockLayout } from '../utils/timetableUtils';
 import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 interface TimetableBlockProps {
@@ -27,7 +28,7 @@ const DETAIL_LINE_HEIGHT = 14;
 /** 블록 사이 틈 (위아래·오른쪽 1px) */
 const GAP = 1;
 
-const timeText = (schedule: Schedule) => `${schedule.start.slice(11, 16)}~${schedule.end.slice(11, 16)}`;
+const timeText = (schedule: Schedule, clock: Clock) => `${clock(schedule.start.slice(11, 16))}~${clock(schedule.end.slice(11, 16))}`;
 
 /**
  * TimetableBlock - 시간표(주간·일간)의 일정 블록 (PC-02 ⑥, MO-05)
@@ -37,6 +38,7 @@ const timeText = (schedule: Schedule) => `${schedule.start.slice(11, 16)}~${sche
  */
 export default function TimetableBlock({ layout, category, hourHeight, fontSize, onOpen, showLink = true, showDetail = false }: TimetableBlockProps) {
   const { schedule } = layout;
+  const clock = useClockText();
   const toPx = (minutes: number) => (minutes / 60) * hourHeight;
   const height = toPx(layout.height);
   // 설명 줄은 제목 한 줄 + 설명 한 줄이 들어갈 높이일 때만
@@ -63,7 +65,7 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
       >
         <button
           type="button"
-          aria-label={`${schedule.title}, ${schedule.allDay ? '종일' : timeText(schedule)}`}
+          aria-label={`${schedule.title}, ${schedule.allDay ? '종일' : timeText(schedule, clock)}`}
           title={schedule.title}
           onClick={(event) => {
             event.stopPropagation();
@@ -82,7 +84,7 @@ export default function TimetableBlock({ layout, category, hourHeight, fontSize,
           </span>
           {hasDetail && (
             <span className="truncate text-[11px] font-normal leading-[1.25] opacity-90" style={{ maxWidth: '100%' }}>
-              {blockDetailText(schedule)}
+              {blockDetailText(schedule, clock)}
             </span>
           )}
         </button>

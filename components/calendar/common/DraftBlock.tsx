@@ -3,6 +3,8 @@
 import { forwardRef } from 'react';
 import type { PointerEvent } from 'react';
 
+import { useClockText } from '@utils/hooks/useTimeFormat';
+
 import { draftBlockLabel, draftBlockMinutes, type TimetableDraft } from '../utils/timetableUtils';
 
 type Grip = 'start' | 'end' | 'body';
@@ -24,6 +26,7 @@ interface DraftBlockProps {
  * 빠른 추가 바깥 누르기 층(z-40) 위에 있어야 끌 수 있다.
  */
 const DraftBlock = forwardRef<HTMLDivElement, DraftBlockProps>(function DraftBlock({ draft, hourHeight, fontSize, onGripDown }, ref) {
+  const clock = useClockText();
   const { top, height } = draftBlockMinutes(draft);
   const toPx = (minutes: number) => (minutes / 60) * hourHeight;
   const isDraggable = Boolean(onGripDown);
@@ -43,7 +46,7 @@ const DraftBlock = forwardRef<HTMLDivElement, DraftBlockProps>(function DraftBlo
         className="h-full overflow-hidden rounded border-2 border-dashed border-[#3B4A35] bg-[rgba(59,74,53,0.06)] px-1.5 py-0.5 font-semibold leading-tight text-ink"
         style={{ fontSize }}
       >
-        {draftBlockLabel(draft.title, draft.startTime, draft.endTime)}
+        {draftBlockLabel(draft.title, draft.startTime, draft.endTime, clock)}
       </div>
       {onGripDown && (
         <>

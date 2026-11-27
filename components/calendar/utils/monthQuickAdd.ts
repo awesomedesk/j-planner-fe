@@ -21,7 +21,7 @@ export const monthQuickAddTimes = (now: Date): { startTime: string; durationMinu
  * 월간 칸의 점선 임시 표식 문구 (#367 4번) — `제목 · 시작-종료`, 제목이 없으면 `(제목 없음)`.
  * 빠른 추가는 하루를 넘기지 않으므로 종료가 시작보다 이르거나 같으면 다음 날이다 → '다음 날'을 붙인다 (#367 3번)
  */
-export const monthDraftLabel = (title: string, startTime: string, endTime: string): string => {
+export const monthDraftLabel = (title: string, startTime: string, endTime: string, clock: (hhmm: string) => string = (t) => t): string => {
   const nextDay = endTime && startTime && clockToMinutes(endTime) <= clockToMinutes(startTime);
-  return `${title.trim() || '(제목 없음)'} · ${startTime}-${nextDay ? '다음 날 ' : ''}${endTime}`;
+  return `${title.trim() || '(제목 없음)'} · ${clock(startTime)}-${nextDay ? '다음 날 ' : ''}${clock(endTime)}`;
 };

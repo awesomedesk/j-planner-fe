@@ -4,6 +4,7 @@ import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 import Icon from '@components/icons/LineIcon';
 
 import { listTimeLabel, schedulesOn, stripeColorOf } from '../utils/calendarUtils';
+import { useClockText } from '@utils/hooks/useTimeFormat';
 import { safeHttpUrl } from '@utils/url/safeHttpUrl';
 
 interface DayScheduleListProps {
@@ -18,6 +19,7 @@ interface DayScheduleListProps {
  * 띠(카테고리 색) · 시각 · 제목. 누르면 일정 수정 창, URL이 있으면 링크 아이콘.
  */
 export default function DayScheduleList({ date, schedules, categoriesById, onOpen }: DayScheduleListProps) {
+  const clock = useClockText();
   const items = schedulesOn(schedules, date);
 
   if (items.length === 0) {
@@ -37,7 +39,7 @@ export default function DayScheduleList({ date, schedules, categoriesById, onOpe
                 style={{ backgroundColor: stripeColorOf(category) }}
                 aria-hidden="true"
               />
-              <span className="w-10 shrink-0 text-tp-muted">{listTimeLabel(schedule, date)}</span>
+              <span className="w-10 shrink-0 text-tp-muted">{clock(listTimeLabel(schedule, date))}</span>
               <span className="min-w-0 flex-1 truncate font-semibold">{schedule.title}</span>
             </button>
             {linkUrl && (

@@ -60,3 +60,29 @@ export const nextTopOfHour = (now: Date) => {
   const isExactHour = now.getMinutes() === 0 && now.getSeconds() === 0 && now.getMilliseconds() === 0;
   return isExactHour ? now.getHours() : now.getHours() + 1;
 };
+
+/** 시간 표시 형식 (설정 SET-03, 08 §9 timeFormat) */
+export type TimeFormat = '24H' | '12H';
+
+/**
+ * `HH:mm` → 화면 시각 (US-26, #396 v1.3.1). 24시간은 그대로, 12시간은 `오후 1:00`·`오전 12:30`.
+ * 시각 모양이 아닌 글자(`종일`·`계속`)는 그대로 돌려준다
+ */
+export const formatTimeOfDay = (text: string, timeFormat: TimeFormat): string => {
+  if (timeFormat === '24H' || !/^\d{2}:\d{2}$/.test(text)) return text;
+  const hour = Number(text.slice(0, 2)) % 24;
+  return `${hour < 12 ? '오전' : '오후'} ${((hour + 11) % 12) + 1}:${text.slice(3, 5)}`;
+};
+
+/**
+ * 시간표 왼쪽 눈금 글자. compact = 30px 모바일 주간·3일 눈금:
+ * 24시간은 `13`, 12시간은 숫자만(`1`) 쓰고 0시·12시 줄에만 `오전 12`·`오후 12` (v1.3.1)
+ */
+export const formatHourLabel = (hour: number, timeFormat: TimeFormat, compact: boolean): string => {
+  if (!compact) return formatTimeOfDay(`${String(hour).padStart(2, '0')}:00`, timeFormat);
+  if (timeFormat === '24H') return String(hour);
+  const twelve = ((hour + 11) % 12) + 1;
+  if (hour === 0) return `오전 ${twelve}`;
+  if (hour === 12) return `오후 ${twelve}`;
+  return String(twelve);
+};

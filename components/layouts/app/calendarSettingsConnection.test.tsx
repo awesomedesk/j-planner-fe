@@ -233,7 +233,7 @@ describe('12시간 표시 · 시간표 칸 30분 (US-26 SET-03·04, #396 v1.3.1)
     expect(await within(screen.getByLabelText('월간 달력')).findByText('오후 2:30')).toBeInTheDocument();
     await user.click(within(screen.getByRole('banner', { name: '달력 도구' })).getByRole('button', { name: '주' }));
     const week = screen.getByLabelText('주간 시간표');
-    expect(await within(week).findByText('오후 2:30~오후 3:00')).toBeInTheDocument();
+    expect(await within(week).findByRole('button', { name: '치과, 오후 2:30~오후 3:00' })).toBeInTheDocument();
     expect(within(week).getByText('오후 1:00')).toBeInTheDocument();
     expect(within(week).queryByText('13:00')).not.toBeInTheDocument();
   });

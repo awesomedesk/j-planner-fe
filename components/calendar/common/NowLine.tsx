@@ -1,4 +1,5 @@
 import { formatClock } from '@utils/date/dateUtils';
+import { useClockText } from '@utils/hooks/useTimeFormat';
 
 interface NowLineProps {
   /** 00:00부터의 분 */
@@ -11,10 +12,11 @@ interface NowLineProps {
 
 /** NowLine - 시간표의 빨간 현재 시각 선 (CAL-06). 오늘 칸에만 그린다 */
 export default function NowLine({ minutes, hourHeight, now, showDot = true }: NowLineProps) {
+  const clock = useClockText();
   return (
     <div
       role="separator"
-      aria-label={`현재 시각 ${formatClock(now)}`}
+      aria-label={`현재 시각 ${clock(formatClock(now))}`}
       className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-danger"
       style={{ top: `${(minutes / 60) * hourHeight}px` }}
     >
