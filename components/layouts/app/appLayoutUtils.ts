@@ -1,14 +1,14 @@
 import type { LocalDate } from '@/types/api';
 import type { CalendarViewMode, PcViewMode } from '@/types/calendar';
-import { DEFAULT_WEEK_START, formatDayTitle, formatMonthTitle } from '@utils/date/dateUtils';
+import { DEFAULT_WEEK_START, formatDayTitle, formatMonthTitle, type WeekStartDay } from '@utils/date/dateUtils';
 import { formatWeekTitle, getThreeDayRange, getWeekRange } from '@components/calendar/utils/timetableUtils';
 
 /**
  * 헤더 가운데 날짜 제목
  * 월간 `2026년 9월`, 주간·목록 `9월 20일 – 26일` (PC-02·MO-05·MO-19), 3일 `9월 25일 – 27일` (MO-20), 일간 `9월 24일 (목)` (PC-03·MO-03)
  */
-export const formatViewTitle = (viewMode: CalendarViewMode, viewDate: LocalDate) => {
-  if (viewMode === 'WEEK' || viewMode === 'LIST') return formatWeekTitle(getWeekRange(viewDate, DEFAULT_WEEK_START));
+export const formatViewTitle = (viewMode: CalendarViewMode, viewDate: LocalDate, weekStart: WeekStartDay = DEFAULT_WEEK_START) => {
+  if (viewMode === 'WEEK' || viewMode === 'LIST') return formatWeekTitle(getWeekRange(viewDate, weekStart));
   if (viewMode === 'THREE_DAY') return formatWeekTitle(getThreeDayRange(viewDate));
   if (viewMode === 'DAY') return formatDayTitle(viewDate);
   return formatMonthTitle(viewDate);

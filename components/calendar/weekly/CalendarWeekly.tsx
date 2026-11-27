@@ -7,7 +7,8 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { openDayView, selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
 
-import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
+import { selectWeekStartDay } from '@store/slices/settingsSlice';
+import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 import { useScrollbarWidth } from '@utils/hooks/useScrollbarWidth';
 
@@ -89,12 +90,13 @@ export default function CalendarWeekly({ variant, span = 'week', onOpenSchedule,
   const today = toLocalDate(now);
 
   const isThreeDays = span === 'threeDays';
+  const weekStart = useAppSelector(selectWeekStartDay);
   const days = useMemo(
-    () => (isThreeDays ? buildThreeDays(viewDate, today) : buildWeekDays(viewDate, DEFAULT_WEEK_START, today)),
-    [isThreeDays, viewDate, today]
+    () => (isThreeDays ? buildThreeDays(viewDate, today) : buildWeekDays(viewDate, weekStart, today)),
+    [isThreeDays, viewDate, weekStart, today]
   );
   const dates = useMemo(() => days.map((day) => day.date), [days]);
-  const range = useMemo(() => (isThreeDays ? getThreeDayRange(viewDate) : getWeekRange(viewDate, DEFAULT_WEEK_START)), [isThreeDays, viewDate]);
+  const range = useMemo(() => (isThreeDays ? getThreeDayRange(viewDate) : getWeekRange(viewDate, weekStart)), [isThreeDays, viewDate, weekStart]);
 
   const { schedules, isLoaded, loadedSchedules } = useScheduleRange(range);
   const todos = useTimetableTodos(range);

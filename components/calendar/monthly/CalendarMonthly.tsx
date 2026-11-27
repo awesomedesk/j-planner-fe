@@ -7,7 +7,8 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { selectDate, selectSelectedDate, selectViewDate } from '@store/slices/calendarSlice';
 import { selectCategoriesById } from '@store/slices/categorySlice';
 
-import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
+import { selectWeekStartDay } from '@store/slices/settingsSlice';
+import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 
 import Icon from '@components/icons/LineIcon';
@@ -75,7 +76,8 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
   const selectedDate = useAppSelector(selectSelectedDate);
 
   const today = toLocalDate(useNow());
-  const weeks = useMemo(() => buildMonthGrid(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
+  const weekStart = useAppSelector(selectWeekStartDay);
+  const weeks = useMemo(() => buildMonthGrid(viewDate, weekStart, today), [viewDate, weekStart, today]);
   const range = useMemo(() => getGridRange(weeks), [weeks]);
   const categoriesById = useAppSelector(selectCategoriesById);
 
@@ -112,9 +114,10 @@ export default function CalendarMonthly({ variant, onOpenSchedule, onTapDate, on
     <div className={`flex min-h-0 flex-1 flex-col ${isDots ? 'px-1.5' : ''}`} aria-label="월간 달력">
       <div className={`grid ${gridColumns} ${isDots ? '' : 'border-b border-tp-line'}`}>
         <div className={`text-center text-tp-muted ${isDots ? 'py-1 text-[10px]' : 'py-2 text-[11px]'}`}>{isDots ? '' : '주차'}</div>
-        {getWeekdayLabels(DEFAULT_WEEK_START).map(({ label, weekday }) => (
+        {getWeekdayLabels(weekStart).map(({ label, weekday }) => (
           <div
             key={weekday}
+            role="columnheader"
             className={`text-center ${isDots ? 'py-1 text-[11px]' : 'py-2 text-xs font-semibold'} ${weekdayTextClass(weekday) ?? 'text-tp-muted'}`}
           >
             {label}

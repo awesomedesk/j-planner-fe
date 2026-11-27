@@ -70,7 +70,7 @@ import SidebarItemsEditor from '@components/sidebar/SidebarItemsEditor';
 import CalendarSettingsPanel from '@components/settings/CalendarSettingsPanel';
 import { CalendarSettingsContext } from '@components/settings/CalendarSettingsContext';
 import { saveLastView } from '@utils/storage/lastViewStorage';
-import { saveSettings, selectSidebarItems, selectSidebarOpenSetting } from '@store/slices/settingsSlice';
+import { saveSettings, selectSidebarItems, selectSidebarOpenSetting, selectWeekStartDay } from '@store/slices/settingsSlice';
 import PaperPlane from './PaperPlane';
 import { useHiddenSaveNotice } from './useHiddenSaveNotice';
 import { useQuickAddState } from './useQuickAddState';
@@ -120,6 +120,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
    */
   const sidebarOpenSetting = useAppSelector(selectSidebarOpenSetting);
   const sidebarItems = useAppSelector(selectSidebarItems);
+  const weekStart = useAppSelector(selectWeekStartDay);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
   const isSidebarOpen = isPc ? sidebarOpenSetting : tabletSidebarOpen;
   /** 막대의 섹션 버튼으로 연 섹션 → 펼쳐서 제목에 초점 (v1.2) */
@@ -408,7 +409,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
       {topBanner}
       <PcHeader
         className="hidden tablet:flex"
-        title={formatViewTitle(shownViewMode, viewDate)}
+        title={formatViewTitle(shownViewMode, viewDate, weekStart)}
         viewMode={shownViewMode}
         onChangeViewMode={changeViewMode}
         onMove={move}
@@ -419,7 +420,7 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
       />
       <MobileHeader
         className="flex tablet:hidden"
-        title={formatViewTitle(viewMode, viewDate)}
+        title={formatViewTitle(viewMode, viewDate, weekStart)}
         viewMode={viewMode}
         onChangeViewMode={changeViewMode}
         onToday={backToToday}

@@ -169,7 +169,8 @@ Guidance for Claude working in this repository (the **FE window** of J-planner).
   '달력 설정 ›' (`data-calendar-settings-entry`); × / Esc → ⚙ focus, ‹ → PC menu reopens (`menuReopenKey`) / mobile account screen
   (`focusCalendarSettings`) with focus on that row. Each change → `saveSettingsQuietly` (result 'saved'|'failed'|'blocked', panel status line,
   no notice). `themeSlice` follows settings darkMode/colorTheme. Start view: `AppDataLoader` → `resolveStartView`; LAST = `utils/storage/
-  lastViewStorage` (the only localStorage user, static-ban exception), AppShell saves each view change. Still to do: week start day,
+  lastViewStorage` (the only localStorage user, static-ban exception), AppShell saves each view change. Week start = `selectWeekStartDay`
+  (month grid + headers, week, list, mini calendar, header title, weekly Todo range). Still to do:
   12H display, 30-min grid lines, custom time picker (D-040).
 - **Plugging a feature into the day tabs / sidebar** (one line each, nothing else in shared files):
   `components/layouts/app/dayTabSlots.tsx` (mobile day tab content; only plugged tabs are enabled; `directAddLabel` makes + act directly)

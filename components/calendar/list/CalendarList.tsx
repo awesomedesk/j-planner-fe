@@ -5,7 +5,8 @@ import { useMemo } from 'react';
 import type { Id, Schedule } from '@/types/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { openDayView, selectViewDate } from '@store/slices/calendarSlice';
-import { DEFAULT_WEEK_START, formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
+import { selectWeekStartDay } from '@store/slices/settingsSlice';
+import { formatDayTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 
 import AgendaRows from '../common/AgendaRows';
@@ -34,8 +35,9 @@ export default function CalendarList({ onOpenSchedule, onOpenDday }: CalendarLis
   const viewDate = useAppSelector(selectViewDate);
   const today = toLocalDate(useNow());
 
-  const days = useMemo(() => buildWeekDays(viewDate, DEFAULT_WEEK_START, today), [viewDate, today]);
-  const range = useMemo(() => getWeekRange(viewDate, DEFAULT_WEEK_START), [viewDate]);
+  const weekStart = useAppSelector(selectWeekStartDay);
+  const days = useMemo(() => buildWeekDays(viewDate, weekStart, today), [viewDate, weekStart, today]);
+  const range = useMemo(() => getWeekRange(viewDate, weekStart), [viewDate, weekStart]);
   const { schedules } = useScheduleRange(range);
   const todos = useTimetableTodos(range);
   const ddayChips = useDdayMarks(range);

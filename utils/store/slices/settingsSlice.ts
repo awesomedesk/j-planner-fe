@@ -117,6 +117,8 @@ const settingsSlice = createSlice({
 export const { applySettings } = settingsSlice.actions;
 
 export const selectSettings = (state: { settings: SettingsState }) => state.settings.value;
+/** 주 시작 요일 (SET-01): 월간·주간·목록·미니 달력·주간 목표 Todo가 따른다 */
+export const selectWeekStartDay = (state: { settings: SettingsState }) => state.settings.value.weekStartDay;
 export const selectSidebarItems = (state: { settings: SettingsState }) => state.settings.value.sidebarItems;
 export const selectSidebarOpenSetting = (state: { settings: SettingsState }) => state.settings.value.sidebarOpen;
 

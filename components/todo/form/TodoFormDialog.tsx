@@ -3,12 +3,14 @@
 import { useEffect, useId, useRef } from 'react';
 
 import type { Category, Id, Todo, TodoType } from '@/types/api';
+import { useAppSelector } from '@/app/hooks';
 import ThemeButton from '@components/button/ThemeButton';
 import DialogFrame, { useDialogRequestClose } from '@components/dialog/DialogFrame';
 import CategorySelect from '@components/form/CategorySelect';
 import { ColorPicker, Field, FieldError, LaterFeature } from '@components/form/FormParts';
 import { INPUT_CLASS } from '@components/form/formStyles';
 
+import { selectWeekStartDay } from '@store/slices/settingsSlice';
 import { formatShortDay } from '@utils/date/dateUtils';
 
 import { useTodoForm, type TodoForm, type TodoFormTarget } from '../hooks/useTodoForm';
@@ -33,7 +35,8 @@ export interface TodoFormDialogProps {
  * - 즐겨찾기·완성도는 첫 배포 이후 자리만 (D-008·D-021)
  */
 export default function TodoFormDialog({ target, categories, onClose, onSaved, onDeleted }: TodoFormDialogProps) {
-  const form = useTodoForm({ target, onSaved, onDeleted });
+  const weekStart = useAppSelector(selectWeekStartDay);
+  const form = useTodoForm({ target, weekStart, onSaved, onDeleted });
   const { values, errors } = form;
   const formId = useId();
   const titleInputRef = useRef<HTMLInputElement>(null);

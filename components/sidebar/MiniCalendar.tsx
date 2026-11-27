@@ -5,7 +5,8 @@ import { useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { buildMonthGrid, weekdayTextClass } from '@components/calendar/utils/calendarUtils';
 import { selectDate, selectSelectedDate } from '@store/slices/calendarSlice';
-import { DEFAULT_WEEK_START, formatDayTitle, formatMonthTitle, toLocalDate } from '@utils/date/dateUtils';
+import { selectWeekStartDay } from '@store/slices/settingsSlice';
+import { formatDayTitle, formatMonthTitle, toLocalDate } from '@utils/date/dateUtils';
 import { useNow } from '@utils/hooks/useNow';
 
 /**
@@ -17,7 +18,8 @@ export default function MiniCalendar() {
   const dispatch = useAppDispatch();
   const selectedDate = useAppSelector(selectSelectedDate);
   const today = toLocalDate(useNow());
-  const weeks = useMemo(() => buildMonthGrid(selectedDate, DEFAULT_WEEK_START, today), [selectedDate, today]);
+  const weekStart = useAppSelector(selectWeekStartDay);
+  const weeks = useMemo(() => buildMonthGrid(selectedDate, weekStart, today), [selectedDate, weekStart, today]);
   const weekdays = weeks[0].days.map((day) => day.weekday);
   const title = formatMonthTitle(selectedDate);
 
