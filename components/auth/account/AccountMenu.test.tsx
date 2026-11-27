@@ -8,6 +8,8 @@ import { checkSession } from '@store/slices/authSlice';
 import { makeStore } from '@store/store';
 import { goTo } from '@utils/navigation';
 
+import { CalendarSettingsContext } from '@components/settings/CalendarSettingsContext';
+
 import AccountMenuButton from './AccountMenuButton';
 import MobileMenu from './MobileMenu';
 import SettingsAccountScreen from './SettingsAccountScreen';
@@ -53,7 +55,7 @@ describe('PC·태블릿 ⚙ 설정 및 계정 (D-109, #366 · US-34 D-072)', () 
     expect(within(menu).getByRole('heading', { name: TRIGGER })).toBeInTheDocument();
   });
 
-  it('내용 순서: 계정(이름·이메일·내 계정) → 달력 설정(점선) → 로그아웃·모든 기기 → 약관·처리방침·문의', async () => {
+  it('내용 순서: 계정(이름·이메일·내 계정) → 달력 설정 → 로그아웃·모든 기기 → 약관·처리방침·문의', async () => {
     const { menu } = await openPcMenu();
     expect(within(menu).getByText('검수')).toBeInTheDocument();
     expect(within(menu).getByText('qa@example.com')).toBeInTheDocument();
@@ -65,10 +67,20 @@ describe('PC·태블릿 ⚙ 설정 및 계정 (D-109, #366 · US-34 D-072)', () 
     expect(within(menu).getByRole('heading', { name: '달력 설정' })).toBeInTheDocument();
   });
 
-  it("[달력 설정]은 아직 점선 — 누르면 메뉴 안 한 줄(aria-live)로 '준비 중이에요' (US-26 전, D-008 · #382 시안)", async () => {
-    const { user, menu } = await openPcMenu();
+  it('[달력 설정 ›] → 메뉴를 닫고 달력 설정을 연다 (진입 ⚙ 기억, US-26 · #396 v1.3)', async () => {
+    const open = vi.fn();
+    const { user } = renderWithStore(
+      <CalendarSettingsContext.Provider value={{ open, menuReopenKey: 0 }}>
+        <AccountMenuButton />
+      </CalendarSettingsContext.Provider>,
+      { store: signedInStore() }
+    );
+    await user.click(screen.getByRole('button', { name: '설정 및 계정' }));
+    const menu = screen.getByRole('dialog', { name: '설정 및 계정' });
+    expect(within(menu).queryByText(/준비 중이에요/)).not.toBeInTheDocument();
     await user.click(within(menu).getByRole('button', { name: '달력 설정' }));
-    expect(within(menu).getByRole('status')).toHaveTextContent('준비 중이에요');
+    expect(open).toHaveBeenCalledWith('gear');
+    expect(screen.queryByRole('dialog', { name: '설정 및 계정' })).not.toBeInTheDocument();
   });
 
   it('키보드: Enter로 열고 Esc로 닫으면 ⚙로 초점이 돌아온다', async () => {

@@ -7,7 +7,8 @@ import { buildDemoData } from '@utils/api/demo/demoData';
 import { makeStore } from '@store/store';
 
 import { selectNotices } from './noticeSlice';
-import { DEFAULT_SETTINGS, fetchSettings, saveSettings, selectSettings, selectSidebarItems } from './settingsSlice';
+import { selectColorTheme, selectDarkMode } from './themeSlice';
+import { DEFAULT_SETTINGS, fetchSettings, saveSettings, saveSettingsQuietly, selectSettings, selectSidebarItems } from './settingsSlice';
 
 afterEach(() => installDemoMode(null));
 
@@ -102,5 +103,39 @@ describe('설정 store (08 §9 /settings, US-21·26)', () => {
     expect(selectSettings(store.getState()).sidebarOpen).toBe(true);
     expect(blocked).toBe(1);
     expect(api.calls('PATCH /settings')).toHaveLength(0);
+  });
+
+  it('다크 모드·색 테마는 받은 설정과 바꾼 값을 화면 테마에 바로 반영한다 (D-024, SET-05)', async () => {
+    mockApi({
+      'GET /settings': () => json(200, { ...DEFAULT_SETTINGS, darkMode: true, colorTheme: 'BROWN' }),
+      'PATCH /settings': (req) => json(200, { ...DEFAULT_SETTINGS, ...(req.body as object) }),
+    });
+    const store = makeStore();
+    await store.dispatch(fetchSettings());
+    expect(selectDarkMode(store.getState())).toBe(true);
+    expect(selectColorTheme(store.getState())).toBe('BROWN');
+    await store.dispatch(saveSettings({ colorTheme: 'GRAY', darkMode: false }));
+    expect(selectColorTheme(store.getState())).toBe('GRAY');
+    expect(selectDarkMode(store.getState())).toBe(false);
+  });
+
+  it('실패해 되돌리면 테마도 되돌아간다', async () => {
+    mockApi({ 'PATCH /settings': () => problem(500, 'INTERNAL', '실패') });
+    const store = makeStore();
+    await store.dispatch(saveSettings({ darkMode: true }));
+    expect(selectDarkMode(store.getState())).toBe(false);
+  });
+
+  it("달력 설정 패널용 saveSettingsQuietly: 결과('saved'·'failed'·'blocked')를 돌려주고, 안내는 패널이 하므로 알림을 띄우지 않는다", async () => {
+    let fail = false;
+    mockApi({ 'PATCH /settings': (req) => (fail ? problem(500, 'INTERNAL', '실패') : json(200, { ...DEFAULT_SETTINGS, ...(req.body as object) })) });
+    const store = makeStore();
+    expect(await store.dispatch(saveSettingsQuietly({ weekStartDay: 'MON' })).unwrap()).toBe('saved');
+    fail = true;
+    expect(await store.dispatch(saveSettingsQuietly({ slotMinutes: 30 })).unwrap()).toBe('failed');
+    expect(selectSettings(store.getState()).slotMinutes).toBe(60);
+    expect(selectNotices(store.getState())).toHaveLength(0);
+    installDemoMode(createDemoBackend(buildDemoData(new Date(2026, 10, 26)), () => undefined));
+    expect(await store.dispatch(saveSettingsQuietly({ slotMinutes: 30 })).unwrap()).toBe('blocked');
   });
 });
