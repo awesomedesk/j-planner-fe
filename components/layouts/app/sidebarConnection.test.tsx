@@ -171,3 +171,78 @@ describe('모바일도 같은 설정 (US-21, D-049)', () => {
     expect(names).toEqual(['메뉴 닫기', '메모', 'Todo', '일기', '카테고리', '설정 및 계정']);
   });
 });
+
+describe('미니 달력 — 사이드바 맨 위 고정 (US-19, D-013·015)', () => {
+  const mini = () => within(sidebar()).getByRole('region', { name: '미니 달력' });
+
+  it('고른 날짜의 달을 그리고 오늘·고른 날을 표시, 날짜를 누르면 사이드바 기준 날짜가 그날로', async () => {
+    const { user, store } = await setup();
+    expect(within(mini()).getByRole('heading', { name: '2026년 9월' })).toBeInTheDocument();
+    const days = within(mini()).getAllByRole('button');
+    expect(days).toHaveLength(30);
+    expect(within(mini()).getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');
+    expect(within(mini()).getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(mini()).getByRole('button', { name: '9월 23일 (수)' }));
+    expect(store.getState().calendar.selectedDate).toBe('2026-09-23');
+    expect(within(sidebar()).getByRole('heading', { name: '9월 23일 (수)' })).toBeInTheDocument();
+    expect(within(mini()).getByRole('button', { name: '9월 23일 (수)' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('섹션 편집 중에는 숨긴다', async () => {
+    const { user } = await setup();
+    await user.click(within(sidebar()).getByRole('button', { name: '섹션 편집' }));
+    expect(within(sidebar()).queryByRole('region', { name: '미니 달력' })).not.toBeInTheDocument();
+  });
+});
+
+describe('태블릿 겹침 사이드바 (US-20, D-039)', () => {
+  it('바깥(달력 쪽)을 누르면 닫힌다', async () => {
+    const { user } = await setup({ width: 820 });
+    await user.click(within(screen.getByRole('complementary', { name: '사이드바 (닫힘)' })).getByRole('button', { name: '사이드바 열기' }));
+    await user.click(screen.getByTestId('sidebar-backdrop'));
+    expect(screen.getByRole('complementary', { name: '사이드바 (닫힘)' })).toBeInTheDocument();
+  });
+
+  it('PC 폭에서는 막이 없다 (달력을 그대로 누를 수 있음)', async () => {
+    await setup();
+    expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+  });
+});
+
+describe('모바일 날짜 시트도 같은 섹션 (US-19·21, MO-01·18 · v1.2.1)', () => {
+  const openSheet = async (user: Awaited<ReturnType<typeof setup>>['user']) => {
+    await user.click(await screen.findByRole('button', { name: /^9월 25일 \(금\)/ }));
+    return screen.getByRole('region', { name: '9월 25일 (금) 날짜 시트' });
+  };
+
+  it('그날 일정·[하루 계획 보기] 아래에 설정 순서의 섹션 (끈 섹션은 빠짐, 일기·메모는 접힘)', async () => {
+    const { user } = await setup({ width: 390, settings: { ...DEFAULT_SETTINGS, sidebarItems: items(['MEMO', true], ['TODO', true], ['DDAY', false], ['DIARY', true]) } });
+    const sheet = await openSheet(user);
+    expect(within(sheet).getByRole('button', { name: '하루 계획 보기' })).toBeInTheDocument();
+    expect(within(sheet).getByText('이날 일정이 없어요')).toBeInTheDocument();
+    const names = within(sheet).getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+    expect(names).toEqual(['메모', 'Todo', '일기']); // 모바일 시트에는 미니 달력이 없다
+    expect(within(sheet).getByRole('button', { name: '메모' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it("[크게 보기] → 끝까지 올림(MO-18), 다시 누르면 '작게 보기'", async () => {
+    const { user } = await setup({ width: 390 });
+    const sheet = await openSheet(user);
+    const expand = within(sheet).getByRole('button', { name: '크게 보기' });
+    await user.click(expand);
+    expect(sheet).toHaveAttribute('data-expanded', 'true');
+    await user.click(within(sheet).getByRole('button', { name: '작게 보기' }));
+    expect(sheet).toHaveAttribute('data-expanded', 'false');
+  });
+
+  it('시트에서도 [섹션 편집] → 편집 행, 바꾸면 저장', async () => {
+    const { user, api } = await setup({ width: 390 });
+    const sheet = await openSheet(user);
+    await user.click(within(sheet).getByRole('button', { name: '섹션 편집' }));
+    const list = within(sheet).getByRole('list', { name: '섹션 편집' });
+    await user.click(within(list).getByRole('checkbox', { name: 'D-Day 표시' }));
+    expect(lastPatch(api)).toEqual({ sidebarItems: items(['TODO', true], ['DDAY', false], ['DIARY', true], ['MEMO', true]) });
+    await user.click(within(sheet).getByRole('button', { name: '완료' }));
+    expect(within(sheet).queryByRole('region', { name: 'D-Day' })).not.toBeInTheDocument();
+  });
+});
