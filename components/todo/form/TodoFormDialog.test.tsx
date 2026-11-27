@@ -6,6 +6,9 @@ import { CATEGORIES } from '@/test/fixtures';
 import { json, mockApi, problem } from '@/test/mockApi';
 import { renderWithStore } from '@/test/render';
 
+import { applySettings } from '@store/slices/settingsSlice';
+import { makeStore } from '@store/store';
+
 import TodoFormDialog from './TodoFormDialog';
 
 beforeEach(() => {
@@ -92,6 +95,22 @@ describe('Todo 추가 (US-12, OV-02 · MO-09)', () => {
     await user.click(saveButton());
     await waitFor(() => expect(api.calls('POST /todos')).toHaveLength(1));
     expect(api.calls('POST /todos')[0].body).toMatchObject({ type: 'PERIOD', startDate: '2026-09-24', endDate: '2026-09-27' });
+  });
+
+  it('주 시작 요일 설정이 월요일이면 주간 목표도 월~일 (US-26 SET-01)', async () => {
+    const api = mockApi({ 'POST /todos': (req) => json(201, { id: 50, ...(req.body as object) }) });
+    const store = makeStore();
+    store.dispatch(applySettings({ weekStartDay: 'MON' }));
+    const { user } = renderWithStore(
+      <TodoFormDialog target={{ mode: 'create', baseDate: '2026-09-24' }} categories={CATEGORIES} onClose={vi.fn()} onSaved={vi.fn()} />,
+      { store }
+    );
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '운동 3번');
+    await user.click(typeRadio('주간 목표'));
+    expect(screen.getByText('9/21 (월) ~ 9/27 (일)')).toBeInTheDocument();
+    await user.click(saveButton());
+    await waitFor(() => expect(api.calls('POST /todos')).toHaveLength(1));
+    expect(api.calls('POST /todos')[0].body).toMatchObject({ type: 'WEEK', startDate: '2026-09-21', endDate: '2026-09-27' });
   });
 
   it('주간 목표: 그 주로 맞추고 기간을 보여 준다 (주 시작 일요일, D-041)', async () => {

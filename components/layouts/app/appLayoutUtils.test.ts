@@ -9,6 +9,10 @@ describe('헤더 날짜 제목', () => {
   it('3일: 보는 날부터 사흘 (US-29, MO-20)', () => expect(formatViewTitle('THREE_DAY', '2026-09-25')).toBe('9월 25일 – 27일'));
   it('3일: 달이 바뀌면 9월 30일 – 10월 2일', () => expect(formatViewTitle('THREE_DAY', '2026-09-30')).toBe('9월 30일 – 10월 2일'));
   it('목록: 그 주 기간 (MO-19)', () => expect(formatViewTitle('LIST', '2026-09-25')).toBe('9월 20일 – 26일'));
+  it('주 시작 요일이 월요일이면 주간·목록 기간도 월~일 (US-26 SET-01)', () => {
+    expect(formatViewTitle('WEEK', '2026-09-25', 'MON')).toBe('9월 21일 – 27일');
+    expect(formatViewTitle('LIST', '2026-09-27', 'MON')).toBe('9월 21일 – 27일');
+  });
 });
 
 describe('보기 선택지 (D-022·025, US-29)', () => {

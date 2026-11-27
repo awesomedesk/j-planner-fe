@@ -181,3 +181,40 @@ describe("'마지막에 본 화면' 기억 (US-27, D-029)", () => {
     expect(localStorage.getItem(LAST_VIEW_KEY)).toBe('LIST');
   });
 });
+
+describe('주 시작 요일 반영 (US-26 SET-01, D-024)', () => {
+  const MONDAY = { ...DEFAULT_SETTINGS, weekStartDay: 'MON' as const };
+
+  it('월요일이면 월간 요일 머리·미니 달력·주간 칸·PC 제목이 월요일부터', async () => {
+    const { user } = await setup({ settings: MONDAY });
+    const monthly = screen.getByLabelText('월간 달력');
+    expect(within(monthly).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['월', '화', '수', '목', '금', '토', '일']);
+    const mini = within(screen.getByRole('complementary', { name: '사이드바' })).getByRole('region', { name: '미니 달력' });
+    expect(within(mini).getAllByRole('button')[0]).toHaveAccessibleName('1일 (화)'); // 9/1(화)은 둘째 칸
+    expect(mini.querySelector('span[aria-hidden="true"]')?.textContent).toBe('월');
+    await user.click(within(screen.getByRole('banner', { name: '달력 도구' })).getByRole('button', { name: '주' }));
+    expect(within(screen.getByRole('banner', { name: '달력 도구' })).getByRole('heading')).toHaveTextContent('9월 21일 – 27일');
+    const columns = within(screen.getByLabelText('주간 시간표'))
+      .getAllByRole('group')
+      .map((g) => g.getAttribute('aria-label'))
+      .filter((name) => name?.endsWith('시간표'));
+    expect(columns[0]).toBe('9월 21일 (월) 시간표');
+    expect(columns[6]).toBe('9월 27일 (일) 시간표');
+  });
+
+  it('모바일 목록 보기도 월요일부터', async () => {
+    const { user } = await setup({ width: 390, settings: MONDAY });
+    await user.click(within(screen.getByRole('banner', { name: '모바일 머리' })).getByRole('button', { name: '화면 선택' }));
+    await user.click(within(screen.getByRole('listbox', { name: '화면 선택' })).getByRole('option', { name: '목록' }));
+    const sections = within(screen.getByRole('region', { name: '목록 보기' })).getAllByRole('region');
+    expect(sections[0]).toHaveAccessibleName('9월 21일 (월)');
+    expect(sections[6]).toHaveAccessibleName('9월 27일 (일)');
+  });
+
+  it('패널에서 바꾸면 달력이 바로 바뀐다', async () => {
+    const { user } = await setup();
+    const panel = await openFromPcMenu(user);
+    await user.click(within(panel).getByRole('radio', { name: '월요일' }));
+    expect(within(screen.getByLabelText('월간 달력')).getAllByRole('columnheader')[0]).toHaveTextContent('월');
+  });
+});
