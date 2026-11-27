@@ -66,6 +66,7 @@ import MobileHeader from './MobileHeader';
 import PcHeader from './PcHeader';
 import SidebarArea from './SidebarArea';
 import SidebarSections, { type SectionFocusRequest } from './SidebarSections';
+import SidebarItemsEditor from '@components/sidebar/SidebarItemsEditor';
 import { saveSettings, selectSidebarItems, selectSidebarOpenSetting } from '@store/slices/settingsSlice';
 import PaperPlane from './PaperPlane';
 import { useHiddenSaveNotice } from './useHiddenSaveNotice';
@@ -441,6 +442,8 @@ function AppShellContent({ topBanner }: { topBanner?: ReactNode }) {
           onOpenSchedule={openSchedule}
           onOpenDayPlan={openDayPlan}
           onClose={() => setSheetDate(null)}
+          sections={<SidebarSections showMiniCalendar={false} />}
+          editor={<SidebarItemsEditor items={sidebarItems} onChange={(next) => void dispatch(saveSettings({ sidebarItems: next }))} />}
         />
       )}
 

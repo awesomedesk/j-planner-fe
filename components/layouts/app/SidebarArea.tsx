@@ -31,7 +31,7 @@ interface SidebarAreaProps {
  * SidebarArea - 오른쪽 사이드바 자리 (768px 이상, US-19~21 · #394 db5f2fd)
  *
  * - 1024px 이상: 저장된 열림 상태(`/settings` sidebarOpen, 기본 열림), 폭 330px. 1920px 이상은 360px (D-018)
- * - 768~1023px: 닫힌 상태로 시작, 열면 달력 위에 겹쳐 표시 (저장하지 않음)
+ * - 768~1023px: 닫힌 상태로 시작, 열면 달력 위에 겹쳐 표시 (저장하지 않음). 바깥(달력 쪽)을 누르면 닫힌다 (D-039)
  * - 닫힘: 오른쪽 좁은 막대(열기 + 보이는 섹션 아이콘, 설정 순서) (PC-04, D-021)
  * - 머리: 날짜 제목 · [섹션 편집]/[완료] · 닫기(›). 편집 중에는 제목 '섹션 편집', 섹션 대신 편집 행. Esc는 편집만 끝낸다
  */
@@ -119,6 +119,8 @@ export default function SidebarArea({ selectedDate, isOpen, isOverlay, onOpen, o
     <div className={`${className}`}>
       {/* 겹쳐 열렸을 때도 막대 자리는 그대로 두어 달력 폭이 흔들리지 않게 한다 */}
       <div className="w-14 shrink-0 border-l border-tp-line bg-tp-bg" aria-hidden="true" />
+      {/* 바깥(달력 쪽)을 누르면 닫는 투명한 막 (D-039). 뒤 달력은 눌리지 않는다 */}
+      <div data-testid="sidebar-backdrop" aria-hidden="true" className="absolute inset-0 z-20" onClick={close} />
       <div className="absolute inset-y-0 right-0 z-30 flex">{panel}</div>
     </div>
   );

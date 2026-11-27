@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 
 import type { Category, Id, LocalDate, Schedule } from '@/types/api';
 
@@ -14,21 +14,30 @@ interface DateSheetProps {
   onOpenSchedule: (schedule: Schedule) => void;
   onOpenDayPlan: (date: LocalDate) => void;
   onClose: () => void;
+  /** 그날 일정 아래 사이드바 섹션 (설정 순서·표시, US-19·21). AppShell이 SidebarSections를 넘긴다 */
+  sections?: ReactNode;
+  /** [섹션 편집] 중에 보일 편집 행 (SidebarItemsEditor). 없으면 버튼도 없다 */
+  editor?: ReactNode;
 }
 
 /** 손잡이를 이만큼(px) 아래로 끌면 닫힌다 */
 const CLOSE_DRAG_DISTANCE = 60;
+/** 손잡이를 이만큼(px) 위로 끌면 끝까지 올린다 (MO-18) */
+const EXPAND_DRAG_DISTANCE = 50;
 /** 이만큼(px) 넘게 움직이면 누르기가 아니라 끌기로 본다 (뒤따르는 클릭으로 닫지 않음) */
 const DRAG_SLOP = 5;
 
 /**
  * DateSheet - 모바일 월간에서 날짜를 누르면 아래에서 올라오는 시트 (MO-01 ③)
- * 그날 일정 목록 + '하루 계획 보기'(일간, US-08).
- * Todo·D-Day·일기·메모 섹션(사이드바 설정 순서)은 M2·M3에서 붙인다. 끝까지 올리기(MO-18)는 US-30.
+ * 그날 일정 목록 + '하루 계획 보기'(일간, US-08) 아래에 사이드바와 같은 섹션(설정 순서·표시, #394 v1.2.1).
+ * [크게 보기]/[작게 보기] 또는 손잡이를 위로 끌면 끝까지 올린다(MO-18). [섹션 편집] 중에도 끝까지 올린 채.
  * 손잡이를 누르거나 아래로 끌면 닫힌다. 끄는 동안 시트가 손가락을 따라 내려오고,
  * 포인터를 붙잡아(setPointerCapture) 손잡이 밖에서 떼도 받는다 (US-06 검수).
  */
-export default function DateSheet({ date, schedules, categoriesById, onOpenSchedule, onOpenDayPlan, onClose }: DateSheetProps) {
+export default function DateSheet({ date, schedules, categoriesById, onOpenSchedule, onOpenDayPlan, onClose, sections, editor }: DateSheetProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const isFull = expanded || editing;
   const dragStartY = useRef<number | null>(null);
   const wasDragged = useRef(false);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
@@ -54,12 +63,14 @@ export default function DateSheet({ date, schedules, categoriesById, onOpenSched
     const distance = event.clientY - dragStartY.current;
     endDrag();
     if (distance > CLOSE_DRAG_DISTANCE) onClose();
+    else if (distance < -EXPAND_DRAG_DISTANCE) setExpanded(true);
   };
 
   return (
     <section
       aria-label={`${formatDayTitle(date)} 날짜 시트`}
-      className={`fixed inset-x-0 bottom-0 z-10 flex h-[46dvh] flex-col gap-2 rounded-t-[18px] bg-tp-bg px-3.5 pb-4 pt-2 text-tp-text shadow-[0_-6px_18px_rgba(0,0,0,0.12)] ${
+      data-expanded={isFull}
+      className={`fixed inset-x-0 bottom-0 z-10 flex ${isFull ? 'h-[96dvh]' : 'h-[46dvh]'} flex-col gap-2 rounded-t-[18px] bg-tp-bg px-3.5 pb-4 pt-2 text-tp-text shadow-[0_-6px_18px_rgba(0,0,0,0.12)] ${
         dragOffset === null ? 'transition-transform' : ''
       }`}
       style={dragOffset === null ? undefined : { transform: `translateY(${dragOffset}px)` }}
@@ -83,14 +94,35 @@ export default function DateSheet({ date, schedules, categoriesById, onOpenSched
       >
         <span className="h-1 w-10 rounded-full bg-tp-line" />
       </button>
-      <div className="flex shrink-0 items-center justify-between">
-        <h2 className="text-[15px] font-bold">{formatDayTitle(date)}</h2>
-        <button type="button" onClick={() => onOpenDayPlan(date)} className="text-[13px] font-semibold text-tp-primary">
-          하루 계획 보기
-        </button>
+      <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <h2 className="text-[15px] font-bold">{editing ? '섹션 편집' : formatDayTitle(date)}</h2>
+        {!editing && (
+          <button type="button" onClick={() => onOpenDayPlan(date)} className="ml-auto text-[13px] font-semibold text-tp-primary">
+            하루 계획 보기
+          </button>
+        )}
+        <div className={`flex gap-1.5 ${editing ? 'ml-auto' : ''}`}>
+          {!editing && (
+            <button type="button" onClick={() => setExpanded((value) => !value)} className="rounded-lg bg-tp-secondary px-2.5 py-1 text-xs font-semibold text-tp-on-secondary">
+              {expanded ? '작게 보기' : '크게 보기'}
+            </button>
+          )}
+          {editor && (
+            <button type="button" onClick={() => setEditing((value) => !value)} className="rounded-lg bg-tp-secondary px-2.5 py-1 text-xs font-semibold text-tp-on-secondary">
+              {editing ? '완료' : '섹션 편집'}
+            </button>
+          )}
+        </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto pb-16">
-        <DayScheduleList date={date} schedules={schedules} categoriesById={categoriesById} onOpen={onOpenSchedule} />
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto pb-16">
+        {editing ? (
+          editor
+        ) : (
+          <>
+            <DayScheduleList date={date} schedules={schedules} categoriesById={categoriesById} onOpen={onOpenSchedule} />
+            {sections}
+          </>
+        )}
       </div>
     </section>
   );

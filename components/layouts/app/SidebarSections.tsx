@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { SidebarItemType } from '@/types/calendar';
 import { useAppSelector } from '@/app/hooks';
 import Icon from '@components/icons/LineIcon';
+import MiniCalendar from '@components/sidebar/MiniCalendar';
 import { SIDEBAR_SECTIONS } from '@components/sidebar/sidebarItems';
 import { selectSidebarItems } from '@store/slices/settingsSlice';
 
@@ -20,6 +21,8 @@ interface SidebarSectionsProps {
   /** 섹션 내용 (기본 = sidebarSectionSlots). 없는 섹션은 빈 틀 */
   content?: Partial<Record<SidebarItemType, SidebarSectionSlot>>;
   focusRequest?: SectionFocusRequest | null;
+  /** 미니 달력(맨 위 고정, D-015). 모바일 날짜 시트는 빼고 그린다 */
+  showMiniCalendar?: boolean;
 }
 
 /** 처음 접혀 있는 섹션: Todo·D-Day는 펼치고 일기·메모는 접는다 (#394 v1.2). 접힘은 기억하지 않는다 (API 자리 없음, FE 검토 ③) */
@@ -27,10 +30,10 @@ const INITIALLY_FOLDED: readonly SidebarItemType[] = ['DIARY', 'MEMO'];
 
 /**
  * SidebarSections - 사이드바·폴드 오른쪽 패널의 섹션 (D-013, US-19·21)
- * 미니 달력(맨 위 고정) → 설정(`/settings` sidebarItems)의 순서대로, 끈 섹션은 뺀다. 모두 끄면 안내.
+ * 미니 달력(맨 위 고정, 모바일 시트는 없음) → 설정(`/settings` sidebarItems)의 순서대로, 끈 섹션은 뺀다. 모두 끄면 안내.
  * 섹션 제목(버튼)을 누르면 접기·펼치기. 내용은 sidebarSectionSlots 한 곳에서 꽂고, 내용은 header(버튼)로 머리를 그린다
  */
-export default function SidebarSections({ content = SIDEBAR_SECTION_SLOTS, focusRequest = null }: SidebarSectionsProps) {
+export default function SidebarSections({ content = SIDEBAR_SECTION_SLOTS, focusRequest = null, showMiniCalendar = true }: SidebarSectionsProps) {
   const items = useAppSelector(selectSidebarItems);
   const visible = items.filter((item) => item.visible);
   // 막대에서 섹션을 눌러 열면 처음부터 그 섹션은 펼친 채
@@ -68,7 +71,11 @@ export default function SidebarSections({ content = SIDEBAR_SECTION_SLOTS, focus
 
   return (
     <div ref={containerRef} className="flex flex-col gap-2.5">
-      <SectionFrame title="미니 달력" />
+      {showMiniCalendar && (
+        <section aria-label="미니 달력" className="rounded-xl border border-tp-line bg-tp-panel p-3">
+          <MiniCalendar />
+        </section>
+      )}
       {visible.length === 0 ? (
         <p className="rounded-xl border border-dashed border-tp-line p-3 text-[13px] text-tp-muted">표시할 섹션이 없어요. 섹션 편집에서 켤 수 있어요.</p>
       ) : (

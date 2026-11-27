@@ -175,17 +175,17 @@ describe('모바일도 같은 설정 (US-21, D-049)', () => {
 describe('미니 달력 — 사이드바 맨 위 고정 (US-19, D-013·015)', () => {
   const mini = () => within(sidebar()).getByRole('region', { name: '미니 달력' });
 
-  it('고른 날짜의 달을 그리고 오늘·고른 날을 표시, 날짜를 누르면 사이드바 기준 날짜가 그날로', async () => {
+  it('고른 날짜의 달(제목 아래 날짜 이름은 \'23일 (수)\')을 그리고 오늘·고른 날을 표시, 날짜를 누르면 사이드바 기준 날짜가 그날로', async () => {
     const { user, store } = await setup();
     expect(within(mini()).getByRole('heading', { name: '2026년 9월' })).toBeInTheDocument();
     const days = within(mini()).getAllByRole('button');
     expect(days).toHaveLength(30);
-    expect(within(mini()).getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-current', 'date');
-    expect(within(mini()).getByRole('button', { name: '9월 25일 (금)' })).toHaveAttribute('aria-pressed', 'true');
-    await user.click(within(mini()).getByRole('button', { name: '9월 23일 (수)' }));
+    expect(within(mini()).getByRole('button', { name: '25일 (금)' })).toHaveAttribute('aria-current', 'date');
+    expect(within(mini()).getByRole('button', { name: '25일 (금)' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(mini()).getByRole('button', { name: '23일 (수)' }));
     expect(store.getState().calendar.selectedDate).toBe('2026-09-23');
     expect(within(sidebar()).getByRole('heading', { name: '9월 23일 (수)' })).toBeInTheDocument();
-    expect(within(mini()).getByRole('button', { name: '9월 23일 (수)' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(mini()).getByRole('button', { name: '23일 (수)' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('섹션 편집 중에는 숨긴다', async () => {
@@ -211,7 +211,7 @@ describe('태블릿 겹침 사이드바 (US-20, D-039)', () => {
 
 describe('모바일 날짜 시트도 같은 섹션 (US-19·21, MO-01·18 · v1.2.1)', () => {
   const openSheet = async (user: Awaited<ReturnType<typeof setup>>['user']) => {
-    await user.click(await screen.findByRole('button', { name: /^9월 25일 \(금\)/ }));
+    await user.click(await within(screen.getByLabelText('월간 달력')).findByRole('button', { name: /^9월 25일 \(금\)/ }));
     return screen.getByRole('region', { name: '9월 25일 (금) 날짜 시트' });
   };
 
